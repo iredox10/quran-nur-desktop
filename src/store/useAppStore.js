@@ -505,6 +505,11 @@ export const useAppStore = create(
                 };
             })),
 
+            setPlannerLastPage: (pageNumber) => set((state) => replaceActivePlanner(state, (activePlanner) => ({
+                ...activePlanner,
+                lastReadPage: pageNumber,
+            }))),
+
             // Advanced Audio State
             currentAudioUrl: null, // Legacy single file support
             audioPlaylist: [], // Array of { url, verseKey, verseNumber }

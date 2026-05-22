@@ -59,6 +59,7 @@ export default function Page() {
         autoScroll, setAutoScroll, autoScrollSpeed, setAutoScrollSpeed,
         isAutoScrollPaused, setIsAutoScrollPaused,
         planner, markPlannerItemComplete, togglePlannerDayComplete,
+        setPlannerLastPage,
         setIsPlaying, isPlaying, audioPlaylist, setAudioPlaylist,
         audioTrackIndex, audioSettings, updateAudioSettings,
         isPlayerVisible, setIsPlayerVisible, playTriggerCount,
@@ -101,21 +102,35 @@ export default function Page() {
         ? getAssignmentProgress(planner, plannerPageContext.assignment)
         : null;
 
+    // Track the current page in the planner for "Resume" functionality
+    // Only fire on pageNumber change — NOT on plannerPageContext (which depends on planner, creating a loop)
+    const lastTrackedPageRef = React.useRef(null);
+    useEffect(() => {
+        if (lastTrackedPageRef.current === pageNumber) return;
+        lastTrackedPageRef.current = pageNumber;
+        // Check planner context at call time to avoid stale closure
+        const { planner: p, setPlannerLastPage: setPage } = useAppStore.getState();
+        if (p && setPage) {
+            setPage(pageNumber);
+        }
+    }, [pageNumber]);
+
     // Auto-mark current page as read when the user navigates to a new page
-    const { markPlannerItemComplete: markItemDone } = useAppStore.getState();
     const prevPageRef = React.useRef(pageNumber);
     useEffect(() => {
         const leavingPage = prevPageRef.current;
         prevPageRef.current = pageNumber;
         if (leavingPage === pageNumber) return; // initial mount, no change
-        // Find context for the page we just left
-        const leftCtx = getPlannerPageContext(planner, leavingPage, chapters || []);
+        // Use getState() to get fresh planner data at the moment of navigation
+        const { planner: currentPlanner, markPlannerItemComplete: markDone } = useAppStore.getState();
+        if (!currentPlanner) return;
+        const leftCtx = getPlannerPageContext(currentPlanner, leavingPage, chapters || []);
         if (!leftCtx || !leftCtx.currentItem) return;
-        const leftProgress = getAssignmentProgress(planner, leftCtx.assignment);
+        const leftProgress = getAssignmentProgress(currentPlanner, leftCtx.assignment);
         if (!leftProgress.completedRangeValues.includes(leftCtx.currentItem.rangeValue)) {
-            markItemDone(leftCtx.assignment.dayNumber, leftCtx.currentItem.rangeValue);
+            markDone(leftCtx.assignment.dayNumber, leftCtx.currentItem.rangeValue);
         }
-    }, [pageNumber]); // intentionally only pageNumber — we want to capture the snapshot when it changes
+    }, [pageNumber, chapters]);
 
     const activeSurahId = verses.length > 0 ? verses[0].verse_key.split(':')[0] : null;
     const activeSurah = chapters?.find(c => c.id.toString() === activeSurahId);

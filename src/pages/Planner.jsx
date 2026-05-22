@@ -360,6 +360,10 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
     const todayTotal = todayProgress?.totalCount ?? 1;
     const todayPct = Math.round((todayDone / todayTotal) * 100);
 
+    // Resume: prefer lastReadPage if user was reading, else fallback to next unread
+    const resumeRoute = planner?.lastReadPage ? `/page/${planner.lastReadPage}` : nextReadRoute;
+    const hasStartedReading = todayDone > 0 || !!planner?.lastReadPage;
+
     // Overall plan progress for stats row
     const overallPct = overview ? Math.round(overview.completionRatio * 100) : 0;
     const completedDays = overview?.completedCount ?? 0;
@@ -463,7 +467,9 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                                         </button>
                                     )}
                                     {slot.status === 'current' && slot.slotRoute && (
-                                        <Link to={slot.slotRoute} className="plr-start-btn">Start</Link>
+                                        <Link to={hasStartedReading ? (resumeRoute || slot.slotRoute) : slot.slotRoute} className="plr-start-btn">
+                                            {hasStartedReading ? 'Resume' : 'Start'}
+                                        </Link>
                                     )}
                                     {slot.status === 'upcoming' && (
                                         <button className="plr-mark-btn" onClick={() => handleMarkPrayer(slot)} title="Mark done">
@@ -478,8 +484,10 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
 
                 {/* Footer CTA */}
                 <div className="plr-active-footer">
-                    {nextReadRoute ? (
-                        <Link to={nextReadRoute} className="plr-open-btn">Open Al-Quran</Link>
+                    {(resumeRoute || nextReadRoute) ? (
+                        <Link to={resumeRoute || nextReadRoute} className="plr-open-btn">
+                            {hasStartedReading ? 'Resume Reading' : 'Open Al-Quran'}
+                        </Link>
                     ) : (
                         <button className="plr-open-btn" disabled>Open Al-Quran</button>
                     )}
@@ -525,7 +533,13 @@ export default function Planner() {
     } = useAppStore();
 
     const { data: chapters = [] } = useQuery({ queryKey: ['chapters'], queryFn: getChapters, staleTime: Infinity });
-    const [view, setView] = useState('intention'); // always land on intention
+    // If user has an active plan with any progress, go straight to the active dashboard
+    const hasProgress = planner && (
+        (planner.completedDays && planner.completedDays.length > 0) ||
+        (planner.assignmentProgress && Object.keys(planner.assignmentProgress).length > 0) ||
+        planner.lastReadPage
+    );
+    const [view, setView] = useState(hasProgress ? 'active' : 'intention');
     const [confirmDelete, setConfirmDelete] = useState(false);
 
     useEffect(() => {
