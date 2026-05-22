@@ -1101,3 +1101,67 @@
     padding-top: 10vh;
     color: var(--mem-ink-muted);
 }
+
+/* ════════════════════════════════════════════
+   WORD-BY-WORD REVEAL & FIRST-LETTER HINTS
+════════════════════════════════════════════ */
+
+.mem-word {
+    cursor: pointer;
+    padding: 0.15em 0.25em;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: inline-block;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Hidden word blocks (word mode) */
+.mem-word.hidden-word {
+    background: var(--mem-bone-dark);
+    color: var(--mem-bone-dark);
+    border-radius: 4px;
+    min-width: 2em;
+    letter-spacing: -0.15em;
+    font-size: 0.7em;
+}
+
+.mem-word.hidden-word:hover {
+    background: var(--mem-teal-soft);
+    box-shadow: 0 0 0 2px rgba(46,79,74,0.15);
+}
+
+.mem-word.hidden-word:active {
+    transform: scale(0.95);
+}
+
+/* First-letter hint blocks */
+.mem-word.hint-word {
+    background: var(--mem-gold-soft);
+    color: var(--mem-gold);
+    border: 1px dashed rgba(184,146,74,0.3);
+    font-size: 0.85em;
+}
+
+.mem-word.hint-word:hover {
+    background: rgba(184,146,74,0.25);
+    border-color: var(--mem-gold);
+}
+
+/* Revealed word (both modes) */
+.mem-word.revealed {
+    background: var(--mem-green-soft);
+    color: inherit;
+    animation: mem-word-pop 0.25s ease;
+}
+
+@keyframes mem-word-pop {
+    0% { transform: scale(0.85); opacity: 0.5; }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ─── Hide Mode Label (tooltip style) ─── */
+.mem-dock-btn[title]::after {
+    content: none; /* Remove default tooltips on mobile */
+}

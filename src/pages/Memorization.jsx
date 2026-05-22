@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getVerses, getChapter, getTajweedVerses } from '../services/api/quranApi';
 import { useAppStore } from '../store/useAppStore';
-import { EyeOff, Eye, Repeat, ArrowLeft, ArrowRight, X, Play, Pause, ShieldAlert, Award, Languages, Layers, RefreshCw, Clock, Bookmark, FolderPlus, Plus, Folder, Settings2, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { EyeOff, Eye, Repeat, ArrowLeft, ArrowRight, X, Play, Pause, ShieldAlert, Award, Languages, Layers, RefreshCw, Clock, Bookmark, FolderPlus, Plus, Folder, Settings2, CheckCircle, ChevronLeft, ChevronRight, Type, MousePointer } from 'lucide-react';
 import { getMushafById, isTajweedEnabledForMushaf } from '../config/mushaf';
 import { getVerseArabicText, sanitizeTajweedHtml } from '../utils/quranText';
 import { getLocalAudioUrl } from '../utils/localAudio';
+import confetti from 'canvas-confetti';
 import './Memorize.css';
 
 
@@ -50,6 +51,14 @@ export default function Memorization() {
     const [showUI, setShowUI] = useState(true);
     const [isAudioSettingsOpen, setIsAudioSettingsOpen] = useState(false);
 
+    // Hide mode: 'visible' | 'blur' | 'word' | 'firstletter'
+    const [hideMode, setHideMode] = useState('visible');
+    const [revealedWords, setRevealedWords] = useState({}); // { 'verseKey-wordIdx': true }
+
+    // Session timer
+    const [sessionSeconds, setSessionSeconds] = useState(0);
+    const sessionTimerRef = useRef(null);
+
     const [isPlayingAudio, setIsPlayingAudio] = useState(false);
     const [audioVerseIndex, setAudioVerseIndex] = useState(0); // 0 to ayahsPerSwipe - 1
     const [rangeLoopTarget, setRangeLoopTarget] = useState(1); // 1 = play once, -1 = Infinite
@@ -72,6 +81,8 @@ export default function Memorization() {
         if (audioRef.current) {
             audioRef.current.pause();
         }
+        // Reset word reveals on page change
+        setRevealedWords({});
     }, [currentVerseIndex, ayahsPerSwipe]);
 
     useEffect(() => {
@@ -188,6 +199,130 @@ export default function Memorization() {
             if (hideTimer) clearTimeout(hideTimer);
         };
     }, []);
+
+    // Session timer
+    useEffect(() => {
+        sessionTimerRef.current = setInterval(() => setSessionSeconds(s => s + 1), 1000);
+        return () => clearInterval(sessionTimerRef.current);
+    }, []);
+
+    const formatTimer = (s) => {
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${m}:${String(sec).padStart(2, '0')}`;
+    };
+
+    // Cycle hide modes: visible → blur → word → firstletter → visible
+    const HIDE_MODES = ['visible', 'blur', 'word', 'firstletter'];
+    const cycleHideMode = useCallback(() => {
+        setHideMode(prev => {
+            const idx = HIDE_MODES.indexOf(prev);
+            const next = HIDE_MODES[(idx + 1) % HIDE_MODES.length];
+            // Reset revealed words when switching modes
+            setRevealedWords({});
+            // Sync legacy blur state
+            setIsBlurred(next === 'blur');
+            return next;
+        });
+    }, []);
+
+    const toggleWordReveal = useCallback((verseKey, wordIdx) => {
+        setRevealedWords(prev => ({
+            ...prev,
+            [`${verseKey}-${wordIdx}`]: !prev[`${verseKey}-${wordIdx}`]
+        }));
+    }, []);
+
+    // Get first letter of Arabic word (skip diacritics)
+    const getFirstLetter = (word) => {
+        if (!word) return '';
+        for (const ch of word) {
+            // Arabic base letters range
+            if (ch.charCodeAt(0) >= 0x0621 && ch.charCodeAt(0) <= 0x064A) return ch;
+            if (ch.charCodeAt(0) >= 0x0671 && ch.charCodeAt(0) <= 0x06D3) return ch;
+        }
+        return word[0] || '';
+    };
+
+    // Confetti on surah completion
+    const prevMemorizedCountRef = useRef(0);
+    useEffect(() => {
+        if (!chapter || !memorizedAyahs) return;
+        const surahAyahs = (memorizedAyahs || []).filter(k => k.startsWith(`${chapter.id}:`));
+        const count = surahAyahs.length;
+        if (count >= chapter.verses_count && prevMemorizedCountRef.current < chapter.verses_count) {
+            // All ayahs memorized — celebrate!
+            confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, colors: ['#2E4F4A', '#B8924A', '#10b981'] });
+            setTimeout(() => confetti({ particleCount: 60, spread: 120, origin: { y: 0.5 } }), 300);
+        }
+        prevMemorizedCountRef.current = count;
+    }, [memorizedAyahs, chapter]);
+
+    // Render verse text based on hide mode
+    const renderVerseText = useCallback((verse, idx) => {
+        const text = getVerseArabicText(verse, mushaf);
+        const computedFontSize = `clamp(${0.9 + fontSize * 0.15}rem, ${fontSize * 1.2}vw, ${fontSize * 0.4 + 1.5}rem)`;
+
+        // For tajweed mode with blur — use tajweed HTML
+        // For word/firstletter modes — fall through to word splitting even with tajweed
+        if (isTajweedActive && tajweedMap?.[verse.verse_key] && hideMode !== 'word' && hideMode !== 'firstletter') {
+            return (
+                <div
+                    className={`mem-verse-arabic quran-text tajweed-text ${isPlayingAudio && audioVerseIndex === idx ? 'is-active' : ''} ${hideMode === 'blur' ? 'is-blurred' : ''}`}
+                    style={{ fontSize: computedFontSize, fontFamily: arabicFont }}
+                >
+                    <span dangerouslySetInnerHTML={{ __html: tajweedMap[verse.verse_key] }} />
+                </div>
+            );
+        }
+
+        // Word-by-word or first-letter modes
+        if (hideMode === 'word' || hideMode === 'firstletter') {
+            const words = text.split(/\s+/);
+            return (
+                <div
+                    className={`mem-verse-arabic quran-text ${isPlayingAudio && audioVerseIndex === idx ? 'is-active' : ''}`}
+                    style={{ fontSize: computedFontSize, fontFamily: arabicFont, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.4em' }}
+                >
+                    {words.map((word, wi) => {
+                        const key = `${verse.verse_key}-${wi}`;
+                        const isRevealed = revealedWords[key];
+                        if (hideMode === 'word') {
+                            return (
+                                <span
+                                    key={wi}
+                                    className={`mem-word ${isRevealed ? 'revealed' : 'hidden-word'}`}
+                                    onClick={(e) => { e.stopPropagation(); toggleWordReveal(verse.verse_key, wi); }}
+                                >
+                                    {isRevealed ? word : '▇'.repeat(Math.max(2, Math.ceil(word.length / 3)))}
+                                </span>
+                            );
+                        }
+                        // firstletter mode
+                        return (
+                            <span
+                                key={wi}
+                                className={`mem-word ${isRevealed ? 'revealed' : 'hint-word'}`}
+                                onClick={(e) => { e.stopPropagation(); toggleWordReveal(verse.verse_key, wi); }}
+                            >
+                                {isRevealed ? word : getFirstLetter(word) + '⸱'.repeat(Math.max(1, Math.ceil(word.length / 4)))}
+                            </span>
+                        );
+                    })}
+                </div>
+            );
+        }
+
+        // Default: visible or blur
+        return (
+            <div
+                className={`mem-verse-arabic quran-text ${isPlayingAudio && audioVerseIndex === idx ? 'is-active' : ''} ${hideMode === 'blur' ? 'is-blurred' : ''}`}
+                style={{ fontSize: computedFontSize, fontFamily: arabicFont }}
+            >
+                {text}
+            </div>
+        );
+    }, [hideMode, revealedWords, fontSize, arabicFont, isTajweedActive, tajweedMap, isPlayingAudio, audioVerseIndex, mushaf]);
 
     const verses = versesResponse?.verses || [];
 
@@ -393,25 +528,14 @@ export default function Memorization() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     className="mem-verse-container"
-                    onClick={() => isBlurred && setIsBlurred(false)}
+                    onClick={() => hideMode === 'blur' && setHideMode('visible')}
                 >
                     <div className="mem-verse-stack">
                         {currentVerses.map((verse, idx) => (
                             <div key={verse.id} className="mem-verse-block">
                                 <div className="mem-verse-text-wrap">
-                                    <div
-                                        className={`mem-verse-arabic quran-text tajweed-text ${isPlayingAudio && audioVerseIndex === idx ? 'is-active' : ''} ${isBlurred ? 'is-blurred' : ''}`}
-                                        style={{
-                                            fontSize: `clamp(${0.9 + fontSize * 0.15}rem, ${fontSize * 1.2}vw, ${fontSize * 0.4 + 1.5}rem)`,
-                                            fontFamily: arabicFont,
-                                        }}
-                                    >
-                                        {isTajweedActive && tajweedMap?.[verse.verse_key]
-                                            ? <span dangerouslySetInnerHTML={{ __html: tajweedMap[verse.verse_key] }} />
-                                            : getVerseArabicText(verse, mushaf)
-                                        }
-                                    </div>
-                                    <div className={`mem-verse-side ${isBlurred ? 'hidden' : ''}`}>
+                                    {renderVerseText(verse, idx)}
+                                    <div className={`mem-verse-side ${hideMode === 'blur' ? 'hidden' : ''}`}>
                                         <button className="mem-verse-side-btn" onClick={(e) => { e.stopPropagation(); toggleBookmark(verse.verse_key, chapter?.name_simple, chapter?.id); }}
                                             style={{ color: bookmarks?.find(b => b.verseKey === verse.verse_key) ? 'var(--mem-teal)' : 'var(--mem-ink-muted)' }}
                                             title="Bookmark">
@@ -458,14 +582,17 @@ export default function Memorization() {
                 <span>Page {currentVerses[0]?.page_number}</span>
                 <span className="mem-info-dot">·</span>
                 <span>Ayah {currentVerses[0]?.verse_key.split(':')[1]}{currentVerses.length > 1 ? `–${currentVerses[currentVerses.length - 1]?.verse_key.split(':')[1]}` : ''}</span>
+                <span className="mem-info-dot">·</span>
+                <span style={{ color: 'var(--mem-gold)', fontWeight: 600 }}>{formatTimer(sessionSeconds)}</span>
             </div>
 
             {/* Bottom Control Dock */}
             <div className={`mem-dock ${showUI ? '' : 'hidden'}`}>
                 <div className="mem-dock-inner" style={{ position: 'relative' }}>
                     <button className="mem-dock-btn" onClick={handlePrev} disabled={currentVerseIndex === 0}><ChevronLeft size={20} /></button>
-                    <button className={`mem-dock-btn ${isBlurred ? 'active' : ''}`} onClick={() => setIsBlurred(!isBlurred)}>
-                        {isBlurred ? <Eye size={18} /> : <EyeOff size={18} />}
+                    <button className={`mem-dock-btn ${hideMode !== 'visible' ? 'active' : ''}`} onClick={cycleHideMode}
+                        title={hideMode === 'visible' ? 'Hide Text' : hideMode === 'blur' ? 'Word-by-Word' : hideMode === 'word' ? 'First Letter Hints' : 'Show All'}>
+                        {hideMode === 'visible' ? <EyeOff size={18} /> : hideMode === 'blur' ? <MousePointer size={18} /> : hideMode === 'word' ? <Type size={18} /> : <Eye size={18} />}
                     </button>
                     <button className={`mem-dock-btn ${showTranslation ? 'active' : ''}`} onClick={() => setShowTranslation(!showTranslation)}>
                         <Languages size={18} />
