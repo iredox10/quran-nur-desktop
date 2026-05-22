@@ -960,6 +960,145 @@
     color: var(--plr-ink-muted);
 }
 
+/* ─── Day Tracker ─── */
+.plr-tracker-section {
+    padding: 0 1.25rem;
+    max-width: 480px;
+    width: 100%;
+    margin: 0 auto 1.25rem;
+}
+
+.plr-tracker-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.plr-tracker-title {
+    font-family: var(--font-ui, 'Cormorant Garamond', serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--plr-ink);
+}
+
+.plr-tracker-summary {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.62rem;
+    color: var(--plr-ink-muted);
+    letter-spacing: 0.05em;
+}
+
+.plr-tracker-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0.75rem;
+    background: var(--plr-cream);
+    border-radius: 14px;
+    border: 1px solid var(--plr-bone-dark);
+}
+
+.plr-tracker-day {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: default;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.plr-tracker-num {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.55rem;
+    font-weight: 500;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+}
+
+/* Status: upcoming */
+.plr-tracker-upcoming {
+    background: var(--plr-bone);
+    color: var(--plr-ink-muted);
+}
+
+/* Status: today */
+.plr-tracker-today {
+    background: rgba(184,146,74,0.12);
+    color: var(--plr-gold);
+    box-shadow: 0 0 0 2px var(--plr-gold);
+}
+
+/* Status: completed */
+.plr-tracker-completed {
+    background: var(--plr-teal);
+    color: #fff;
+}
+
+.plr-tracker-check {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    color: #fff;
+    opacity: 0.85;
+}
+
+/* Status: overdue (missed) */
+.plr-tracker-overdue {
+    background: rgba(192,57,43,0.1);
+    color: #c0392b;
+    box-shadow: 0 0 0 1.5px rgba(192,57,43,0.3);
+}
+
+/* Partial progress ring on today */
+.plr-tracker-progress {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--plr-gold) var(--pct, 0%),
+        transparent var(--pct, 0%)
+    );
+    opacity: 0.25;
+    pointer-events: none;
+}
+
+/* Legend */
+.plr-tracker-legend {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.plr-tracker-legend-item {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.58rem;
+    color: var(--plr-ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    letter-spacing: 0.04em;
+}
+
+.plr-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.plr-legend-completed { background: var(--plr-teal); }
+.plr-legend-today { background: var(--plr-gold); }
+.plr-legend-overdue { background: #c0392b; }
+.plr-legend-upcoming { background: var(--plr-bone-dark); }
+
 /* ─── Prayer action extras ─── */
 .plr-check-badge {
     width: 26px;

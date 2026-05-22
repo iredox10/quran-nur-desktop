@@ -431,7 +431,21 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
     const currentDay = overview?.currentDayNumber ?? 1;
 
     const todayProgress = useMemo(() => todayAssignment ? getAssignmentProgress(planner, todayAssignment) : null, [planner, todayAssignment]);
-    const nextReadRoute = todayProgress?.nextItem?.route || todayAssignment?.primaryRoute || null;
+    const todayComplete = todayProgress?.isComplete ?? false;
+
+    // Find next unfinished assignment (for read-ahead when today is done)
+    const nextAssignment = useMemo(() => {
+        if (!planner || !todayComplete) return null;
+        return planner.assignments.find(a => {
+            if (todayAssignment && a.dayNumber <= todayAssignment.dayNumber) return false;
+            return !getAssignmentProgress(planner, a).isComplete;
+        }) || null;
+    }, [planner, todayComplete, todayAssignment]);
+
+    const nextAssignmentProgress = nextAssignment ? getAssignmentProgress(planner, nextAssignment) : null;
+    const nextReadRoute = todayComplete
+        ? (nextAssignmentProgress?.nextItem?.route || nextAssignment?.primaryRoute || null)
+        : (todayProgress?.nextItem?.route || todayAssignment?.primaryRoute || null);
 
     // Ring shows TODAY's page progress (not overall day-completion)
     const todayDone = todayProgress?.completedCount ?? 0;
@@ -460,8 +474,10 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
     // Dynamic subtitle
     const nextPrayer = prayerSlots.find(s => s.status === 'current' || s.status === 'upcoming');
     const daySubtitle = (() => {
-        if (overview?.isFinishedWindow) return 'Plan complete! 🎉';
+        if (overview?.isFinishedWindow && !nextAssignment) return 'Plan complete! 🎉';
         if (!todayAssignment) return 'Starting soon…';
+        if (todayComplete && nextAssignment) return `Day ${currentDay} complete! 🎉 · Day ${nextAssignment.dayNumber} ready`;
+        if (todayComplete) return `Day ${currentDay} complete! 🎉`;
         if (todayDone > 0 && todayDone < todayTotal && nextPrayer) return `${todayDone} of ${todayTotal} ${unitsLabel} read · ${nextPrayer.name} next`;
         if (nextPrayer) return `${todayTotal} ${unitsLabel} today · start with ${nextPrayer.name}`;
         return 'All done for today! ✓';
@@ -504,7 +520,46 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                     </div>
                 </div>
 
-                {/* Daily Ritual */}
+                {/* Day Tracker */}
+                <div className="plr-tracker-section">
+                    <div className="plr-tracker-header">
+                        <h2 className="plr-tracker-title">Day Tracker</h2>
+                        <span className="plr-tracker-summary">{completedDays} of {planner.durationDays} completed</span>
+                    </div>
+                    <div className="plr-tracker-grid">
+                        {planner.assignments.map(a => {
+                            const status = getAssignmentStatus(planner, a, today);
+                            const progress = getAssignmentProgress(planner, a);
+                            const isToday = a.date === today;
+                            const pct = progress.totalCount ? Math.round((progress.completedCount / progress.totalCount) * 100) : 0;
+                            return (
+                                <motion.div
+                                    key={a.dayNumber}
+                                    className={`plr-tracker-day plr-tracker-${status} ${isToday ? 'plr-tracker-today' : ''}`}
+                                    title={`Day ${a.dayNumber}: ${a.title} — ${status === 'completed' ? '✓ Done' : status === 'today' ? `${pct}%` : status}`}
+                                    whileHover={{ scale: 1.15 }}
+                                    whileTap={{ scale: 0.9 }}
+                                >
+                                    <span className="plr-tracker-num">{a.dayNumber}</span>
+                                    {status === 'completed' && (
+                                        <svg className="plr-tracker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
+                                    )}
+                                    {isToday && status !== 'completed' && pct > 0 && (
+                                        <div className="plr-tracker-progress" style={{ '--pct': `${pct}%` }} />
+                                    )}
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                    <div className="plr-tracker-legend">
+                        <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-completed" /> Done</span>
+                        <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-today" /> Today</span>
+                        <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-overdue" /> Missed</span>
+                        <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-upcoming" /> Upcoming</span>
+                    </div>
+                </div>
                 <div className="plr-ritual-section">
                     <div className="plr-ritual-header">
                         <h2 className="plr-ritual-title">Daily Ritual</h2>
@@ -562,13 +617,23 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
 
                 {/* Footer CTA */}
                 <div className="plr-active-footer">
-                    {(resumeRoute || nextReadRoute) ? (
-                        <Link to={resumeRoute || nextReadRoute} className="plr-open-btn">
-                            {hasStartedReading ? 'Resume Reading' : 'Open Al-Quran'}
-                        </Link>
-                    ) : (
-                        <button className="plr-open-btn" disabled>Open Al-Quran</button>
-                    )}
+                    {(() => {
+                        const planDone = overview?.isFinishedWindow && !nextAssignment;
+                        const ctaRoute = todayComplete ? (nextReadRoute || resumeRoute) : (resumeRoute || nextReadRoute);
+                        const ctaLabel = planDone
+                            ? 'Plan Complete ✓'
+                            : todayComplete && nextAssignment
+                                ? `Continue to Day ${nextAssignment.dayNumber}`
+                                : todayComplete
+                                    ? 'All Caught Up'
+                                    : hasStartedReading ? 'Resume Reading' : 'Open Al-Quran';
+                        if (planDone) {
+                            return <button className="plr-open-btn" disabled>{ctaLabel}</button>;
+                        }
+                        return ctaRoute
+                            ? <Link to={ctaRoute} className="plr-open-btn">{ctaLabel}</Link>
+                            : <button className="plr-open-btn" disabled>{ctaLabel}</button>;
+                    })()}
                     <p className="plr-ayah-quote">"Recite what has been revealed to you of the Book…" (29:45)</p>
                     <button className="plr-delete-link" onClick={onDelete}
                         title="Delete plan" aria-label="Delete plan">
