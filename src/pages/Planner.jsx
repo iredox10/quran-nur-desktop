@@ -153,10 +153,10 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
 
     const unitMeta = PLANNER_UNITS[unitType];
     const maxUnit = unitMeta?.max || 604;
-    const safeEndPage = Math.min(endPage, maxUnit);
-    const totalUnits = Math.max(safeEndPage - startPage + 1, 1);
+    const safeEndPage = Math.min(Number(endPage) || maxUnit, maxUnit);
+    const totalUnits = Math.max(safeEndPage - (Number(startPage) || 1) + 1, 1);
     // Auto-calculate duration from pages per day
-    const computedDuration = Math.ceil(totalUnits / Math.max(pagesPerDay, 1));
+    const computedDuration = Math.ceil(totalUnits / Math.max(Number(pagesPerDay) || 1, 1));
 
     const handleBegin = () => {
         const pace = PACES.find(p => p.id === selected);
@@ -269,10 +269,17 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                 })}
             </div>
 
-            {/* My Plans — shown right after pace cards */}
-            {planners && planners.length > 0 && (
-                <div className="plr-plans-section">
+            {/* My Plans section — always visible, with + button */}
+            <div className="plr-plans-section">
+                <div className="plr-plans-header">
                     <h2 className="plr-plans-title">My Plans</h2>
+                    <button className="plr-plans-add-btn" onClick={() => setShowCustom(true)} title="Create custom plan">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
+                {planners && planners.length > 0 ? (
                     <div className="plr-plans-list">
                         {planners.map(p => {
                             const overview = getPlannerOverview(p);
@@ -304,92 +311,109 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                             );
                         })}
                     </div>
-                </div>
-            )}
+                ) : (
+                    <p className="plr-plans-empty">No plans yet. Select a path above or tap + to create a custom plan.</p>
+                )}
+            </div>
 
-            {/* Custom timeline section */}
-            <motion.div className="plr-custom-section"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-            >
-                <h2 className="plr-custom-heading">Prefer a custom timeline?</h2>
-                <p className="plr-custom-desc">
-                    Define your own start date and completion target. We'll handle the calculation of daily portions for you.
-                </p>
-
-                <button className="plr-custom-toggle-btn" onClick={() => setShowCustom(v => !v)}>
-                    {showCustom ? '− Hide custom options' : '+ Configure custom plan'}
-                </button>
-            </motion.div>
-
+            {/* Custom Plan Modal */}
             <AnimatePresence>
                 {showCustom && (
-                    <motion.div className="plr-custom-form" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                        {/* Plan title */}
-                        <div className="plr-form-group">
-                            <label className="plr-form-label">Plan name (optional)</label>
-                            <input type="text" className="plr-text-input" value={customTitle}
-                                onChange={e => setCustomTitle(e.target.value)}
-                                placeholder="e.g. Morning Routine, Juz Amma..." />
-                        </div>
-                        {/* Unit type */}
-                        <div className="plr-form-group">
-                            <label className="plr-form-label">Reading unit</label>
-                            <div className="plr-unit-pills">
-                                {Object.entries(PLANNER_UNITS).map(([key, meta]) => (
-                                    <button key={key} className={`plr-unit-pill ${unitType === key ? 'active' : ''}`}
-                                        onClick={() => { setUnitType(key); setStartPage(1); setEndPage(meta.max); }}>
-                                        {meta.label}
-                                    </button>
-                                ))}
+                    <motion.div className="plr-modal-overlay"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        onClick={e => { if (e.target === e.currentTarget) setShowCustom(false); }}
+                    >
+                        <motion.div className="plr-modal"
+                            initial={{ opacity: 0, y: 40, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 30, scale: 0.96 }}
+                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                        >
+                            <div className="plr-modal-header">
+                                <h2 className="plr-modal-title">Create Custom Plan</h2>
+                                <button className="plr-modal-close" onClick={() => setShowCustom(false)} aria-label="Close">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
                             </div>
-                        </div>
-                        {/* Page range */}
-                        <div className="plr-form-group">
-                            <label className="plr-form-label">{unitMeta.label} range</label>
-                            <div className="plr-range-inputs">
-                                <div className="plr-range-field">
-                                    <span className="plr-range-field-label">From</span>
-                                    <input type="number" className="plr-num-input" min={1} max={safeEndPage}
-                                        value={startPage} onChange={e => setStartPage(Math.max(1, Math.min(Number(e.target.value) || 1, safeEndPage)))} />
-                                </div>
-                                <span className="plr-range-arrow">→</span>
-                                <div className="plr-range-field">
-                                    <span className="plr-range-field-label">To</span>
-                                    <input type="number" className="plr-num-input" min={startPage} max={maxUnit}
-                                        value={safeEndPage} onChange={e => setEndPage(Math.max(startPage, Math.min(Number(e.target.value) || maxUnit, maxUnit)))} />
-                                </div>
-                            </div>
-                            <p className="plr-range-hint">{Math.max(safeEndPage - startPage + 1, 0)} {unitMeta.plural} selected</p>
-                        </div>
-                        {/* Pages per day */}
-                        <div className="plr-form-group">
-                            <label className="plr-form-label">{unitMeta.plural} per day</label>
-                            <div className="plr-perday-row">
-                                <input type="number" className="plr-num-input plr-num-perday" min={1} max={totalUnits}
-                                    value={pagesPerDay} onChange={e => setPagesPerDay(Math.max(1, Math.min(Number(e.target.value) || 1, totalUnits)))} />
-                                <input type="range" min={1} max={Math.min(totalUnits, 50)} value={Math.min(pagesPerDay, 50)}
-                                    onChange={e => setPagesPerDay(Number(e.target.value))} className="plr-range plr-range-perday" />
-                            </div>
-                        </div>
-                        {/* Start date */}
-                        <div className="plr-form-group">
-                            <label className="plr-form-label">Start date</label>
-                            <input type="date" className="plr-date-input" value={startDate} onChange={e => setStartDate(e.target.value)} />
-                        </div>
 
-                        {/* Custom plan stats + CTA */}
-                        <div className="plr-custom-cta-row">
-                            <div className="plr-card-stats">
-                                <span>{pagesPerDay} {unitMeta.plural}/day</span>
-                                <span className="plr-card-stats-dot">·</span>
-                                <span>{computedDuration} days</span>
-                                <span className="plr-card-stats-dot">·</span>
-                                <span>Done by {activeStats.endLabel}</span>
+                            <div className="plr-modal-body">
+                                {/* Plan title */}
+                                <div className="plr-form-group">
+                                    <label className="plr-form-label">Plan name (optional)</label>
+                                    <input type="text" className="plr-text-input" value={customTitle}
+                                        onChange={e => setCustomTitle(e.target.value)}
+                                        placeholder="e.g. Morning Routine, Juz Amma..." />
+                                </div>
+                                {/* Unit type */}
+                                <div className="plr-form-group">
+                                    <label className="plr-form-label">Reading unit</label>
+                                    <div className="plr-unit-pills">
+                                        {Object.entries(PLANNER_UNITS).map(([key, meta]) => (
+                                            <button key={key} className={`plr-unit-pill ${unitType === key ? 'active' : ''}`}
+                                                onClick={() => { setUnitType(key); setStartPage(1); setEndPage(meta.max); }}>
+                                                {meta.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                {/* Page range */}
+                                <div className="plr-form-group">
+                                    <label className="plr-form-label">{unitMeta.label} range</label>
+                                    <div className="plr-range-inputs">
+                                        <div className="plr-range-field">
+                                            <span className="plr-range-field-label">From</span>
+                                            <input type="number" className="plr-num-input" min={1} max={safeEndPage}
+                                                value={startPage}
+                                                onChange={e => setStartPage(e.target.value === '' ? '' : Number(e.target.value))}
+                                                onBlur={() => setStartPage(prev => Math.max(1, Math.min(Number(prev) || 1, safeEndPage)))} />
+                                        </div>
+                                        <span className="plr-range-arrow">→</span>
+                                        <div className="plr-range-field">
+                                            <span className="plr-range-field-label">To</span>
+                                            <input type="number" className="plr-num-input" min={startPage} max={maxUnit}
+                                                value={endPage}
+                                                onChange={e => setEndPage(e.target.value === '' ? '' : Number(e.target.value))}
+                                                onBlur={() => setEndPage(prev => Math.max(Number(startPage) || 1, Math.min(Number(prev) || maxUnit, maxUnit)))} />
+                                        </div>
+                                    </div>
+                                    <p className="plr-range-hint">{Math.max((Number(safeEndPage) || 0) - (Number(startPage) || 0) + 1, 0)} {unitMeta.plural} selected</p>
+                                </div>
+                                {/* Pages per day */}
+                                <div className="plr-form-group">
+                                    <label className="plr-form-label">{unitMeta.plural} per day</label>
+                                    <div className="plr-perday-row">
+                                        <input type="number" className="plr-num-input plr-num-perday" min={1} max={totalUnits}
+                                            value={pagesPerDay}
+                                            onChange={e => setPagesPerDay(e.target.value === '' ? '' : Number(e.target.value))}
+                                            onBlur={() => setPagesPerDay(prev => Math.max(1, Math.min(Number(prev) || 1, totalUnits)))} />
+                                        <input type="range" min={1} max={Math.min(totalUnits, 50)} value={Math.min(Number(pagesPerDay) || 1, 50)}
+                                            onChange={e => setPagesPerDay(Number(e.target.value))} className="plr-range plr-range-perday" />
+                                    </div>
+                                </div>
+                                {/* Start date */}
+                                <div className="plr-form-group">
+                                    <label className="plr-form-label">Start date</label>
+                                    <input type="date" className="plr-date-input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                                </div>
                             </div>
-                            <motion.button className="plr-card-begin-btn" whileTap={{ scale: 0.96 }} onClick={handleBegin}>
-                                CREATE CUSTOM PLAN
-                            </motion.button>
-                        </div>
+
+                            {/* Stats + CTA */}
+                            <div className="plr-modal-footer">
+                                <div className="plr-card-stats">
+                                    <span>{pagesPerDay} {unitMeta.plural}/day</span>
+                                    <span className="plr-card-stats-dot">·</span>
+                                    <span>{computedDuration} days</span>
+                                    <span className="plr-card-stats-dot">·</span>
+                                    <span>Done by {activeStats.endLabel}</span>
+                                </div>
+                                <motion.button className="plr-card-begin-btn" whileTap={{ scale: 0.96 }}
+                                    onClick={() => { handleBegin(); setShowCustom(false); }}>
+                                    CREATE PLAN
+                                </motion.button>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -733,7 +757,14 @@ export default function Planner() {
     }, [setNavHeaderTitle]);
 
     const handleBegin = (built) => {
-        // Add new plan (don't delete existing ones — support multiple plans)
+        // Check for duplicate — same title already exists
+        const existing = (planners || []).find(p => p.title && built.title && p.title === built.title);
+        if (existing) {
+            if (!window.confirm(`You already have a "${built.title}" plan. Replace it with a new one?`)) {
+                return;
+            }
+            deletePlanner(existing.id);
+        }
         setPlanner(built);
         setView('active');
     };

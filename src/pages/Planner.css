@@ -964,13 +964,6 @@
     .plr-card-cta {
         display: none !important;
     }
-    /* Custom form wider */
-    .plr-custom-form {
-        max-width: 560px;
-    }
-    .plr-custom-section {
-        max-width: 560px;
-    }
 }
 
 /* Tablet: 2+1 or side-by-side */
@@ -1044,30 +1037,78 @@
     opacity: 0.7;
 }
 
-/* ─── Custom Timeline Section ─── */
-.plr-custom-section {
-    text-align: center;
-    padding: 2rem 1.5rem 0.5rem;
-    max-width: 480px;
-    width: 100%;
-    margin: 0 auto;
+/* ─── Custom Plan Modal ─── */
+.plr-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(30,35,32,0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
-.plr-custom-heading {
+.plr-modal {
+    background: var(--plr-white, #FAFAF5);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 24px 80px rgba(0,0,0,0.18),
+        0 0 0 1px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.plr-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--plr-bone-dark);
+}
+
+.plr-modal-title {
     font-family: var(--font-ui, 'Cormorant Garamond', serif);
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--plr-ink);
-    margin-bottom: 0.5rem;
 }
 
-.plr-custom-desc {
-    font-family: var(--font-body, 'Piazzolla', serif);
-    font-size: 0.85rem;
+.plr-modal-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: none;
+    background: var(--plr-bone);
     color: var(--plr-ink-mid);
-    line-height: 1.6;
-    max-width: 400px;
-    margin: 0 auto 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.plr-modal-close:hover {
+    background: var(--plr-bone-dark);
+    color: var(--plr-ink);
+}
+
+.plr-modal-body {
+    padding: 1.25rem 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.plr-modal-footer {
+    padding: 1rem 1.5rem 1.25rem;
+    border-top: 1px solid var(--plr-bone-dark);
+    background: var(--plr-cream);
 }
 
 /* ─── Bottom Quote ─── */
@@ -1552,14 +1593,52 @@ a.plr-open-btn, a.plr-start-btn {
     padding: 0 1.25rem 2rem;
 }
 
+.plr-plans-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--plr-bone-dark);
+}
+
 .plr-plans-title {
     font-family: var(--font-ui, 'Cormorant Garamond', serif);
     font-size: 1.15rem;
     font-weight: 600;
     color: var(--plr-ink);
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--plr-bone-dark);
+    margin: 0;
+}
+
+.plr-plans-add-btn {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid var(--plr-bone-dark);
+    background: transparent;
+    color: var(--plr-teal);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.plr-plans-add-btn:hover {
+    background: var(--plr-teal);
+    border-color: var(--plr-teal);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(46,79,74,0.2);
+}
+
+.plr-plans-empty {
+    font-family: var(--font-body, 'Piazzolla', serif);
+    font-size: 0.85rem;
+    color: var(--plr-ink-muted);
+    text-align: center;
+    padding: 1.5rem 0.5rem;
+    font-style: italic;
+    line-height: 1.6;
 }
 
 .plr-plans-list {
