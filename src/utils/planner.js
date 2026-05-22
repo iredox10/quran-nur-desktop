@@ -82,7 +82,10 @@ function resolveAssignmentPageBounds(assignment, chapters = []) {
 
 export function formatPlannerDate(date) {
   const value = typeof date === 'string' ? new Date(`${date}T00:00:00`) : date;
-  return value.toISOString().split('T')[0];
+  const y = value.getFullYear();
+  const m = String(value.getMonth() + 1).padStart(2, '0');
+  const d = String(value.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function formatPlannerDateLabel(date) {
