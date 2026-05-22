@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getVerses, getChapter, getTajweedVerses } from '../services/api/quranApi';
 import { useAppStore } from '../store/useAppStore';
-import { Mic, EyeOff, Eye, Repeat, ArrowLeft, ArrowRight, X, Play, Pause, ShieldAlert, Award, Languages, Layers, RefreshCw, Clock, Bookmark, FolderPlus, Plus, Folder, Settings2, CheckCircle } from 'lucide-react';
+import { EyeOff, Eye, Repeat, ArrowLeft, ArrowRight, X, Play, Pause, ShieldAlert, Award, Languages, Layers, RefreshCw, Clock, Bookmark, FolderPlus, Plus, Folder, Settings2, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getMushafById, isTajweedEnabledForMushaf } from '../config/mushaf';
 import { getVerseArabicText, sanitizeTajweedHtml } from '../utils/quranText';
 import { getLocalAudioUrl } from '../utils/localAudio';
-
+import './Memorize.css';
 
 
 const DELAY_OPTIONS = [0, 1, 2, 3, 5, 10];
@@ -363,394 +363,65 @@ export default function Memorization() {
 
 
     if (isVersesLoading || isChapterLoading) {
-        return <div className="container" style={{ textAlign: 'center', paddingTop: '10vh' }}>Loading Hifdh Mode...</div>;
+        return <div className="mem-session"><div className="mem-loading">Loading Hifdh Mode...</div></div>;
     }
 
     if (verses.length === 0) return null;
 
+    const sessionPct = Math.round(((currentVerseIndex + currentVerses.length) / verses.length) * 100);
+    const hasNonDefaultAudio = ayahRepeatTarget !== 1 || ayahDelay > 0 || rangeLoopTarget !== 1;
+
     return (
-        <div style={{ position: 'relative', minHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
-
-            {/* Hidden Audio Player for Memorization Sequence */}
-            {resolvedAudioUrl && (
-                <audio
-                    ref={audioRef}
-                    src={resolvedAudioUrl}
-                    onEnded={handleAudioEnded}
-                    onError={(e) => {
-                        console.error('Audio playback error', e);
-                        setIsPlayingAudio(false);
-                    }}
-                />
-            )}
-
-            {/* Top Controls */}
-            <div className="container" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap', opacity: showUI ? 1 : 0, transition: 'opacity 0.4s', pointerEvents: showUI ? 'auto' : 'none' }}>
-
-                <div style={{ position: 'relative' }}>
-                    <button
-                        className="btn-icon"
-                        onClick={() => setIsAudioSettingsOpen(!isAudioSettingsOpen)}
-                        style={{
-                            background: (ayahRepeatTarget !== 1 || ayahDelay > 0 || rangeLoopTarget !== 1) ? 'var(--accent-light)' : 'var(--bg-surface)',
-                            border: '1px solid var(--border-color)',
-                            color: (ayahRepeatTarget !== 1 || ayahDelay > 0 || rangeLoopTarget !== 1) ? 'var(--accent-primary)' : 'inherit'
-                        }}
-                        title="Audio Repeat Settings"
-                    >
-                        <Settings2 size={20} />
-                    </button>
-
-                    <AnimatePresence>
-                        {isAudioSettingsOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 10 }}
-                                style={{
-                                    position: 'absolute',
-                                    top: '120%',
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
-                                    width: '240px',
-                                    background: 'var(--bg-surface)',
-                                    borderRadius: '16px',
-                                    border: '1px solid var(--border-color)',
-                                    boxShadow: 'var(--shadow-lg)',
-                                    padding: '1rem',
-                                    zIndex: 100,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '1rem'
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', margin: 0 }}>Repeat Settings</h4>
-                                    <button
-                                        onClick={() => setIsAudioSettingsOpen(false)}
-                                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-
-                                {/* Ayah Repeat Option */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                        <RefreshCw size={14} /> Ayah
-                                    </div>
-                                    <select
-                                        value={ayahRepeatTarget}
-                                        onChange={(e) => {
-                                            setAyahRepeatTarget(Number(e.target.value));
-                                            setCurrentAyahPlayCount(0);
-                                        }}
-                                        style={{
-                                            background: 'var(--bg-secondary)',
-                                            border: '1px solid var(--border-color)',
-                                            color: 'var(--text-primary)',
-                                            borderRadius: '8px',
-                                            padding: '4px 8px',
-                                            fontSize: '0.8rem',
-                                            outline: 'none',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        {AYAH_REPEAT_OPTIONS.map(opt => (
-                                            <option key={opt} value={opt}>
-                                                {opt === 1 ? "1x" : opt === -1 ? "Infinite" : `${opt}x`}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Delay Option */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                        <Clock size={14} /> Delay
-                                    </div>
-                                    <select
-                                        value={ayahDelay}
-                                        onChange={(e) => setAyahDelay(Number(e.target.value))}
-                                        style={{
-                                            background: 'var(--bg-secondary)',
-                                            border: '1px solid var(--border-color)',
-                                            color: 'var(--text-primary)',
-                                            borderRadius: '8px',
-                                            padding: '4px 8px',
-                                            fontSize: '0.8rem',
-                                            outline: 'none',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        {DELAY_OPTIONS.map(delay => (
-                                            <option key={delay} value={delay}>
-                                                {delay === 0 ? "None" : `${delay}s`}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Range Loop Option */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                        <Repeat size={14} /> Range
-                                    </div>
-                                    <select
-                                        value={rangeLoopTarget}
-                                        onChange={(e) => {
-                                            setRangeLoopTarget(Number(e.target.value));
-                                            setRangeLoopCurrent(0);
-                                        }}
-                                        style={{
-                                            background: 'var(--bg-secondary)',
-                                            border: '1px solid var(--border-color)',
-                                            color: 'var(--text-primary)',
-                                            borderRadius: '8px',
-                                            padding: '4px 8px',
-                                            fontSize: '0.8rem',
-                                            outline: 'none',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        {RANGE_LOOP_OPTIONS.map(opt => (
-                                            <option key={opt} value={opt}>
-                                                {opt === 1 ? "1x" : opt === -1 ? "Infinite" : `${opt}x`}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-                <button
-                    className="btn-icon"
-                    onClick={() => setIsBlurred(!isBlurred)}
-                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}
-                    title={isBlurred ? "Reveal Text" : "Mask Text (Test Memory)"}
-                >
-                    {isBlurred ? <Eye size={20} /> : <EyeOff size={20} />}
-                </button>
-                <button
-                    className="btn-icon"
-                    onClick={() => setShowTranslation(!showTranslation)}
-                    style={{ background: showTranslation ? 'var(--accent-light)' : 'var(--bg-surface)', border: '1px solid var(--border-color)', color: showTranslation ? 'var(--accent-primary)' : 'inherit' }}
-                    title={showTranslation ? "Hide Translation" : "Show Translation"}
-                >
-                    <Languages size={20} />
-                </button>
-                <div
-                    onClick={() => setIsCollectionsOpen(!isCollectionsOpen)}
-                    style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-surface)', padding: '0.5rem 1rem', borderRadius: '24px', border: '1px solid var(--border-color)', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                    <FolderPlus size={16} /> <span style={{ fontSize: '0.875rem' }}>Collections</span>
-
-                    <AnimatePresence>
-                        {isCollectionsOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 10 }}
-                                onClick={(e) => e.stopPropagation()}
-                                style={{
-                                    position: 'absolute',
-                                    top: '120%',
-                                    left: 0,
-                                    width: '240px',
-                                    background: 'var(--bg-surface)',
-                                    borderRadius: '16px',
-                                    border: '1px solid var(--border-color)',
-                                    boxShadow: 'var(--shadow-lg)',
-                                    padding: '1rem',
-                                    zIndex: 100,
-                                    textAlign: 'left'
-                                }}
-                            >
-                                <h4 style={{ fontSize: '0.9rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>Add to Collection</h4>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto', marginBottom: '1rem' }}>
-                                    {(collections || []).map(c => (
-                                        <button
-                                            key={c.id}
-                                            onClick={() => {
-                                                currentVerses.forEach(v => {
-                                                    addToCollection(c.id, v.verse_key, chapter?.name_simple, chapter?.id);
-                                                });
-                                                setIsCollectionsOpen(false);
-                                            }}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                padding: '0.5rem',
-                                                background: 'none',
-                                                border: 'none',
-                                                borderRadius: '8px',
-                                                color: 'var(--text-secondary)',
-                                                cursor: 'pointer',
-                                                transition: 'background 0.2s',
-                                                width: '100%'
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                                        >
-                                            <Folder size={14} /> {c.name}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input
-                                        type="text"
-                                        placeholder="New collection..."
-                                        value={newCollectionName}
-                                        onChange={(e) => setNewCollectionName(e.target.value)}
-                                        style={{
-                                            flex: 1,
-                                            padding: '0.4rem 0.8rem',
-                                            borderRadius: '8px',
-                                            border: '1px solid var(--border-color)',
-                                            fontSize: '0.8rem',
-                                            background: 'var(--bg-secondary)',
-                                            color: 'var(--text-primary)'
-                                        }}
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            if (newCollectionName.trim()) {
-                                                const newId = Date.now();
-                                                addCollection(newCollectionName.trim(), newId);
-                                                currentVerses.forEach(v => {
-                                                    addToCollection(newId, v.verse_key, chapter?.name_simple, chapter?.id);
-                                                });
-                                                setNewCollectionName('');
-                                                setIsCollectionsOpen(false);
-                                            }
-                                        }}
-                                        style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '8px', padding: '0.4rem', cursor: 'pointer' }}
-                                    >
-                                        <Plus size={16} />
-                                    </button>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-surface)', padding: '0.5rem 1rem', borderRadius: '24px', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                    <Layers size={16} />
-                    <select
-                        value={ayahsPerSwipe}
-                        onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setAyahsPerSwipe(val);
-                            if (val === -1 && verses.length > 0) {
-                                const currentPage = verses[currentVerseIndex].page_number;
-                                let startIdx = currentVerseIndex;
-                                while (startIdx > 0 && verses[startIdx - 1].page_number === currentPage) {
-                                    startIdx--;
-                                }
-                                setCurrentVerseIndex(startIdx);
-                            } else {
-                                setCurrentVerseIndex(0);
-                            }
-                        }}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'inherit',
-                            outline: 'none',
-                            fontSize: '0.875rem',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        <option value={1} style={{ color: 'black' }}>1 Ayah</option>
-                        <option value={3} style={{ color: 'black' }}>3 Ayahs</option>
-                        <option value={5} style={{ color: 'black' }}>5 Ayahs</option>
-                        <option value={10} style={{ color: 'black' }}>10 Ayahs</option>
-                        <option value={-1} style={{ color: 'black' }}>By Page</option>
-                    </select>
-                </div>
+        <div className="mem-session">
+            {/* Session Progress Bar */}
+            <div className="mem-progress-track">
+                <div className="mem-progress-fill" style={{ width: `${sessionPct}%` }} />
             </div>
 
-            {/* Central Verse Display */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', margin: '2rem 0', width: '100%', padding: '0 1.5rem', boxSizing: 'border-box' }}>
+            {/* Hidden Audio */}
+            {resolvedAudioUrl && (
+                <audio ref={audioRef} src={resolvedAudioUrl}
+                    onEnded={handleAudioEnded}
+                    onError={() => setIsPlayingAudio(false)} />
+            )}
+
+            {/* Verse Display Area */}
+            <div className="mem-verse-area">
                 <motion.div
                     key={`${currentVerseIndex}-${ayahsPerSwipe}`}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    style={{
-                        textAlign: 'center',
-                        filter: isBlurred ? 'blur(8px)' : 'none',
-                        transition: 'filter 0.3s ease',
-                        cursor: isBlurred ? 'pointer' : 'default',
-                        width: '100%',
-                        maxWidth: '800px',
-                        margin: '0 auto',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '2rem'
-                    }}
+                    className="mem-verse-container"
                     onClick={() => isBlurred && setIsBlurred(false)}
                 >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', width: '100%' }}>
+                    <div className="mem-verse-stack">
                         {currentVerses.map((verse, idx) => (
-                            <div key={verse.id}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', width: '100%', minHeight: '64px' }}>
-                                    <div className="quran-text tajweed-text" style={{
-                                        fontSize: `clamp(${0.9 + fontSize * 0.15}rem, ${fontSize * 1.2}vw, ${fontSize * 0.4 + 1.5}rem)`,
-                                        fontFamily: arabicFont,
-                                        lineHeight: 2.2,
-                                        color: (isPlayingAudio && audioVerseIndex === idx) ? 'var(--accent-primary)' : 'var(--text-primary)',
-                                        transition: 'color 0.3s ease',
-                                        textAlign: 'center',
-                                        direction: 'rtl'
-                                    }}>
+                            <div key={verse.id} className="mem-verse-block">
+                                <div className="mem-verse-text-wrap">
+                                    <div
+                                        className={`mem-verse-arabic quran-text tajweed-text ${isPlayingAudio && audioVerseIndex === idx ? 'is-active' : ''} ${isBlurred ? 'is-blurred' : ''}`}
+                                        style={{
+                                            fontSize: `clamp(${0.9 + fontSize * 0.15}rem, ${fontSize * 1.2}vw, ${fontSize * 0.4 + 1.5}rem)`,
+                                            fontFamily: arabicFont,
+                                        }}
+                                    >
                                         {isTajweedActive && tajweedMap?.[verse.verse_key]
                                             ? <span dangerouslySetInnerHTML={{ __html: tajweedMap[verse.verse_key] }} />
                                             : getVerseArabicText(verse, mushaf)
                                         }
                                     </div>
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '0.5rem',
-                                        opacity: isBlurred ? 0 : 1,
-                                        transition: 'all 0.3s'
-                                    }}>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleBookmark(verse.verse_key, chapter?.name_simple, chapter?.id);
-                                            }}
-                                            style={{
-                                                background: 'none',
-                                                border: 'none',
-                                                color: bookmarks?.find(b => b.verseKey === verse.verse_key) ? 'var(--accent-primary)' : 'var(--text-muted)',
-                                                cursor: 'pointer',
-                                                padding: '0.5rem',
-                                            }}
-                                            title="Bookmark Ayah"
-                                        >
-                                            <Bookmark size={24} fill={bookmarks?.find(b => b.verseKey === verse.verse_key) ? 'currentColor' : 'none'} />
+                                    <div className={`mem-verse-side ${isBlurred ? 'hidden' : ''}`}>
+                                        <button className="mem-verse-side-btn" onClick={(e) => { e.stopPropagation(); toggleBookmark(verse.verse_key, chapter?.name_simple, chapter?.id); }}
+                                            style={{ color: bookmarks?.find(b => b.verseKey === verse.verse_key) ? 'var(--mem-teal)' : 'var(--mem-ink-muted)' }}
+                                            title="Bookmark">
+                                            <Bookmark size={20} fill={bookmarks?.find(b => b.verseKey === verse.verse_key) ? 'currentColor' : 'none'} />
                                         </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleMemorizedAyah(verse.verse_key);
-                                            }}
-                                            style={{
-                                                background: 'none',
-                                                border: 'none',
-                                                color: (memorizedAyahs || []).includes(verse.verse_key) ? 'var(--status-success, #10b981)' : 'var(--text-muted)',
-                                                cursor: 'pointer',
-                                                padding: '0.5rem',
-                                            }}
-                                            title="Mark Ayah as Memorized"
-                                        >
-                                            <CheckCircle size={24} fill={(memorizedAyahs || []).includes(verse.verse_key) ? 'currentColor' : 'none'} color={(memorizedAyahs || []).includes(verse.verse_key) ? 'white' : 'currentColor'} />
+                                        <button className="mem-verse-side-btn" onClick={(e) => { e.stopPropagation(); toggleMemorizedAyah(verse.verse_key); }}
+                                            style={{ color: (memorizedAyahs || []).includes(verse.verse_key) ? 'var(--mem-green)' : 'var(--mem-ink-muted)' }}
+                                            title="Mark Memorized">
+                                            <CheckCircle size={20} fill={(memorizedAyahs || []).includes(verse.verse_key) ? 'currentColor' : 'none'}
+                                                color={(memorizedAyahs || []).includes(verse.verse_key) ? 'white' : 'currentColor'} />
                                         </button>
                                     </div>
                                 </div>
@@ -758,22 +429,11 @@ export default function Memorization() {
                                 <AnimatePresence>
                                     {showTranslation && (
                                         <motion.div
-                                            initial={{ opacity: 0, height: 0, y: -10 }}
-                                            animate={{ opacity: 1, height: 'auto', y: 0 }}
-                                            exit={{ opacity: 0, height: 0, y: -10 }}
-                                            className="text-english"
-                                            style={{
-                                                marginTop: '1.5rem',
-                                                padding: '1.5rem',
-                                                background: 'var(--bg-surface)',
-                                                borderRadius: '16px',
-                                                border: '1px solid var(--border-color)',
-                                                color: 'var(--text-secondary)',
-                                                fontSize: `${(translationFontSize || 2) * 0.15 + 0.75}rem`,
-                                                lineHeight: 1.6,
-                                                boxShadow: 'var(--shadow-sm)',
-                                                overflow: 'hidden'
-                                            }}
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="mem-translation"
+                                            style={{ fontSize: `${(translationFontSize || 2) * 0.15 + 0.75}rem` }}
                                         >
                                             {verse.translations?.[0]?.text?.replace(/<[^>]*>?/gm, '')}
                                         </motion.div>
@@ -785,148 +445,163 @@ export default function Memorization() {
                 </motion.div>
             </div>
 
-            {/* Left/Right Nav */}
-            <button onClick={handlePrev} disabled={currentVerseIndex === 0} style={{ position: 'fixed', left: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: currentVerseIndex === 0 ? 'default' : 'pointer', opacity: showUI ? (currentVerseIndex === 0 ? 0.2 : 0.6) : 0, transition: 'opacity 0.4s', pointerEvents: showUI ? 'auto' : 'none', zIndex: 10 }}>
-                <ArrowLeft size={32} />
-            </button>
-            <button onClick={handleNext} disabled={currentVerseIndex + currentVerses.length >= verses.length} style={{ position: 'fixed', right: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: currentVerseIndex + currentVerses.length >= verses.length ? 'default' : 'pointer', opacity: showUI ? (currentVerseIndex + currentVerses.length >= verses.length ? 0.2 : 0.6) : 0, transition: 'opacity 0.4s', pointerEvents: showUI ? 'auto' : 'none', zIndex: 10 }}>
-                <ArrowRight size={32} />
-            </button>
-
-            {/* Surah Info Bar - Positioned at bottom center, below play button */}
-            <div style={{
-                position: 'fixed',
-                bottom: '1.5rem',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                display: 'flex',
-                gap: '0.75rem',
-                justifyContent: 'center',
-                alignItems: 'center',
-                color: 'var(--text-muted)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.9rem',
-                flexWrap: 'wrap',
-                opacity: showUI ? 1 : 0,
-                transition: 'opacity 0.4s',
-                pointerEvents: showUI ? 'auto' : 'none',
-                zIndex: 30
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>Surah {chapter?.name_simple}</span>
-                    <button
-                        onClick={() => chapter?.id && toggleMemorizedSurah(chapter.id)}
-                        style={{
-                            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                            color: (memorizedSurahs || []).includes(chapter?.id) ? 'var(--status-success, #10b981)' : 'var(--text-muted)',
-                            display: 'flex', alignItems: 'center',
-                            marginLeft: '4px'
-                        }}
-                        title={(memorizedSurahs || []).includes(chapter?.id) ? "Surah Memorized" : "Mark Surah as Memorized"}
-                    >
-                        <Award size={18} fill={(memorizedSurahs || []).includes(chapter?.id) ? 'currentColor' : 'none'} />
+            {/* Info Bar */}
+            <div className={`mem-info-bar ${showUI ? '' : 'hidden'}`}>
+                <div className="mem-info-surah">
+                    <span>Surah {chapter?.name_simple}</span>
+                    <button className="mem-info-surah-btn" onClick={() => chapter?.id && toggleMemorizedSurah(chapter.id)}
+                        style={{ color: (memorizedSurahs || []).includes(chapter?.id) ? 'var(--mem-green)' : 'var(--mem-ink-muted)' }}>
+                        <Award size={16} fill={(memorizedSurahs || []).includes(chapter?.id) ? 'currentColor' : 'none'} />
                     </button>
                 </div>
-                <span>•</span>
+                <span className="mem-info-dot">·</span>
                 <span>Page {currentVerses[0]?.page_number}</span>
-                <span>•</span>
-                <span>Verses {currentVerses[0]?.verse_key.split(':')[1]}{currentVerses.length > 1 ? ` - ${currentVerses[currentVerses.length - 1]?.verse_key.split(':')[1]}` : ''}</span>
+                <span className="mem-info-dot">·</span>
+                <span>Ayah {currentVerses[0]?.verse_key.split(':')[1]}{currentVerses.length > 1 ? `–${currentVerses[currentVerses.length - 1]?.verse_key.split(':')[1]}` : ''}</span>
             </div>
 
-            {/* Floating Play Control */}
-            <div style={{ position: 'fixed', bottom: '6rem', left: '50%', transform: 'translateX(-50%)', zIndex: 40, opacity: showUI ? 1 : 0, transition: 'opacity 0.4s', pointerEvents: showUI ? 'auto' : 'none' }}>
-                <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={toggleAudio}
-                    animate={isPlayingAudio ? { scale: [1, 1.1, 1], boxShadow: ["0px 0px 0px rgba(198,168,124,0)", "0px 0px 30px rgba(198,168,124,0.6)", "0px 0px 0px rgba(198,168,124,0)"] } : {}}
-                    transition={{ repeat: isPlayingAudio ? Infinity : 0, duration: 1.5 }}
-                    style={{
-                        width: '72px',
-                        height: '72px',
-                        borderRadius: '50%',
-                        backgroundColor: isPlayingAudio ? 'var(--accent-hover)' : 'var(--accent-primary)',
-                        color: 'white',
-                        border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: 'var(--shadow-lg)',
-                        cursor: 'pointer'
-                    }}
-                >
-                    {isPlayingAudio ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" style={{ marginLeft: '4px' }} />}
-                </motion.button>
+            {/* Bottom Control Dock */}
+            <div className={`mem-dock ${showUI ? '' : 'hidden'}`}>
+                <div className="mem-dock-inner" style={{ position: 'relative' }}>
+                    <button className="mem-dock-btn" onClick={handlePrev} disabled={currentVerseIndex === 0}><ChevronLeft size={20} /></button>
+                    <button className={`mem-dock-btn ${isBlurred ? 'active' : ''}`} onClick={() => setIsBlurred(!isBlurred)}>
+                        {isBlurred ? <Eye size={18} /> : <EyeOff size={18} />}
+                    </button>
+                    <button className={`mem-dock-btn ${showTranslation ? 'active' : ''}`} onClick={() => setShowTranslation(!showTranslation)}>
+                        <Languages size={18} />
+                    </button>
+                    <div className="mem-dock-divider" />
+                    <motion.button className={`mem-dock-play ${isPlayingAudio ? 'is-playing' : ''}`}
+                        whileTap={{ scale: 0.9 }} onClick={toggleAudio}
+                        animate={isPlayingAudio ? { scale: [1, 1.08, 1] } : {}}
+                        transition={{ repeat: isPlayingAudio ? Infinity : 0, duration: 1.5 }}>
+                        {isPlayingAudio ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" style={{ marginLeft: '2px' }} />}
+                    </motion.button>
+                    <div className="mem-dock-divider" />
+                    <div className="mem-ayah-select">
+                        <Layers size={14} />
+                        <select value={ayahsPerSwipe} onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setAyahsPerSwipe(val);
+                            if (val === -1 && verses.length > 0) {
+                                const pg = verses[currentVerseIndex].page_number;
+                                let s = currentVerseIndex;
+                                while (s > 0 && verses[s - 1].page_number === pg) s--;
+                                setCurrentVerseIndex(s);
+                            } else setCurrentVerseIndex(0);
+                        }}>
+                            <option value={1}>1</option><option value={3}>3</option><option value={5}>5</option>
+                            <option value={10}>10</option><option value={-1}>Page</option>
+                        </select>
+                    </div>
+
+                    {/* Collections popover */}
+                    <div style={{ position: 'relative' }}>
+                        <button className="mem-dock-btn" onClick={() => setIsCollectionsOpen(!isCollectionsOpen)}><FolderPlus size={18} /></button>
+                        <AnimatePresence>
+                            {isCollectionsOpen && (
+                                <motion.div className="mem-collections-popover"
+                                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+                                    onClick={e => e.stopPropagation()}>
+                                    <div className="mem-popover-header">
+                                        <span className="mem-popover-title">Add to Collection</span>
+                                        <button className="mem-popover-close" onClick={() => setIsCollectionsOpen(false)}><X size={14} /></button>
+                                    </div>
+                                    <div className="mem-collections-list">
+                                        {(collections || []).map(c => (
+                                            <button key={c.id} className="mem-collection-btn" onClick={() => {
+                                                currentVerses.forEach(v => addToCollection(c.id, v.verse_key, chapter?.name_simple, chapter?.id));
+                                                setIsCollectionsOpen(false);
+                                            }}><Folder size={14} /> {c.name}</button>
+                                        ))}
+                                    </div>
+                                    <div className="mem-new-collection">
+                                        <input type="text" placeholder="New…" value={newCollectionName} onChange={e => setNewCollectionName(e.target.value)} />
+                                        <button onClick={() => {
+                                            if (newCollectionName.trim()) {
+                                                const nid = Date.now();
+                                                addCollection(newCollectionName.trim(), nid);
+                                                currentVerses.forEach(v => addToCollection(nid, v.verse_key, chapter?.name_simple, chapter?.id));
+                                                setNewCollectionName(''); setIsCollectionsOpen(false);
+                                            }
+                                        }}><Plus size={14} /></button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Audio settings popover */}
+                    <div style={{ position: 'relative' }}>
+                        <button className={`mem-dock-btn ${hasNonDefaultAudio ? 'active' : ''}`} onClick={() => setIsAudioSettingsOpen(!isAudioSettingsOpen)}>
+                            <Settings2 size={18} />
+                        </button>
+                        <AnimatePresence>
+                            {isAudioSettingsOpen && (
+                                <motion.div className="mem-audio-popover"
+                                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
+                                    <div className="mem-popover-header">
+                                        <span className="mem-popover-title">Repeat</span>
+                                        <button className="mem-popover-close" onClick={() => setIsAudioSettingsOpen(false)}><X size={14} /></button>
+                                    </div>
+                                    <div className="mem-popover-row">
+                                        <div className="mem-popover-label"><RefreshCw size={13} /> Ayah</div>
+                                        <select className="mem-popover-select" value={ayahRepeatTarget}
+                                            onChange={e => { setAyahRepeatTarget(Number(e.target.value)); setCurrentAyahPlayCount(0); }}>
+                                            {AYAH_REPEAT_OPTIONS.map(o => <option key={o} value={o}>{o === 1 ? '1×' : o === -1 ? '∞' : `${o}×`}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="mem-popover-row">
+                                        <div className="mem-popover-label"><Clock size={13} /> Delay</div>
+                                        <select className="mem-popover-select" value={ayahDelay} onChange={e => setAyahDelay(Number(e.target.value))}>
+                                            {DELAY_OPTIONS.map(d => <option key={d} value={d}>{d === 0 ? 'None' : `${d}s`}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="mem-popover-row">
+                                        <div className="mem-popover-label"><Repeat size={13} /> Range</div>
+                                        <select className="mem-popover-select" value={rangeLoopTarget}
+                                            onChange={e => { setRangeLoopTarget(Number(e.target.value)); setRangeLoopCurrent(0); }}>
+                                            {RANGE_LOOP_OPTIONS.map(o => <option key={o} value={o}>{o === 1 ? '1×' : o === -1 ? '∞' : `${o}×`}</option>)}
+                                        </select>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    <button className="mem-dock-btn" onClick={handleNext} disabled={currentVerseIndex + currentVerses.length >= verses.length}>
+                        <ChevronRight size={20} />
+                    </button>
+                </div>
             </div>
 
-            {/* AI Recitation Analysis Modal */}
+            {/* AI Analysis Modal */}
             <AnimatePresence>
                 {showAnalysis && (
-                    <div style={{
-                        position: 'fixed',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundColor: 'rgba(26, 26, 24, 0.4)',
-                        backdropFilter: 'blur(8px)',
-                        zIndex: 100,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <motion.div
+                    <div className="mem-analysis-backdrop">
+                        <motion.div className="mem-analysis-panel"
                             initial={{ opacity: 0, y: 50, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                            className="glass-panel"
-                            style={{
-                                width: '90%',
-                                maxWidth: '500px',
-                                background: 'var(--bg-primary)',
-                                padding: '2.5rem',
-                                borderRadius: '24px',
-                                boxShadow: 'var(--shadow-lg)',
-                                border: '1px solid var(--accent-light)',
-                                position: 'relative'
-                            }}
-                        >
-                            <button onClick={() => setShowAnalysis(false)} className="btn-icon" style={{ position: 'absolute', top: '1.5rem', right: '1.5rem' }}>
-                                <X size={20} />
-                            </button>
-
-                            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                                <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>Analysis Results</h3>
-                                <div style={{
-                                    width: '120px', height: '120px',
-                                    borderRadius: '50%',
-                                    background: 'conic-gradient(var(--accent-primary) 92%, var(--bg-surface) 0)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto'
-                                }}>
-                                    <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                        <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>92<span style={{ fontSize: '1rem' }}>%</span></span>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Accuracy</span>
-                                    </div>
+                            exit={{ opacity: 0, y: 20, scale: 0.95 }}>
+                            <button className="mem-modal-close" onClick={() => setShowAnalysis(false)}
+                                style={{ position: 'absolute', top: '1rem', right: '1rem' }}><X size={18} /></button>
+                            <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.25rem', fontWeight: 700, color: 'var(--mem-ink)' }}>Analysis Results</h3>
+                            <div className="mem-analysis-ring" style={{ background: 'conic-gradient(var(--mem-teal) 92%, var(--mem-bone) 0)' }}>
+                                <div className="mem-analysis-ring-inner">
+                                    <span className="mem-analysis-score">92<small>%</small></span>
+                                    <span className="mem-analysis-label">Accuracy</span>
                                 </div>
                             </div>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 600 }}>Detected Errors</h4>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '1rem', background: 'var(--bg-surface)', borderRadius: '12px', borderLeft: '4px solid #dc2626' }}>
-                                    <ShieldAlert size={20} color="#dc2626" style={{ marginTop: '2px' }} />
-                                    <div>
-                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Missed Ghunnah</div>
-                                        <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Verses {currentVerses.map(v => v.verse_key.split(':')[1]).join(', ')}</div>
-                                        <button style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                            <Play size={14} /> Listen to Expert
-                                        </button>
-                                    </div>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '1rem', background: 'var(--bg-surface)', borderRadius: '12px', borderLeft: '4px solid var(--accent-primary)' }}>
-                                    <Award size={20} color="var(--accent-primary)" style={{ marginTop: '2px' }} />
-                                    <div>
-                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Perfect Makhraj</div>
-                                        <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Pronunciation of 'Qaaf' was excellent.</div>
-                                    </div>
-                                </div>
+                            <div className="mem-error-card is-error">
+                                <ShieldAlert size={18} color="#dc2626" style={{ marginTop: '2px', flexShrink: 0 }} />
+                                <div><div className="mem-error-title">Missed Ghunnah</div>
+                                <div className="mem-error-detail">Verses {currentVerses.map(v => v.verse_key.split(':')[1]).join(', ')}</div></div>
                             </div>
-
+                            <div className="mem-error-card is-success">
+                                <Award size={18} color="var(--mem-teal)" style={{ marginTop: '2px', flexShrink: 0 }} />
+                                <div><div className="mem-error-title">Perfect Makhraj</div>
+                                <div className="mem-error-detail">Pronunciation of 'Qaaf' was excellent.</div></div>
+                            </div>
                         </motion.div>
                     </div>
                 )}
@@ -934,3 +609,4 @@ export default function Memorization() {
         </div>
     );
 }
+

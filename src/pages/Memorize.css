@@ -1,0 +1,1103 @@
+/* ─── Memorize.css — Hifdh pages ─────────────────────────────────────── */
+
+/* Design tokens — consistent with Planner palette */
+.mem-index,
+.mem-session {
+    --mem-paper:      #F6F2E8;
+    --mem-cream:      #FAF7F0;
+    --mem-bone:       #EDE8DA;
+    --mem-bone-dark:  #DDD7C7;
+
+    --mem-ink:        #2B3F3C;
+    --mem-ink-mid:    #4D5F5C;
+    --mem-ink-muted:  #8E9B97;
+
+    --mem-gold:       #B8924A;
+    --mem-gold-soft:  rgba(184,146,74,0.18);
+
+    --mem-teal:       #2E4F4A;
+    --mem-teal-mid:   #3D6560;
+    --mem-teal-soft:  rgba(46,79,74,0.08);
+
+    --mem-green:      #10b981;
+    --mem-green-soft: rgba(16,185,129,0.1);
+    --mem-red-soft:   rgba(220,38,38,0.08);
+
+    --mem-white:      #FAFAF5;
+    --mem-ring-bg:    #EAE5D4;
+}
+
+/* ════════════════════════════════════════════
+   MEMORIZE INDEX (Dashboard)
+════════════════════════════════════════════ */
+.mem-index {
+    padding: 0 1rem 5rem;
+    max-width: 780px;
+    margin: 0 auto;
+}
+
+/* ─── Continue Banner ─── */
+.mem-continue {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, var(--mem-teal), var(--mem-teal-mid));
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    text-decoration: none;
+}
+
+.mem-continue:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(46,79,74,0.25);
+}
+
+.mem-continue-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mem-continue-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.mem-continue-title {
+    font-family: var(--font-ui, 'Cormorant Garamond', serif);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.mem-continue-sub {
+    font-size: 0.72rem;
+    opacity: 0.75;
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    letter-spacing: 0.02em;
+}
+
+.mem-continue-arrow {
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+/* ─── Compact Stats Row ─── */
+.mem-stats-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.75rem;
+}
+
+.mem-stat-card {
+    flex: 1;
+    padding: 0.85rem 0.75rem;
+    background: var(--mem-cream);
+    border: 1.5px solid var(--mem-bone-dark);
+    border-radius: 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.mem-stat-card:hover {
+    border-color: var(--mem-gold);
+    box-shadow: 0 2px 12px rgba(184,146,74,0.12);
+}
+
+.mem-stat-value {
+    font-family: var(--font-ui, 'Cormorant Garamond', serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--mem-ink);
+    line-height: 1.2;
+}
+
+.mem-stat-value small {
+    font-size: 0.75rem;
+    color: var(--mem-ink-muted);
+    font-weight: 400;
+}
+
+.mem-stat-label {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.58rem;
+    color: var(--mem-ink-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 0.2rem;
+}
+
+/* ─── Search Bar ─── */
+.mem-search {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.15rem;
+    background: var(--mem-cream);
+    border: 1.5px solid var(--mem-bone-dark);
+    border-radius: 14px;
+    margin-bottom: 1rem;
+    transition: border-color 0.2s;
+}
+
+.mem-search:focus-within {
+    border-color: var(--mem-teal);
+}
+
+.mem-search svg {
+    color: var(--mem-ink-muted);
+    flex-shrink: 0;
+}
+
+.mem-search input {
+    border: none;
+    background: transparent;
+    outline: none;
+    color: var(--mem-ink);
+    width: 100%;
+    font-size: 0.95rem;
+    font-family: inherit;
+}
+
+.mem-search input::placeholder {
+    color: var(--mem-ink-muted);
+}
+
+/* ─── Filter Row ─── */
+.mem-filter-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.mem-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1.5px solid var(--mem-bone-dark);
+    background: transparent;
+    color: var(--mem-ink-muted);
+    font-family: inherit;
+}
+
+.mem-filter-btn.active {
+    background: var(--mem-green-soft);
+    border-color: var(--mem-green);
+    color: var(--mem-green);
+}
+
+/* ─── Surah Grid ─── */
+.mem-surah-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+}
+
+@media (min-width: 520px) {
+    .mem-surah-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .mem-surah-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.mem-surah-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--mem-cream);
+    border: 1.5px solid var(--mem-bone-dark);
+    border-radius: 14px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.12s;
+    position: relative;
+    overflow: hidden;
+}
+
+.mem-surah-card:hover {
+    border-color: var(--mem-teal);
+    box-shadow: 0 4px 14px rgba(46,79,74,0.08);
+    transform: translateY(-1px);
+}
+
+.mem-surah-card.is-memorized {
+    border-color: var(--mem-green);
+}
+
+.mem-surah-num {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    background: var(--mem-teal-soft);
+    color: var(--mem-teal);
+}
+
+.mem-surah-card.is-memorized .mem-surah-num {
+    background: var(--mem-green-soft);
+    color: var(--mem-green);
+}
+
+.mem-surah-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.mem-surah-name {
+    font-family: var(--font-ui, 'Cormorant Garamond', serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--mem-ink);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.mem-surah-meta {
+    font-size: 0.72rem;
+    color: var(--mem-ink-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.15rem;
+}
+
+.mem-surah-progress-pill {
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: var(--mem-gold-soft);
+    color: var(--mem-gold);
+}
+
+/* Per-surah progress bar */
+.mem-surah-bar {
+    height: 3px;
+    background: var(--mem-bone-dark);
+    border-radius: 2px;
+    margin-top: 0.4rem;
+    overflow: hidden;
+}
+
+.mem-surah-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--mem-teal);
+    transition: width 0.4s ease;
+}
+
+.mem-surah-card.is-memorized .mem-surah-bar-fill {
+    background: var(--mem-green);
+}
+
+/* ─── Memorized Badge ─── */
+.mem-memorized-icon {
+    color: var(--mem-green);
+    flex-shrink: 0;
+}
+
+/* ─── Section Headers ─── */
+.mem-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    margin-top: 2rem;
+}
+
+.mem-section-title {
+    font-family: var(--font-ui, 'Cormorant Garamond', serif);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--mem-ink);
+}
+
+.mem-section-link {
+    font-size: 0.78rem;
+    color: var(--mem-teal);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* ─── Quick Resume Cards ─── */
+.mem-resume-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+}
+
+.mem-resume-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    background: var(--mem-cream);
+    border: 1.5px solid var(--mem-bone-dark);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.mem-resume-card:hover {
+    border-color: var(--mem-teal);
+    box-shadow: 0 2px 10px rgba(46,79,74,0.08);
+}
+
+.mem-resume-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--mem-teal);
+}
+
+.mem-resume-detail {
+    font-size: 0.72rem;
+    color: var(--mem-ink-muted);
+    margin-top: 0.1rem;
+}
+
+/* ─── Collection Cards ─── */
+.mem-collection-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: var(--mem-gold-soft);
+    border: 1.5px solid var(--mem-gold);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.2s;
+}
+
+.mem-collection-card:hover {
+    box-shadow: 0 2px 10px rgba(184,146,74,0.15);
+}
+
+/* ─── Empty State ─── */
+.mem-empty {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--mem-ink-muted);
+    font-style: italic;
+    font-family: var(--font-body, 'Piazzolla', serif);
+    font-size: 0.9rem;
+}
+
+/* ─── Modals (reuse Planner modal pattern) ─── */
+.mem-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(30,35,32,0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.mem-modal {
+    background: var(--mem-white);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+.mem-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--mem-bone-dark);
+}
+
+.mem-modal-title {
+    font-family: var(--font-ui, 'Cormorant Garamond', serif);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--mem-ink);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mem-modal-close {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: none;
+    background: var(--mem-bone);
+    color: var(--mem-ink-mid);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.mem-modal-close:hover {
+    background: var(--mem-bone-dark);
+}
+
+.mem-modal-body {
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Modal list items */
+.mem-modal-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s;
+    margin-bottom: 0.3rem;
+}
+
+.mem-modal-item:hover {
+    background: var(--mem-bone);
+}
+
+.mem-modal-item-num {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--mem-green-soft);
+    color: var(--mem-green);
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.mem-modal-item-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--mem-ink);
+}
+
+.mem-modal-item-sub {
+    font-size: 0.72rem;
+    color: var(--mem-ink-muted);
+}
+
+/* Ayah pills in modal */
+.mem-ayah-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.mem-ayah-pill {
+    padding: 0.3rem 0.6rem;
+    background: var(--mem-bone);
+    border: 1px solid var(--mem-bone-dark);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--mem-ink);
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.mem-ayah-pill:hover {
+    background: var(--mem-teal-soft);
+    border-color: var(--mem-teal);
+    color: var(--mem-teal);
+}
+
+/* ─── Page title (eyebrow) ─── */
+.mem-eyebrow {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--mem-ink-muted);
+    text-align: center;
+    margin-bottom: 0.25rem;
+    margin-top: 1rem;
+}
+
+.mem-page-title {
+    font-family: var(--font-ui, 'Cormorant Garamond', serif);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--mem-ink);
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+/* ════════════════════════════════════════════
+   MEMORIZATION SESSION
+════════════════════════════════════════════ */
+.mem-session {
+    position: relative;
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ─── Session Progress Bar (top) ─── */
+.mem-progress-track {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--mem-bone-dark);
+    z-index: 50;
+}
+
+.mem-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--mem-teal), var(--mem-green));
+    border-radius: 0 2px 2px 0;
+    transition: width 0.4s ease;
+}
+
+/* ─── Verse Display Area ─── */
+.mem-verse-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: 2rem 0 8rem;
+    width: 100%;
+    padding: 0 1.5rem;
+    box-sizing: border-box;
+}
+
+.mem-verse-container {
+    text-align: center;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.mem-verse-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    width: 100%;
+}
+
+.mem-verse-block {
+    position: relative;
+    width: 100%;
+}
+
+.mem-verse-text-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    min-height: 64px;
+}
+
+.mem-verse-arabic {
+    line-height: 2.2;
+    text-align: center;
+    direction: rtl;
+    transition: color 0.3s ease, filter 0.3s ease;
+}
+
+.mem-verse-arabic.is-active {
+    color: var(--mem-teal);
+}
+
+.mem-verse-arabic.is-blurred {
+    filter: blur(8px);
+    cursor: pointer;
+}
+
+/* ─── Side Actions (bookmark / memorize) ─── */
+.mem-verse-side {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: opacity 0.3s;
+}
+
+.mem-verse-side.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.mem-verse-side-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: color 0.15s;
+}
+
+/* ─── Translation Card ─── */
+.mem-translation {
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--mem-cream);
+    border-radius: 14px;
+    border: 1px solid var(--mem-bone-dark);
+    color: var(--mem-ink-mid);
+    line-height: 1.6;
+    overflow: hidden;
+}
+
+/* ─── Bottom Control Dock ─── */
+.mem-dock {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    transition: opacity 0.4s, transform 0.4s;
+    padding: 0 1rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.mem-dock.hidden {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+}
+
+.mem-dock-inner {
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--mem-white);
+    border: 1.5px solid var(--mem-bone-dark);
+    border-radius: 20px;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03);
+    padding: 0.65rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+
+.mem-dock-btn {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: var(--mem-ink-mid);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.mem-dock-btn:hover {
+    background: var(--mem-bone);
+}
+
+.mem-dock-btn.active {
+    background: var(--mem-teal-soft);
+    color: var(--mem-teal);
+}
+
+.mem-dock-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
+}
+
+/* Play button (larger, accent) */
+.mem-dock-play {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    background: var(--mem-teal);
+    box-shadow: 0 4px 16px rgba(46,79,74,0.25);
+    transition: background 0.15s, transform 0.1s;
+    flex-shrink: 0;
+    margin: 0 0.35rem;
+}
+
+.mem-dock-play:hover {
+    background: var(--mem-teal-mid);
+}
+
+.mem-dock-play.is-playing {
+    background: var(--mem-gold);
+    box-shadow: 0 4px 16px rgba(184,146,74,0.3);
+}
+
+/* Divider in dock */
+.mem-dock-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--mem-bone-dark);
+    margin: 0 0.15rem;
+    flex-shrink: 0;
+}
+
+/* ─── Ayah Selector Pill (in dock) ─── */
+.mem-ayah-select {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0 0.5rem;
+    height: 42px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: var(--mem-ink-mid);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.78rem;
+}
+
+.mem-ayah-select select {
+    background: transparent;
+    border: none;
+    color: inherit;
+    outline: none;
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+}
+
+.mem-ayah-select select option {
+    color: #333;
+}
+
+/* ─── Audio Settings Popover ─── */
+.mem-audio-popover {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.75rem;
+    width: 220px;
+    background: var(--mem-white);
+    border-radius: 16px;
+    border: 1.5px solid var(--mem-bone-dark);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 50;
+}
+
+.mem-popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mem-popover-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--mem-ink);
+}
+
+.mem-popover-close {
+    background: none;
+    border: none;
+    color: var(--mem-ink-muted);
+    cursor: pointer;
+    padding: 0.2rem;
+}
+
+.mem-popover-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mem-popover-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--mem-ink-mid);
+    font-size: 0.78rem;
+}
+
+.mem-popover-select {
+    background: var(--mem-bone);
+    border: 1px solid var(--mem-bone-dark);
+    color: var(--mem-ink);
+    border-radius: 8px;
+    padding: 3px 6px;
+    font-size: 0.75rem;
+    outline: none;
+    cursor: pointer;
+}
+
+/* ─── Collections Popover ─── */
+.mem-collections-popover {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.75rem;
+    width: 240px;
+    background: var(--mem-white);
+    border-radius: 16px;
+    border: 1.5px solid var(--mem-bone-dark);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    padding: 0.85rem;
+    z-index: 50;
+    text-align: left;
+}
+
+.mem-collections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    max-height: 180px;
+    overflow-y: auto;
+    margin-bottom: 0.75rem;
+}
+
+.mem-collection-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--mem-ink-mid);
+    cursor: pointer;
+    transition: background 0.15s;
+    width: 100%;
+    font-size: 0.82rem;
+    text-align: left;
+}
+
+.mem-collection-btn:hover {
+    background: var(--mem-bone);
+}
+
+.mem-new-collection {
+    display: flex;
+    gap: 6px;
+}
+
+.mem-new-collection input {
+    flex: 1;
+    padding: 0.35rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid var(--mem-bone-dark);
+    font-size: 0.75rem;
+    background: var(--mem-bone);
+    color: var(--mem-ink);
+    outline: none;
+}
+
+.mem-new-collection button {
+    background: var(--mem-teal);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.35rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ─── Info Bar (Surah · Page · Verse range) ─── */
+.mem-info-bar {
+    position: fixed;
+    bottom: 5.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.78rem;
+    color: var(--mem-ink-muted);
+    transition: opacity 0.4s;
+    z-index: 30;
+    white-space: nowrap;
+}
+
+.mem-info-bar.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.mem-info-surah {
+    color: var(--mem-teal);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.mem-info-surah-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+}
+
+.mem-info-dot {
+    opacity: 0.4;
+}
+
+/* ─── Analysis Modal ─── */
+.mem-analysis-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(30,35,32,0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mem-analysis-panel {
+    width: 90%;
+    max-width: 500px;
+    background: var(--mem-white);
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.18);
+    border: 1.5px solid var(--mem-bone-dark);
+    position: relative;
+}
+
+.mem-analysis-ring {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.mem-analysis-ring-inner {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--mem-white);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.mem-analysis-score {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--mem-ink);
+    line-height: 1;
+}
+
+.mem-analysis-score small {
+    font-size: 0.8rem;
+}
+
+.mem-analysis-label {
+    font-size: 0.65rem;
+    color: var(--mem-ink-muted);
+}
+
+.mem-error-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    background: var(--mem-cream);
+    border-radius: 12px;
+    margin-bottom: 0.6rem;
+}
+
+.mem-error-card.is-error {
+    border-left: 3px solid #dc2626;
+}
+
+.mem-error-card.is-success {
+    border-left: 3px solid var(--mem-teal);
+}
+
+.mem-error-title {
+    font-weight: 600;
+    color: var(--mem-ink);
+    font-size: 0.9rem;
+}
+
+.mem-error-detail {
+    font-size: 0.78rem;
+    color: var(--mem-ink-muted);
+    margin-top: 0.15rem;
+}
+
+/* ─── Loading ─── */
+.mem-loading {
+    text-align: center;
+    padding-top: 10vh;
+    color: var(--mem-ink-muted);
+}
