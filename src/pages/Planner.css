@@ -415,9 +415,96 @@
     flex-direction: column;
     align-items: center;
     padding: 2.5rem 1.25rem 6rem;
-    max-width: 480px;
+    max-width: 960px;
     margin: 0 auto;
     width: 100%;
+}
+
+/* Mobile: single column */
+.plr-active-columns {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+}
+
+.plr-active-left,
+.plr-active-right {
+    width: 100%;
+    max-width: 480px;
+}
+
+/* CTA inside left column — hidden on mobile, shown on desktop */
+.plr-left-cta {
+    display: none;
+    padding: 1rem 0;
+}
+
+/* Desktop: two columns side by side */
+@media (min-width: 768px) {
+    .plr-active-inner {
+        padding: 2.5rem 2rem 4rem;
+    }
+
+    .plr-active-columns {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 2.5rem;
+    }
+
+    .plr-active-left {
+        position: sticky;
+        top: 2rem;
+        flex: 0 0 340px;
+        max-width: 340px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .plr-active-right {
+        flex: 1;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .plr-left-cta {
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+
+    .plr-left-cta .plr-open-btn {
+        width: 100%;
+    }
+
+    /* Tracker section spans full width on desktop */
+    .plr-tracker-section {
+        max-width: 100%;
+        padding: 0;
+    }
+
+    .plr-ritual-section {
+        max-width: 100%;
+        padding: 0;
+    }
+
+    /* Stats row wraps better */
+    .plr-stat-row {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* Day tracker grid can be wider */
+    .plr-tracker-grid {
+        gap: 7px;
+    }
+
+    .plr-tracker-day {
+        width: 34px;
+        height: 34px;
+    }
 }
 
 /* Day header */

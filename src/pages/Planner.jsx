@@ -515,150 +515,166 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
             <div className="plr-active-bg" aria-hidden="true" />
             <motion.div className="plr-active-inner" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}>
 
-                {/* Day header */}
-                <div className="plr-day-header">
-                    <h1 className="plr-day-title">Day {currentDay} of {planner.durationDays}</h1>
-                    <p className="plr-day-sub">{daySubtitle}</p>
-                </div>
+                {/* Desktop two-column wrapper */}
+                <div className="plr-active-columns">
 
-                {/* Ring */}
-                <div className="plr-ring-section">
-                    <RingProgress percent={todayPct} size={200} stroke={9}>
-                        <span className="plr-pct">{todayPct}%</span>
-                        <span className="plr-juz-label">{ringLabel}</span>
-                    </RingProgress>
-                </div>
+                    {/* Left column: Ring + Stats + CTA */}
+                    <div className="plr-active-left">
+                        {/* Day header */}
+                        <div className="plr-day-header">
+                            <h1 className="plr-day-title">Day {currentDay} of {planner.durationDays}</h1>
+                            <p className="plr-day-sub">{daySubtitle}</p>
+                        </div>
 
-                {/* Stats */}
-                <div className="plr-stat-row">
-                    <div className="plr-stat-pill">
-                        <span className="plr-stat-label">Overall</span>
-                        <span className="plr-stat-val">{completedDays}/{planner.durationDays} Days ({overallPct}%)</span>
-                    </div>
-                    <div className="plr-stat-pill">
-                        <span className="plr-stat-label">Finish by</span>
-                        <span className="plr-stat-val">{completionDate}</span>
-                    </div>
-                    <div className="plr-stat-pill">
-                        <span className="plr-stat-label">Streak</span>
-                        <span className="plr-stat-val">{streakDays} Day{streakDays !== 1 ? 's' : ''}</span>
-                    </div>
-                </div>
+                        {/* Ring */}
+                        <div className="plr-ring-section">
+                            <RingProgress percent={todayPct} size={200} stroke={9}>
+                                <span className="plr-pct">{todayPct}%</span>
+                                <span className="plr-juz-label">{ringLabel}</span>
+                            </RingProgress>
+                        </div>
 
-                {/* Day Tracker */}
-                <div className="plr-tracker-section">
-                    <div className="plr-tracker-header">
-                        <h2 className="plr-tracker-title">Day Tracker</h2>
-                        <span className="plr-tracker-summary">{completedDays} of {planner.durationDays} completed</span>
-                    </div>
-                    <div className="plr-tracker-grid">
-                        {planner.assignments.map(a => {
-                            const status = getAssignmentStatus(planner, a, today);
-                            const progress = getAssignmentProgress(planner, a);
-                            const isToday = a.date === today;
-                            const pct = progress.totalCount ? Math.round((progress.completedCount / progress.totalCount) * 100) : 0;
-                            return (
-                                <motion.div
-                                    key={a.dayNumber}
-                                    className={`plr-tracker-day plr-tracker-${status} ${isToday ? 'plr-tracker-today' : ''}`}
-                                    title={`Day ${a.dayNumber}: ${a.title} — ${status === 'completed' ? '✓ Done' : status === 'today' ? `${pct}%` : status}`}
-                                    whileHover={{ scale: 1.15 }}
-                                    whileTap={{ scale: 0.9 }}
-                                >
-                                    <span className="plr-tracker-num">{a.dayNumber}</span>
-                                    {status === 'completed' && (
-                                        <svg className="plr-tracker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    )}
-                                    {isToday && status !== 'completed' && pct > 0 && (
-                                        <div className="plr-tracker-progress" style={{ '--pct': `${pct}%` }} />
-                                    )}
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-                    <div className="plr-tracker-legend">
-                        <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-completed" /> Done</span>
-                        <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-today" /> Today</span>
-                        <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-overdue" /> Missed</span>
-                        <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-upcoming" /> Upcoming</span>
-                    </div>
-                </div>
-                <div className="plr-ritual-section">
-                    <div className="plr-ritual-header">
-                        <h2 className="plr-ritual-title">Daily Ritual</h2>
-                        <span className="plr-ritual-status">
-                            <span className="plr-ritual-dot" />
-                            {todayAssignment && getAssignmentProgress(planner, todayAssignment).isComplete ? 'Complete' : 'In Progress'}
-                        </span>
+                        {/* Stats */}
+                        <div className="plr-stat-row">
+                            <div className="plr-stat-pill">
+                                <span className="plr-stat-label">Overall</span>
+                                <span className="plr-stat-val">{completedDays}/{planner.durationDays} Days ({overallPct}%)</span>
+                            </div>
+                            <div className="plr-stat-pill">
+                                <span className="plr-stat-label">Finish by</span>
+                                <span className="plr-stat-val">{completionDate}</span>
+                            </div>
+                            <div className="plr-stat-pill">
+                                <span className="plr-stat-label">Streak</span>
+                                <span className="plr-stat-val">{streakDays} Day{streakDays !== 1 ? 's' : ''}</span>
+                            </div>
+                        </div>
+
+                        {/* CTA button (desktop: inside left column) */}
+                        <div className="plr-left-cta">
+                            {(() => {
+                                const planDone = overview?.isFinishedWindow && !nextAssignment;
+                                const ctaRoute = todayComplete ? (nextReadRoute || resumeRoute) : (resumeRoute || nextReadRoute);
+                                const ctaLabel = planDone
+                                    ? 'Plan Complete ✓'
+                                    : todayComplete && nextAssignment
+                                        ? `Continue to Day ${nextAssignment.dayNumber}`
+                                        : todayComplete
+                                            ? 'All Caught Up'
+                                            : hasStartedReading ? 'Resume Reading' : 'Open Al-Quran';
+                                if (planDone) {
+                                    return <button className="plr-open-btn" disabled>{ctaLabel}</button>;
+                                }
+                                return ctaRoute
+                                    ? <Link to={ctaRoute} className="plr-open-btn">{ctaLabel}</Link>
+                                    : <button className="plr-open-btn" disabled>{ctaLabel}</button>;
+                            })()}
+                        </div>
                     </div>
 
-                    <div className="plr-prayers">
-                        {prayerSlots.map((slot, i) => (
-                            <motion.div key={slot.name}
-                                className={`plr-prayer-card plr-prayer-${slot.status}`}
-                                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.05 * i, duration: 0.35 }}
-                            >
-                                <div className={`plr-prayer-icon plr-prayer-icon-${slot.status}`}>
-                                    {slot.status === 'completed' && <CheckIcon size={18} />}
-                                    {slot.status === 'current' && <BookIcon />}
-                                    {slot.status === 'upcoming' && <ClockIcon />}
-                                </div>
-                                <div className="plr-prayer-info">
-                                    <span className={`plr-prayer-name ${slot.status === 'completed' ? 'is-done' : ''}`}>{slot.name}</span>
-                                    <span className="plr-prayer-meta">
-                                        {slot.status === 'completed' && `${slot.doneInSlot}/${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} ✓`}
-                                        {slot.status === 'current' && `${slot.doneInSlot} of ${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} read`}
-                                        {slot.status === 'upcoming' && `${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} · not started`}
-                                    </span>
-                                </div>
-                                <div className="plr-prayer-action">
-                                    {slot.status === 'completed' && (
-                                        <button
-                                            className="plr-check-badge"
-                                            onClick={() => handleUndoPrayer(slot)}
-                                            title="Undo this prayer"
+                    {/* Right column: Tracker + Ritual */}
+                    <div className="plr-active-right">
+                        {/* Day Tracker */}
+                        <div className="plr-tracker-section">
+                            <div className="plr-tracker-header">
+                                <h2 className="plr-tracker-title">Day Tracker</h2>
+                                <span className="plr-tracker-summary">{completedDays} of {planner.durationDays} completed</span>
+                            </div>
+                            <div className="plr-tracker-grid">
+                                {planner.assignments.map(a => {
+                                    const status = getAssignmentStatus(planner, a, today);
+                                    const progress = getAssignmentProgress(planner, a);
+                                    const isToday = a.date === today;
+                                    const pct = progress.totalCount ? Math.round((progress.completedCount / progress.totalCount) * 100) : 0;
+                                    return (
+                                        <motion.div
+                                            key={a.dayNumber}
+                                            className={`plr-tracker-day plr-tracker-${status} ${isToday ? 'plr-tracker-today' : ''}`}
+                                            title={`Day ${a.dayNumber}: ${a.title} — ${status === 'completed' ? '✓ Done' : status === 'today' ? `${pct}%` : status}`}
+                                            whileHover={{ scale: 1.15 }}
+                                            whileTap={{ scale: 0.9 }}
                                         >
-                                            <CheckIcon size={14} />
-                                        </button>
-                                    )}
-                                    {slot.status === 'current' && slot.slotRoute && (
-                                        <Link to={hasStartedReading ? (resumeRoute || slot.slotRoute) : slot.slotRoute} className="plr-start-btn">
-                                            {hasStartedReading ? 'Resume' : 'Start'}
-                                        </Link>
-                                    )}
-                                    {slot.status === 'upcoming' && (
-                                        <button className="plr-mark-btn" onClick={() => handleMarkPrayer(slot)} title="Mark done">
-                                            <div className="plr-empty-ring" />
-                                        </button>
-                                    )}
-                                </div>
-                            </motion.div>
-                        ))}
+                                            <span className="plr-tracker-num">{a.dayNumber}</span>
+                                            {status === 'completed' && (
+                                                <svg className="plr-tracker-check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                    <polyline points="20 6 9 17 4 12"/>
+                                                </svg>
+                                            )}
+                                            {isToday && status !== 'completed' && pct > 0 && (
+                                                <div className="plr-tracker-progress" style={{ '--pct': `${pct}%` }} />
+                                            )}
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                            <div className="plr-tracker-legend">
+                                <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-completed" /> Done</span>
+                                <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-today" /> Today</span>
+                                <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-overdue" /> Missed</span>
+                                <span className="plr-tracker-legend-item"><span className="plr-legend-dot plr-legend-upcoming" /> Upcoming</span>
+                            </div>
+                        </div>
+
+                        {/* Daily Ritual */}
+                        <div className="plr-ritual-section">
+                            <div className="plr-ritual-header">
+                                <h2 className="plr-ritual-title">Daily Ritual</h2>
+                                <span className="plr-ritual-status">
+                                    <span className="plr-ritual-dot" />
+                                    {todayAssignment && getAssignmentProgress(planner, todayAssignment).isComplete ? 'Complete' : 'In Progress'}
+                                </span>
+                            </div>
+
+                            <div className="plr-prayers">
+                                {prayerSlots.map((slot, i) => (
+                                    <motion.div key={slot.name}
+                                        className={`plr-prayer-card plr-prayer-${slot.status}`}
+                                        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.05 * i, duration: 0.35 }}
+                                    >
+                                        <div className={`plr-prayer-icon plr-prayer-icon-${slot.status}`}>
+                                            {slot.status === 'completed' && <CheckIcon size={18} />}
+                                            {slot.status === 'current' && <BookIcon />}
+                                            {slot.status === 'upcoming' && <ClockIcon />}
+                                        </div>
+                                        <div className="plr-prayer-info">
+                                            <span className={`plr-prayer-name ${slot.status === 'completed' ? 'is-done' : ''}`}>{slot.name}</span>
+                                            <span className="plr-prayer-meta">
+                                                {slot.status === 'completed' && `${slot.doneInSlot}/${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} ✓`}
+                                                {slot.status === 'current' && `${slot.doneInSlot} of ${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} read`}
+                                                {slot.status === 'upcoming' && `${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} · not started`}
+                                            </span>
+                                        </div>
+                                        <div className="plr-prayer-action">
+                                            {slot.status === 'completed' && (
+                                                <button
+                                                    className="plr-check-badge"
+                                                    onClick={() => handleUndoPrayer(slot)}
+                                                    title="Undo this prayer"
+                                                >
+                                                    <CheckIcon size={14} />
+                                                </button>
+                                            )}
+                                            {slot.status === 'current' && slot.slotRoute && (
+                                                <Link to={hasStartedReading ? (resumeRoute || slot.slotRoute) : slot.slotRoute} className="plr-start-btn">
+                                                    {hasStartedReading ? 'Resume' : 'Start'}
+                                                </Link>
+                                            )}
+                                            {slot.status === 'upcoming' && (
+                                                <button className="plr-mark-btn" onClick={() => handleMarkPrayer(slot)} title="Mark done">
+                                                    <div className="plr-empty-ring" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Footer CTA */}
+                {/* Footer — below both columns */}
                 <div className="plr-active-footer">
-                    {(() => {
-                        const planDone = overview?.isFinishedWindow && !nextAssignment;
-                        const ctaRoute = todayComplete ? (nextReadRoute || resumeRoute) : (resumeRoute || nextReadRoute);
-                        const ctaLabel = planDone
-                            ? 'Plan Complete ✓'
-                            : todayComplete && nextAssignment
-                                ? `Continue to Day ${nextAssignment.dayNumber}`
-                                : todayComplete
-                                    ? 'All Caught Up'
-                                    : hasStartedReading ? 'Resume Reading' : 'Open Al-Quran';
-                        if (planDone) {
-                            return <button className="plr-open-btn" disabled>{ctaLabel}</button>;
-                        }
-                        return ctaRoute
-                            ? <Link to={ctaRoute} className="plr-open-btn">{ctaLabel}</Link>
-                            : <button className="plr-open-btn" disabled>{ctaLabel}</button>;
-                    })()}
                     <p className="plr-ayah-quote">"Recite what has been revealed to you of the Book…" (29:45)</p>
                     <button className="plr-delete-link" onClick={onDelete}
                         title="Delete plan" aria-label="Delete plan">
