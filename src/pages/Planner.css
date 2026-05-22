@@ -64,14 +64,24 @@
     text-align: center;
 }
 
+.plr-int-eyebrow {
+    display: block;
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: var(--plr-teal);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
 .plr-int-title {
     font-family: var(--font-ui, 'Cormorant Garamond', serif);
-    font-size: clamp(1.7rem, 6vw, 2.4rem);
+    font-size: clamp(1.7rem, 6vw, 2.8rem);
     font-weight: 600;
     color: var(--plr-ink);
     letter-spacing: -0.01em;
     line-height: 1.1;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
 }
 
 .plr-int-sub {
@@ -79,7 +89,7 @@
     font-size: 0.92rem;
     color: var(--plr-ink-mid);
     line-height: 1.65;
-    max-width: 300px;
+    max-width: 480px;
     margin: 0 auto;
 }
 
@@ -182,6 +192,66 @@
     font-weight: 600;
     color: var(--plr-ink);
     letter-spacing: 0.01em;
+}
+
+.plr-pace-daily {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.68rem;
+    color: var(--plr-ink-mid);
+    letter-spacing: 0.03em;
+}
+
+.plr-pace-prayer-info {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-body, 'Piazzolla', serif);
+    font-size: 0.82rem;
+    color: var(--plr-ink-mid);
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+.plr-pace-prayer-info svg {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+}
+
+/* Select Path button — hidden on mobile, shown on desktop */
+.plr-select-path-btn {
+    display: none;
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    border-radius: 10px;
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.5rem;
+    /* Default: outlined */
+    border: 1.5px solid var(--plr-bone-dark);
+    background: transparent;
+    color: var(--plr-ink-mid);
+}
+
+.plr-select-path-btn:hover {
+    border-color: var(--plr-teal);
+    color: var(--plr-teal);
+}
+
+.plr-select-path-btn.is-filled {
+    background: var(--plr-teal);
+    border-color: var(--plr-teal);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(46,79,74,0.22);
+}
+
+.plr-select-path-btn.is-filled:hover {
+    background: var(--plr-teal-mid);
 }
 
 .plr-pace-duration {
@@ -772,24 +842,71 @@
     margin-top: 0.75rem;
 }
 
-/* ─── Responsive: desktop vertical stack ─── */
-@media (min-width: 480px) {
+/* ─── Responsive: desktop layout ─── */
+@media (min-width: 768px) {
     .plr-int-header {
-        padding: 3rem 2rem 2rem;
+        padding: 3.5rem 2rem 2rem;
+    }
+    .plr-int-sub {
+        max-width: 560px;
     }
     .plr-pace-list {
-        flex-direction: column;
+        flex-direction: row;
         overflow-x: visible;
         scroll-snap-type: none;
-        padding: 0 1.5rem;
+        padding: 0 2rem;
+        max-width: 860px;
+        gap: 1.25rem;
+        justify-content: center;
     }
     .plr-pace-card {
-        min-width: auto;
+        min-width: 0;
+        flex: 1;
+        max-width: 260px;
         flex-shrink: 1;
         scroll-snap-align: initial;
+        padding: 2rem 1.5rem 1.5rem;
     }
     .plr-pace-card:not(.is-selected) .plr-pace-quote {
         display: block;
+    }
+    /* Desktop: show Select Path, hide inline CTA */
+    .plr-select-path-btn {
+        display: block;
+    }
+    .plr-card-cta {
+        display: none !important;
+    }
+    /* Custom form wider */
+    .plr-custom-form {
+        max-width: 560px;
+    }
+    .plr-custom-section {
+        max-width: 560px;
+    }
+}
+
+/* Tablet: 2+1 or side-by-side */
+@media (min-width: 480px) and (max-width: 767px) {
+    .plr-int-header {
+        padding: 2rem 1.5rem 1.25rem;
+    }
+    .plr-pace-list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        overflow-x: visible;
+        scroll-snap-type: none;
+        padding: 0 1.5rem;
+        max-width: 560px;
+        gap: 1rem;
+        justify-content: center;
+    }
+    .plr-pace-card {
+        min-width: 160px;
+        flex: 1 1 45%;
+        max-width: 240px;
+        flex-shrink: 1;
+        scroll-snap-align: initial;
     }
 }
 
@@ -840,14 +957,55 @@
     opacity: 0.7;
 }
 
-/* ─── Custom Plan Form ─── */
-.plr-custom-toggle-row {
-    display: flex;
-    justify-content: center;
-    padding: 0 1.25rem 0.5rem;
+/* ─── Custom Timeline Section ─── */
+.plr-custom-section {
+    text-align: center;
+    padding: 2rem 1.5rem 0.5rem;
     max-width: 480px;
     width: 100%;
     margin: 0 auto;
+}
+
+.plr-custom-heading {
+    font-family: var(--font-ui, 'Cormorant Garamond', serif);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--plr-ink);
+    margin-bottom: 0.5rem;
+}
+
+.plr-custom-desc {
+    font-family: var(--font-body, 'Piazzolla', serif);
+    font-size: 0.85rem;
+    color: var(--plr-ink-mid);
+    line-height: 1.6;
+    max-width: 400px;
+    margin: 0 auto 0.75rem;
+}
+
+/* ─── Bottom Quote ─── */
+.plr-int-quote-section {
+    text-align: center;
+    padding: 2.5rem 1.5rem 1.5rem;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.plr-int-wisdom {
+    font-family: var(--font-body, 'Piazzolla', serif);
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--plr-ink-mid);
+    line-height: 1.65;
+    margin-bottom: 0.4rem;
+}
+
+.plr-int-wisdom-source {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    color: var(--plr-ink-muted);
+    text-transform: uppercase;
 }
 
 .plr-custom-toggle-btn {

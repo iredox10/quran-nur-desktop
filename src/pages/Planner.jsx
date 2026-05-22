@@ -203,8 +203,11 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
             )}
 
             <motion.div className="plr-int-header" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
+                <span className="plr-int-eyebrow">THE FIRST STEP</span>
                 <h1 className="plr-int-title">Set Your Intention</h1>
-                <p className="plr-int-sub">Choose a pace that aligns with your rhythm.</p>
+                <p className="plr-int-sub">
+                    Choose a pace that resonates with your soul. Whether intensive or slow, the journey of the Quran is a dialogue of devotion.
+                </p>
             </motion.div>
 
             <div className="plr-pace-list">
@@ -220,13 +223,30 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                             layout
                         >
                             {pace.badge && <div className="plr-pace-badge">{pace.badge}</div>}
-                            <div className="plr-pace-icon-wrap"><Icon /></div>
-                            <p className="plr-pace-name">{pace.title}</p>
-                            <p className="plr-pace-duration">{pace.duration}</p>
-                            <PaceRing durationDays={pace.durationDays} selected={isSelected} />
-                            <p className="plr-pace-quote">"{stats.perPrayer} pages per prayer"</p>
 
-                            {/* Inline CTA — visible inside selected card */}
+                            {/* Ring at top */}
+                            <PaceRing durationDays={pace.durationDays} selected={isSelected} />
+
+                            {/* Title + daily pages */}
+                            <p className="plr-pace-name">{pace.title}</p>
+                            <p className="plr-pace-daily">{stats.dailyPages} pages per day</p>
+
+                            {/* Per-prayer info */}
+                            <div className="plr-pace-prayer-info">
+                                <Icon />
+                                <span>{stats.perPrayer} pages per prayer</span>
+                            </div>
+
+                            {/* Desktop: Select Path button (always visible) */}
+                            <motion.button
+                                className={`plr-select-path-btn ${isSelected ? 'is-filled' : ''}`}
+                                whileTap={{ scale: 0.96 }}
+                                onClick={e => { e.stopPropagation(); setSelected(pace.id); setShowCustom(false); if (isSelected) handleBegin(); }}
+                            >
+                                {isSelected ? 'Begin Journey' : 'Select Path'}
+                            </motion.button>
+
+                            {/* Mobile: Inline CTA — visible inside selected card only */}
                             <AnimatePresence>
                                 {isSelected && !showCustom && (
                                     <motion.div className="plr-card-cta"
@@ -249,12 +269,19 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                 })}
             </div>
 
-            {/* Customise toggle */}
-            <div className="plr-custom-toggle-row">
+            {/* Custom timeline section */}
+            <motion.div className="plr-custom-section"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+            >
+                <h2 className="plr-custom-heading">Prefer a custom timeline?</h2>
+                <p className="plr-custom-desc">
+                    Define your own start date and completion target. We'll handle the calculation of daily portions for you.
+                </p>
+
                 <button className="plr-custom-toggle-btn" onClick={() => setShowCustom(v => !v)}>
-                    {showCustom ? '− Hide custom options' : '+ Create custom plan'}
+                    {showCustom ? '− Hide custom options' : '+ Configure custom plan'}
                 </button>
-            </div>
+            </motion.div>
 
             <AnimatePresence>
                 {showCustom && (
@@ -329,6 +356,12 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                 )}
             </AnimatePresence>
 
+            {/* Bottom quote */}
+            <div className="plr-int-quote-section">
+                <p className="plr-int-wisdom">"The best of deeds are those that are consistent, even if they are few."</p>
+                <span className="plr-int-wisdom-source">Prophetic Wisdom</span>
+            </div>
+
             {/* Existing plans list */}
             {planners && planners.length > 0 && (
                 <div className="plr-plans-section">
@@ -395,16 +428,8 @@ function buildPrayerSlots(planner, todayAssignment) {
     });
     const firstIncomplete = slots.findIndex(s => s.status !== 'completed');
     if (firstIncomplete !== -1 && slots[firstIncomplete].status === 'upcoming') {
-        // If no progress yet, use time-based detection; otherwise use positional
-        const timePrayer = done === 0 ? getPrayerByTime() : null;
-        if (timePrayer) {
-            // Find the matching slot index by name
-            const timeIdx = slots.findIndex(s => s.name === timePrayer);
-            const targetIdx = timeIdx >= firstIncomplete ? timeIdx : firstIncomplete;
-            slots[targetIdx] = { ...slots[targetIdx], status: 'current' };
-        } else {
-            slots[firstIncomplete] = { ...slots[firstIncomplete], status: 'current' };
-        }
+        // Always start from the first incomplete slot (Fajr first)
+        slots[firstIncomplete] = { ...slots[firstIncomplete], status: 'current' };
     }
     return slots;
 }
