@@ -1072,3 +1072,210 @@ a.plr-open-btn, a.plr-start-btn {
 }
 
 .plr-modal-confirm:hover { background: #a93226; }
+
+/* ─── Text input for plan name ─── */
+.plr-text-input {
+    font-family: var(--font-body, 'Piazzolla', serif);
+    font-size: 0.95rem;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--plr-bone-dark);
+    background: var(--plr-cream);
+    color: var(--plr-ink);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+}
+.plr-text-input:focus { border-color: var(--plr-gold); }
+.plr-text-input::placeholder { color: var(--plr-ink-muted); opacity: 0.6; }
+
+/* ─── Page range inputs (From → To) ─── */
+.plr-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.plr-range-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.plr-range-field-label {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    color: var(--plr-ink-muted);
+    text-transform: uppercase;
+}
+
+.plr-num-input {
+    font-family: var(--font-body, 'Piazzolla', serif);
+    font-size: 1rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--plr-bone-dark);
+    background: var(--plr-cream);
+    color: var(--plr-ink);
+    outline: none;
+    width: 100%;
+    text-align: center;
+    transition: border-color 0.2s;
+    -moz-appearance: textfield;
+}
+.plr-num-input::-webkit-inner-spin-button,
+.plr-num-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.plr-num-input:focus { border-color: var(--plr-gold); }
+
+.plr-range-arrow {
+    font-size: 1.1rem;
+    color: var(--plr-ink-muted);
+    padding-top: 1rem;
+    flex-shrink: 0;
+}
+
+.plr-range-hint {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.65rem;
+    color: var(--plr-ink-muted);
+    text-align: center;
+    margin-top: 0.15rem;
+}
+
+/* ─── Pages per day row ─── */
+.plr-perday-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.plr-num-perday {
+    width: 70px;
+    flex-shrink: 0;
+}
+
+.plr-range-perday {
+    flex: 1;
+}
+
+/* ─── My Plans Section ─── */
+.plr-plans-section {
+    max-width: 480px;
+    width: 100%;
+    margin: 1.5rem auto 0;
+    padding: 0 1.25rem 2rem;
+}
+
+.plr-plans-title {
+    font-family: var(--font-ui, 'Cormorant Garamond', serif);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--plr-ink);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--plr-bone-dark);
+}
+
+.plr-plans-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.plr-plan-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: var(--plr-cream);
+    border: 1.5px solid var(--plr-bone-dark);
+    border-radius: 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.plr-plan-item.is-active {
+    border-color: var(--plr-gold);
+    box-shadow: 0 3px 12px rgba(184,146,74,0.12);
+}
+
+.plr-plan-item:hover {
+    border-color: var(--plr-teal);
+}
+
+.plr-plan-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.plr-plan-name {
+    font-family: var(--font-body, 'Piazzolla', serif);
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--plr-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.plr-plan-meta {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.62rem;
+    color: var(--plr-ink-muted);
+    letter-spacing: 0.04em;
+    margin-top: 0.2rem;
+}
+
+.plr-plan-bar {
+    height: 3px;
+    background: var(--plr-bone-dark);
+    border-radius: 2px;
+    margin-top: 0.4rem;
+    overflow: hidden;
+}
+
+.plr-plan-bar-fill {
+    height: 100%;
+    background: var(--plr-teal);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    min-width: 2px;
+}
+
+.plr-plan-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.plr-plan-active-badge {
+    font-family: var(--font-mono, 'Geist Mono', monospace);
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    background: rgba(184,146,74,0.14);
+    color: var(--plr-gold);
+    font-weight: 500;
+}
+
+.plr-plan-delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--plr-ink-muted);
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.plr-plan-delete-btn:hover {
+    color: #c0392b;
+    background: rgba(192,57,43,0.08);
+}

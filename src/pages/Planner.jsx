@@ -141,28 +141,39 @@ function PaceRing({ durationDays, selected }) {
 /* ════════════════════════════════════════════════════════
    INTENTION VIEW  (no active planner)
 ════════════════════════════════════════════════════════ */
-function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan }) {
+function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, planners, activePlannerId, onSwitchPlan, onDeletePlan }) {
     const [selected, setSelected] = useState('steady');
     const [showCustom, setShowCustom] = useState(false);
     const [unitType, setUnitType] = useState('page');
     const [startDate, setStartDate] = useState(formatPlannerDate(new Date()));
-    const [durationDays, setDurationDays] = useState(60);
+    const [pagesPerDay, setPagesPerDay] = useState(10);
+    const [startPage, setStartPage] = useState(1);
+    const [endPage, setEndPage] = useState(604);
+    const [customTitle, setCustomTitle] = useState('');
 
     const unitMeta = PLANNER_UNITS[unitType];
+    const maxUnit = unitMeta?.max || 604;
+    const safeEndPage = Math.min(endPage, maxUnit);
+    const totalUnits = Math.max(safeEndPage - startPage + 1, 1);
+    // Auto-calculate duration from pages per day
+    const computedDuration = Math.ceil(totalUnits / Math.max(pagesPerDay, 1));
 
     const handleBegin = () => {
         const pace = PACES.find(p => p.id === selected);
         if (!pace) return;
-        const days = showCustom ? durationDays : pace.durationDays;
+        const days = showCustom ? computedDuration : pace.durationDays;
         const unit = showCustom ? unitType : 'page';
+        const sUnit = showCustom ? startPage : 1;
+        const eUnit = showCustom ? safeEndPage : PLANNER_UNITS[unit].max;
+        const title = showCustom ? (customTitle.trim() || '') : pace.title;
         try {
             const built = buildReadingPlanner({
                 unitType: unit,
                 durationDays: days,
                 startDate,
-                startUnit: 1,
-                endUnit: PLANNER_UNITS[unit].max,
-                customTitle: showCustom ? '' : pace.title,
+                startUnit: sUnit,
+                endUnit: eUnit,
+                customTitle: title,
             }, chapters || []);
             onBegin(built);
         } catch (e) {
@@ -172,7 +183,7 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan }) {
     };
 
     // Compute stats for the currently selected/active duration
-    const activeDays = showCustom ? durationDays : PACES.find(p => p.id === selected)?.durationDays || 60;
+    const activeDays = showCustom ? computedDuration : PACES.find(p => p.id === selected)?.durationDays || 60;
     const activeStats = getPaceStats(activeDays);
 
     return (
@@ -203,7 +214,7 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan }) {
                     const stats = getPaceStats(pace.durationDays);
                     return (
                         <motion.div key={pace.id} className={`plr-pace-card ${isSelected ? 'is-selected' : ''}`}
-                            onClick={() => { setSelected(pace.id); setDurationDays(pace.durationDays); }}
+                            onClick={() => { setSelected(pace.id); setShowCustom(false); }}
                             initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: 0.1 + i * 0.12 }}
                             layout
@@ -217,7 +228,7 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan }) {
 
                             {/* Inline CTA — visible inside selected card */}
                             <AnimatePresence>
-                                {isSelected && (
+                                {isSelected && !showCustom && (
                                     <motion.div className="plr-card-cta"
                                         initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                                         exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }}
@@ -241,22 +252,58 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan }) {
             {/* Customise toggle */}
             <div className="plr-custom-toggle-row">
                 <button className="plr-custom-toggle-btn" onClick={() => setShowCustom(v => !v)}>
-                    {showCustom ? '− Hide options' : '+ Customise plan'}
+                    {showCustom ? '− Hide custom options' : '+ Create custom plan'}
                 </button>
             </div>
 
             <AnimatePresence>
                 {showCustom && (
                     <motion.div className="plr-custom-form" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                        {/* Plan title */}
+                        <div className="plr-form-group">
+                            <label className="plr-form-label">Plan name (optional)</label>
+                            <input type="text" className="plr-text-input" value={customTitle}
+                                onChange={e => setCustomTitle(e.target.value)}
+                                placeholder="e.g. Morning Routine, Juz Amma..." />
+                        </div>
                         {/* Unit type */}
                         <div className="plr-form-group">
                             <label className="plr-form-label">Reading unit</label>
                             <div className="plr-unit-pills">
                                 {Object.entries(PLANNER_UNITS).map(([key, meta]) => (
-                                    <button key={key} className={`plr-unit-pill ${unitType === key ? 'active' : ''}`} onClick={() => setUnitType(key)}>
+                                    <button key={key} className={`plr-unit-pill ${unitType === key ? 'active' : ''}`}
+                                        onClick={() => { setUnitType(key); setStartPage(1); setEndPage(meta.max); }}>
                                         {meta.label}
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+                        {/* Page range */}
+                        <div className="plr-form-group">
+                            <label className="plr-form-label">{unitMeta.label} range</label>
+                            <div className="plr-range-inputs">
+                                <div className="plr-range-field">
+                                    <span className="plr-range-field-label">From</span>
+                                    <input type="number" className="plr-num-input" min={1} max={safeEndPage}
+                                        value={startPage} onChange={e => setStartPage(Math.max(1, Math.min(Number(e.target.value) || 1, safeEndPage)))} />
+                                </div>
+                                <span className="plr-range-arrow">→</span>
+                                <div className="plr-range-field">
+                                    <span className="plr-range-field-label">To</span>
+                                    <input type="number" className="plr-num-input" min={startPage} max={maxUnit}
+                                        value={safeEndPage} onChange={e => setEndPage(Math.max(startPage, Math.min(Number(e.target.value) || maxUnit, maxUnit)))} />
+                                </div>
+                            </div>
+                            <p className="plr-range-hint">{Math.max(safeEndPage - startPage + 1, 0)} {unitMeta.plural} selected</p>
+                        </div>
+                        {/* Pages per day */}
+                        <div className="plr-form-group">
+                            <label className="plr-form-label">{unitMeta.plural} per day</label>
+                            <div className="plr-perday-row">
+                                <input type="number" className="plr-num-input plr-num-perday" min={1} max={totalUnits}
+                                    value={pagesPerDay} onChange={e => setPagesPerDay(Math.max(1, Math.min(Number(e.target.value) || 1, totalUnits)))} />
+                                <input type="range" min={1} max={Math.min(totalUnits, 50)} value={Math.min(pagesPerDay, 50)}
+                                    onChange={e => setPagesPerDay(Number(e.target.value))} className="plr-range plr-range-perday" />
                             </div>
                         </div>
                         {/* Start date */}
@@ -264,30 +311,61 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan }) {
                             <label className="plr-form-label">Start date</label>
                             <input type="date" className="plr-date-input" value={startDate} onChange={e => setStartDate(e.target.value)} />
                         </div>
-                        {/* Duration */}
-                        <div className="plr-form-group">
-                            <label className="plr-form-label">Duration — <strong>{durationDays} days</strong></label>
-                            <input type="range" min={1} max={unitMeta.max} value={durationDays}
-                                onChange={e => setDurationDays(Number(e.target.value))} className="plr-range" />
-                            <div className="plr-range-limits"><span>1</span><span>{unitMeta.max}</span></div>
-                        </div>
 
                         {/* Custom plan stats + CTA */}
                         <div className="plr-custom-cta-row">
                             <div className="plr-card-stats">
-                                <span>{activeStats.dailyPages} pages/day</span>
+                                <span>{pagesPerDay} {unitMeta.plural}/day</span>
                                 <span className="plr-card-stats-dot">·</span>
-                                <span>{activeStats.perPrayer} per prayer</span>
+                                <span>{computedDuration} days</span>
                                 <span className="plr-card-stats-dot">·</span>
                                 <span>Done by {activeStats.endLabel}</span>
                             </div>
                             <motion.button className="plr-card-begin-btn" whileTap={{ scale: 0.96 }} onClick={handleBegin}>
-                                BEGIN CUSTOM JOURNEY
+                                CREATE CUSTOM PLAN
                             </motion.button>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Existing plans list */}
+            {planners && planners.length > 0 && (
+                <div className="plr-plans-section">
+                    <h2 className="plr-plans-title">My Plans</h2>
+                    <div className="plr-plans-list">
+                        {planners.map(p => {
+                            const overview = getPlannerOverview(p);
+                            const pct = overview ? Math.round(overview.completionRatio * 100) : 0;
+                            const isActive = p.id === activePlannerId;
+                            return (
+                                <motion.div key={p.id} className={`plr-plan-item ${isActive ? 'is-active' : ''}`}
+                                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                                    <div className="plr-plan-info" onClick={() => { onSwitchPlan(p.id); onViewActive?.(); }}>
+                                        <p className="plr-plan-name">{p.title || 'Unnamed Plan'}</p>
+                                        <p className="plr-plan-meta">
+                                            {p.durationDays} days · {p.unitType} · {pct}% complete
+                                        </p>
+                                        <div className="plr-plan-bar">
+                                            <div className="plr-plan-bar-fill" style={{ width: `${pct}%` }} />
+                                        </div>
+                                    </div>
+                                    <div className="plr-plan-actions">
+                                        {isActive && <span className="plr-plan-active-badge">Active</span>}
+                                        <button className="plr-plan-delete-btn" onClick={() => onDeletePlan(p.id)}
+                                            title="Delete this plan" aria-label="Delete plan">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                                                <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -528,7 +606,8 @@ function ActiveViewWrapper({ planner, onDelete, onBack, setPlannerAssignmentProg
 }
 export default function Planner() {
     const {
-        setNavHeaderTitle, planner, setPlanner, deletePlanner,
+        setNavHeaderTitle, planner, planners, activePlannerId,
+        setPlanner, setActivePlanner, deletePlanner,
         setPlannerAssignmentProgress, togglePlannerDayComplete,
     } = useAppStore();
 
@@ -548,10 +627,7 @@ export default function Planner() {
     }, [setNavHeaderTitle]);
 
     const handleBegin = (built) => {
-        // Delete any existing plan first so we start fresh with 0 progress
-        if (planner) {
-            deletePlanner(planner.id);
-        }
+        // Add new plan (don't delete existing ones — support multiple plans)
         setPlanner(built);
         setView('active');
     };
@@ -560,6 +636,17 @@ export default function Planner() {
         deletePlanner(planner.id);
         setConfirmDelete(false);
         setView('intention');
+    };
+
+    const handleDeletePlan = (id) => {
+        if (window.confirm('Delete this plan? All progress will be lost.')) {
+            deletePlanner(id);
+            // If we deleted the active plan and there are none left, go to intention
+            const remaining = (planners || []).filter(p => p.id !== id);
+            if (!remaining.length) {
+                setView('intention');
+            }
+        }
     };
 
     return (
@@ -582,6 +669,10 @@ export default function Planner() {
                             onViewActive={() => setView('active')}
                             hasExistingPlan={!!planner}
                             chapters={chapters}
+                            planners={planners || []}
+                            activePlannerId={activePlannerId}
+                            onSwitchPlan={(id) => { setActivePlanner(id); setView('active'); }}
+                            onDeletePlan={handleDeletePlan}
                         />
                     </motion.div>
                 )}
