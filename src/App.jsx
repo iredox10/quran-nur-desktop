@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import BottomNav from './components/BottomNav';
@@ -18,6 +19,39 @@ import FloatingPomodoro from './components/FloatingPomodoro';
 import CloudSync from './components/CloudSync';
 
 function App() {
+  useEffect(() => {
+    async function requestPersistentStorage() {
+      if (navigator.storage && navigator.storage.persist) {
+        const isPersisted = await navigator.storage.persisted();
+        if (isPersisted) {
+          console.log('✅ Storage is already permanently locked.');
+          return;
+        }
+        const granted = await navigator.storage.persist();
+        console.log(granted
+          ? '✅ Storage is now permanently locked! The OS will not delete offline data.'
+          : '⚠️ Persistent storage not granted yet. Install the app for best offline experience.'
+        );
+      }
+    }
+
+    // If already running as installed PWA, request immediately
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone;
+    if (isStandalone) {
+      requestPersistentStorage();
+    }
+
+    // Also request right after the user installs the PWA
+    const onInstalled = () => {
+      console.log('🎉 App installed! Requesting persistent storage...');
+      requestPersistentStorage();
+    };
+    window.addEventListener('appinstalled', onInstalled);
+
+    return () => window.removeEventListener('appinstalled', onInstalled);
+  }, []);
+
   return (
     <BrowserRouter>
       {/* Headless cloud sync — runs silently in the background on every page */}
