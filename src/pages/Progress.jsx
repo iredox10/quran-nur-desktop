@@ -2,10 +2,10 @@ import React, { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { Target, Activity, CalendarDays, BookMarked, BookOpen, Layers, Clock, TrendingUp } from 'lucide-react';
+import { Target, Activity, CalendarDays, BookMarked, BookOpen, Layers, Clock, TrendingUp, Flame, BarChart3 } from 'lucide-react';
+import './Progress.css';
 
 const TOTAL_SURAHS = 114;
-const TOTAL_JUZ = 30;
 
 function getLastNDays(n) {
     const days = [];
@@ -25,6 +25,33 @@ function formatMinutes(seconds) {
     return rem > 0 ? `${hrs}h ${rem}m` : `${hrs}h`;
 }
 
+function getBarLevel(mins, maxMins) {
+    if (mins === 0) return 'level-0';
+    const ratio = maxMins > 0 ? mins / maxMins : 0;
+    if (ratio < 0.25) return 'level-1';
+    if (ratio < 0.55) return 'level-2';
+    if (ratio < 0.85) return 'level-3';
+    return 'level-4';
+}
+
+function getHeatmapLevel(active, duration) {
+    if (!active) return 'level-0';
+    const mins = Math.round(duration / 60);
+    if (mins < 10) return 'level-1';
+    if (mins < 30) return 'level-2';
+    return 'level-3';
+}
+
+const tooltipStyle = {
+    background: '#FAFAF5',
+    border: '1.5px solid #DDD7C7',
+    borderRadius: '10px',
+    boxShadow: '0 4px 16px rgba(43,63,60,0.08)',
+    fontFamily: "'Geist Mono', monospace",
+    fontSize: '0.72rem',
+    color: '#2B3F3C',
+};
+
 export default function Progress() {
     const { setNavHeaderTitle, readingSessions, recentlyRead, bookmarks, collections, pomodoroHistory } = useAppStore();
 
@@ -38,7 +65,6 @@ export default function Progress() {
 
     // === Compute Stats ===
 
-    // Daily activity for the last 7 days
     const last7Days = getLastNDays(7);
     const dailyActivity = useMemo(() => {
         return last7Days.map(date => {
@@ -49,7 +75,8 @@ export default function Progress() {
         });
     }, [sessions]);
 
-    // Activity breakdown by type
+    const maxDayMinutes = useMemo(() => Math.max(...dailyActivity.map(d => d.minutes), 1), [dailyActivity]);
+
     const activityByType = useMemo(() => {
         const typeMap = { reading: 0, memorizing: 0, listening: 0, pomodoro: 0 };
         sessions.forEach(s => {
@@ -67,15 +94,14 @@ export default function Progress() {
 
     const pomodoroFocusMinutes = useMemo(() => {
         return (pomodoroHistory || [])
-            .filter((session) => session.mode === 'focus')
+            .filter(session => session.mode === 'focus')
             .reduce((sum, session) => sum + (session.duration || 0), 0);
     }, [pomodoroHistory]);
 
     const pomodoroFocusCount = useMemo(() => {
-        return (pomodoroHistory || []).filter((session) => session.mode === 'focus').length;
+        return (pomodoroHistory || []).filter(session => session.mode === 'focus').length;
     }, [pomodoroHistory]);
 
-    // Unique surahs read
     const uniqueSurahsRead = useMemo(() => {
         const surahIds = new Set();
         (recentlyRead || []).forEach(r => surahIds.add(r.chapterId));
@@ -83,43 +109,37 @@ export default function Progress() {
         return surahIds.size;
     }, [sessions, recentlyRead]);
 
-    // Streak calculation
     const streak = useMemo(() => {
         if (sessions.length === 0) return 0;
         const uniqueDates = [...new Set(sessions.map(s => s.date))].sort().reverse();
         let count = 0;
         const checkDate = new Date();
-
         for (let i = 0; i < 365; i++) {
             const dateStr = checkDate.toISOString().split('T')[0];
             if (uniqueDates.includes(dateStr)) {
                 count++;
             } else if (i > 0) {
-                break; // Gap found
+                break;
             }
             checkDate.setDate(checkDate.getDate() - 1);
         }
         return count;
     }, [sessions]);
 
-    // Today's total
     const todayTotal = useMemo(() => {
         return sessions.filter(s => s.date === today).reduce((sum, s) => sum + (s.duration || 0), 0);
     }, [sessions, today]);
 
-    // Total all-time
     const allTimeTotal = useMemo(() => {
         return sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
     }, [sessions]);
 
-    // Surah completion pie chart
     const surahData = [
         { name: 'Read', value: uniqueSurahsRead },
         { name: 'Remaining', value: TOTAL_SURAHS - uniqueSurahsRead },
     ];
-    const COLORS = ['var(--accent-primary)', 'var(--border-color)'];
+    const COLORS = ['#2E4F4A', '#DDD7C7'];
 
-    // Weekly trend (last 4 weeks)
     const weeklyTrend = useMemo(() => {
         const weeks = [];
         for (let w = 3; w >= 0; w--) {
@@ -127,111 +147,146 @@ export default function Progress() {
             weekStart.setDate(weekStart.getDate() - (w * 7 + 6));
             const weekEnd = new Date();
             weekEnd.setDate(weekEnd.getDate() - (w * 7));
-
             let total = 0;
             const startStr = weekStart.toISOString().split('T')[0];
             const endStr = weekEnd.toISOString().split('T')[0];
-
             sessions.forEach(s => {
                 if (s.date >= startStr && s.date <= endStr) {
                     total += s.duration || 0;
                 }
             });
-
             weeks.push({ name: `W${4 - w}`, minutes: Math.round(total / 60) });
         }
         return weeks;
     }, [sessions]);
 
+    // 30-day heatmap data
+    const last30Days = getLastNDays(30);
+    const heatmapData = useMemo(() => {
+        return last30Days.map(date => {
+            const daySessions = sessions.filter(s => s.date === date);
+            const totalSeconds = daySessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+            return { date, active: daySessions.length > 0, duration: totalSeconds };
+        });
+    }, [sessions]);
+
     const hasData = sessions.length > 0;
 
-    return (
-        <div className="container" style={{ paddingBottom: '6rem' }}>
-            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}>
+    // Greeting based on time of day
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
 
-                {/* Top Stat Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+    return (
+        <div className="prog">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+
+                {/* ─── Hero ─── */}
+                <div className="prog-hero">
+                    <span className="prog-eyebrow">Your Journey</span>
+                    <h1 className="prog-title">Progress & Analytics</h1>
+                    <p className="prog-subtitle">{greeting}. Here's how your Quran journey is going.</p>
+                </div>
+
+                {/* ─── Top Stat Cards ─── */}
+                <div className="prog-stats">
                     {[
-                        { label: 'Current Streak', value: `${streak} Day${streak !== 1 ? 's' : ''}`, icon: <Activity size={20} /> },
-                        { label: 'Surahs Read', value: `${uniqueSurahsRead} / ${TOTAL_SURAHS}`, icon: <BookMarked size={20} /> },
-                        { label: 'Today', value: formatMinutes(todayTotal), icon: <Clock size={20} /> },
-                        { label: 'All Time', value: formatMinutes(allTimeTotal), icon: <TrendingUp size={20} /> },
-                        { label: 'Pomodoro Focus', value: formatMinutes(pomodoroFocusMinutes), icon: <Target size={20} /> },
-                        { label: 'Focus Sessions', value: `${pomodoroFocusCount}`, icon: <CalendarDays size={20} /> },
+                        { label: 'Current Streak', value: `${streak}`, unit: streak !== 1 ? 'Days' : 'Day', icon: <Flame size={18} /> },
+                        { label: 'Surahs Read', value: `${uniqueSurahsRead}`, unit: `/ ${TOTAL_SURAHS}`, icon: <BookMarked size={18} /> },
+                        { label: 'Today', value: formatMinutes(todayTotal), icon: <Clock size={18} /> },
+                        { label: 'All Time', value: formatMinutes(allTimeTotal), icon: <TrendingUp size={18} /> },
+                        { label: 'Focus Time', value: formatMinutes(pomodoroFocusMinutes), icon: <Target size={18} /> },
+                        { label: 'Focus Sessions', value: `${pomodoroFocusCount}`, icon: <CalendarDays size={18} /> },
                     ].map((stat, i) => (
                         <motion.div
                             key={i}
-                            initial={{ opacity: 0, y: 20 }}
+                            className="prog-stat"
+                            initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            style={{
-                                padding: '1.5rem',
-                                background: 'var(--bg-surface)',
-                                borderRadius: '16px',
-                                border: '1px solid var(--border-color)',
-                                boxShadow: 'var(--shadow-sm)',
-                                textAlign: 'center',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}
+                            transition={{ delay: i * 0.06 }}
                         >
-                            <div style={{ color: 'var(--accent-primary)' }}>{stat.icon}</div>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>{stat.value}</h3>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{stat.label}</span>
+                            <div className="prog-stat-icon">{stat.icon}</div>
+                            <div className="prog-stat-value">
+                                {stat.value}
+                                {stat.unit && <span style={{ fontSize: '0.7rem', color: 'var(--prog-ink-muted)', fontWeight: 400, marginLeft: '0.2rem' }}>{stat.unit}</span>}
+                            </div>
+                            <div className="prog-stat-label">{stat.label}</div>
                         </motion.div>
                     ))}
                 </div>
 
+                {/* ─── Empty State ─── */}
                 {!hasData && (
-                    <div style={{
-                        padding: '3rem 2rem',
-                        textAlign: 'center',
-                        background: 'var(--bg-surface)',
-                        borderRadius: '16px',
-                        border: '1px solid var(--border-color)',
-                        marginBottom: '2rem'
-                    }}>
-                        <BookOpen size={48} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
-                        <h3 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Start Your Journey</h3>
-                        <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '400px', margin: '0 auto' }}>
-                            Your reading and memorization activity will appear here as you use the app. Open a Surah to begin tracking your progress!
-                        </p>
+                    <div className="prog-empty">
+                        <BookOpen size={44} className="prog-empty-icon" />
+                        <h3>Start Your Journey</h3>
+                        <p>Your reading and memorization activity will appear here as you use the app. Open a Surah to begin tracking your progress!</p>
                     </div>
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                {/* ─── Weekly Heatmap Bars ─── */}
+                <div className="prog-week">
+                    <div className="prog-section-header">
+                        <div className="prog-section-title">
+                            <Activity size={16} /> Weekly Activity
+                        </div>
+                        <span className="prog-section-badge">Last 7 days</span>
+                    </div>
+                    <div className="prog-week-grid">
+                        {dailyActivity.map((day, i) => {
+                            const isToday = day.date === today;
+                            const heightPct = maxDayMinutes > 0 ? Math.max((day.minutes / maxDayMinutes) * 100, day.minutes > 0 ? 8 : 0) : 0;
+                            const level = getBarLevel(day.minutes, maxDayMinutes);
+                            return (
+                                <div key={i} className="prog-week-day">
+                                    <span className={`prog-week-label ${isToday ? 'prog-week-today' : ''}`}>{day.name}</span>
+                                    <div className="prog-week-bar-track">
+                                        <div className={`prog-week-bar-fill ${level}`} style={{ height: `${heightPct}%` }} />
+                                    </div>
+                                    <span className={`prog-week-mins ${isToday ? 'prog-week-today' : ''}`}>
+                                        {day.minutes > 0 ? `${day.minutes}m` : '–'}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
 
-                    {/* Daily Activity Graph */}
-                    <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-md)' }}>
-                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>Daily Activity (Last 7 Days)</h4>
-                        <div style={{ width: '100%', height: 250 }}>
+                {/* ─── Charts Grid ─── */}
+                <div className="prog-charts-grid">
+
+                    {/* Daily Activity Line Chart */}
+                    <div className="prog-chart-card">
+                        <div className="prog-chart-title">
+                            <BarChart3 size={16} /> Daily Trend
+                        </div>
+                        <div className="prog-chart-wrap">
                             <ResponsiveContainer>
                                 <LineChart data={dailyActivity}>
-                                    <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} unit="m" />
+                                    <XAxis dataKey="name" stroke="#8E9B97" fontSize={11} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#8E9B97" fontSize={11} tickLine={false} axisLine={false} unit="m" />
                                     <Tooltip
                                         formatter={(value) => [`${value} min`, 'Time Spent']}
-                                        contentStyle={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '8px', color: 'var(--text-primary)' }}
+                                        contentStyle={tooltipStyle}
                                     />
-                                    <Line type="monotone" dataKey="minutes" stroke="var(--accent-primary)" strokeWidth={3} dot={{ fill: 'var(--accent-primary)', r: 4 }} activeDot={{ r: 6 }} />
+                                    <Line type="monotone" dataKey="minutes" stroke="#2E4F4A" strokeWidth={2.5} dot={{ fill: '#2E4F4A', r: 3.5 }} activeDot={{ r: 5.5, fill: '#B8924A' }} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
-                    {/* Surah Progress */}
-                    <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-md)' }}>
-                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>Surah Coverage</h4>
-                        <div style={{ width: '100%', height: 250, position: 'relative' }}>
+                    {/* Surah Coverage Donut */}
+                    <div className="prog-chart-card">
+                        <div className="prog-chart-title">
+                            <BookOpen size={16} /> Surah Coverage
+                        </div>
+                        <div className="prog-chart-wrap" style={{ position: 'relative' }}>
                             <ResponsiveContainer>
                                 <PieChart>
                                     <Pie
                                         data={surahData}
-                                        innerRadius={70}
-                                        outerRadius={100}
-                                        paddingAngle={5}
+                                        innerRadius={65}
+                                        outerRadius={90}
+                                        paddingAngle={4}
                                         dataKey="value"
                                         stroke="none"
                                     >
@@ -239,51 +294,55 @@ export default function Progress() {
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip contentStyle={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '8px', color: 'var(--text-primary)' }} />
+                                    <Tooltip contentStyle={tooltipStyle} />
                                 </PieChart>
                             </ResponsiveContainer>
-                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                                <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                            <div className="prog-donut-center">
+                                <div className="prog-donut-pct">
                                     {Math.round((uniqueSurahsRead / TOTAL_SURAHS) * 100)}%
-                                </span>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Explored</div>
+                                </div>
+                                <div className="prog-donut-label">Explored</div>
                             </div>
                         </div>
                     </div>
 
                     {/* Activity Breakdown */}
-                    <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-md)' }}>
-                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>Activity Breakdown</h4>
-                        <div style={{ width: '100%', height: 250 }}>
+                    <div className="prog-chart-card">
+                        <div className="prog-chart-title">
+                            <Layers size={16} /> Activity Breakdown
+                        </div>
+                        <div className="prog-chart-wrap">
                             <ResponsiveContainer>
                                 <BarChart data={activityByType}>
-                                    <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} unit="m" />
+                                    <XAxis dataKey="name" stroke="#8E9B97" fontSize={11} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#8E9B97" fontSize={11} tickLine={false} axisLine={false} unit="m" />
                                     <Tooltip
                                         formatter={(value) => [`${value} min`, 'Total']}
-                                        cursor={{ fill: 'var(--accent-light)' }}
-                                        contentStyle={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '8px', color: 'var(--text-primary)' }}
+                                        cursor={{ fill: 'rgba(46,79,74,0.06)' }}
+                                        contentStyle={tooltipStyle}
                                     />
-                                    <Bar dataKey="minutes" fill="var(--accent-primary)" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="minutes" fill="#2E4F4A" radius={[6, 6, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* Weekly Trend */}
-                    <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-md)' }}>
-                        <h4 style={{ marginBottom: '1.5rem', fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>Weekly Trend</h4>
-                        <div style={{ width: '100%', height: 250 }}>
+                    <div className="prog-chart-card">
+                        <div className="prog-chart-title">
+                            <TrendingUp size={16} /> Weekly Trend
+                        </div>
+                        <div className="prog-chart-wrap">
                             <ResponsiveContainer>
                                 <BarChart data={weeklyTrend}>
-                                    <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} unit="m" />
+                                    <XAxis dataKey="name" stroke="#8E9B97" fontSize={11} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#8E9B97" fontSize={11} tickLine={false} axisLine={false} unit="m" />
                                     <Tooltip
                                         formatter={(value) => [`${value} min`, 'Total']}
-                                        cursor={{ fill: 'var(--accent-light)' }}
-                                        contentStyle={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '8px', color: 'var(--text-primary)' }}
+                                        cursor={{ fill: 'rgba(46,79,74,0.06)' }}
+                                        contentStyle={tooltipStyle}
                                     />
-                                    <Bar dataKey="minutes" fill="var(--color-ink, var(--text-muted))" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="minutes" fill="#B8924A" radius={[6, 6, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -291,92 +350,64 @@ export default function Progress() {
 
                 </div>
 
-                {/* 30-Day Activity Heatmap */}
-                <div style={{ marginTop: '2rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                        <h3 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 600 }}>Activity Heatmap</h3>
-                        <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Last 30 days</span>
-                    </div>
-                    <div style={{
-                        background: 'var(--bg-surface)',
-                        padding: '1.5rem',
-                        borderRadius: '16px',
-                        border: '1px solid var(--border-color)',
-                        boxShadow: 'var(--shadow-sm)'
-                    }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                            {getLastNDays(30).map((date, i) => {
-                                const active = sessions.some(s => s.date === date);
-                                const d = new Date(date + 'T00:00:00');
-                                return (
-                                    <div
-                                        key={i}
-                                        title={d.toDateString()}
-                                        style={{
-                                            width: 'calc((100% / 10) - 8px)',
-                                            paddingBottom: 'calc((100% / 10) - 8px)',
-                                            background: active ? 'var(--accent-primary)' : 'var(--accent-light)',
-                                            opacity: active ? 1 : 0.4,
-                                            borderRadius: '4px'
-                                        }}
-                                    />
-                                );
-                            })}
+                {/* ─── 30-Day Heatmap ─── */}
+                <div className="prog-heatmap">
+                    <div className="prog-section-header">
+                        <div className="prog-section-title">
+                            <CalendarDays size={16} /> Activity Heatmap
                         </div>
+                        <span className="prog-section-badge">Last 30 days</span>
+                    </div>
+                    <div className="prog-heatmap-grid">
+                        {heatmapData.map((day, i) => {
+                            const d = new Date(day.date + 'T00:00:00');
+                            const level = getHeatmapLevel(day.active, day.duration);
+                            return (
+                                <div
+                                    key={i}
+                                    className={`prog-heatmap-cell ${level}`}
+                                    title={`${d.toDateString()} — ${day.active ? `${Math.round(day.duration / 60)}m` : 'No activity'}`}
+                                />
+                            );
+                        })}
+                    </div>
+                    <div className="prog-heatmap-legend">
+                        <span className="prog-heatmap-legend-label">Less</span>
+                        <div className="prog-heatmap-legend-cell" style={{ background: 'var(--prog-bone)', opacity: 0.5 }} />
+                        <div className="prog-heatmap-legend-cell" style={{ background: 'var(--prog-teal-soft)', border: '1px solid rgba(46,79,74,0.12)' }} />
+                        <div className="prog-heatmap-legend-cell" style={{ background: 'rgba(46,79,74,0.35)' }} />
+                        <div className="prog-heatmap-legend-cell" style={{ background: 'var(--prog-teal)' }} />
+                        <span className="prog-heatmap-legend-label">More</span>
                     </div>
                 </div>
 
-                {/* Bookmarks & Collections Summary */}
-                <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <div style={{
-                        padding: '1.5rem',
-                        background: 'var(--bg-surface)',
-                        borderRadius: '16px',
-                        border: '1px solid var(--border-color)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem'
-                    }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <BookMarked size={24} color="var(--accent-primary)" />
+                {/* ─── Bottom Summary Cards ─── */}
+                <div className="prog-summary">
+                    <div className="prog-summary-card">
+                        <div className="prog-summary-icon gold">
+                            <BookMarked size={20} />
                         </div>
                         <div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>{(bookmarks || []).length}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Bookmarks</div>
+                            <div className="prog-summary-value">{(bookmarks || []).length}</div>
+                            <div className="prog-summary-label">Bookmarks</div>
                         </div>
                     </div>
-                    <div style={{
-                        padding: '1.5rem',
-                        background: 'var(--bg-surface)',
-                        borderRadius: '16px',
-                        border: '1px solid var(--border-color)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem'
-                    }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Layers size={24} color="var(--accent-primary)" />
+                    <div className="prog-summary-card">
+                        <div className="prog-summary-icon teal">
+                            <Layers size={20} />
                         </div>
                         <div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>{(collections || []).length}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Collections</div>
+                            <div className="prog-summary-value">{(collections || []).length}</div>
+                            <div className="prog-summary-label">Collections</div>
                         </div>
                     </div>
-                    <div style={{
-                        padding: '1.5rem',
-                        background: 'var(--bg-surface)',
-                        borderRadius: '16px',
-                        border: '1px solid var(--border-color)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem'
-                    }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CalendarDays size={24} color="var(--accent-primary)" />
+                    <div className="prog-summary-card">
+                        <div className="prog-summary-icon green">
+                            <CalendarDays size={20} />
                         </div>
                         <div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>{(recentlyRead || []).length}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Recent Surahs</div>
+                            <div className="prog-summary-value">{(recentlyRead || []).length}</div>
+                            <div className="prog-summary-label">Recent Surahs</div>
                         </div>
                     </div>
                 </div>
