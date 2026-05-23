@@ -40,7 +40,7 @@ export default function BottomNav() {
                         >
                             <div className="flex items-center gap-2 rounded-[999px] bg-[var(--accent-light)] px-4 py-[10px] text-accent">
                                 <Icon size={22} color="currentColor" />
-                                <span className="text-[0.8rem] font-bold">{tab.label}</span>
+                                <span className="font-[var(--font-mono)] text-[0.72rem] font-bold">{tab.label}</span>
                             </div>
                         </div>
                     );
@@ -49,7 +49,7 @@ export default function BottomNav() {
                 return (
                     <Link key={tab.path} to={tab.path} className="flex flex-1 flex-col items-center justify-center gap-[6px] text-[var(--text-muted)] no-underline transition-colors duration-200 hover:text-accent">
                         <Icon size={22} />
-                        <span className="text-[0.65rem] font-semibold opacity-90">{tab.label}</span>
+                        <span className="font-[var(--font-mono)] text-[0.6rem] font-semibold opacity-90">{tab.label}</span>
                     </Link>
                 );
             })}
