@@ -102,6 +102,9 @@ export const useAppStore = create(
             pomodoroCompletedFocusCount: 0,
             showGlobalPomodoro: false,
 
+            dailyReadingGoal: 20, // minutes per day
+            setDailyReadingGoal: (minutes) => set({ dailyReadingGoal: minutes }),
+
             setIsSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
             toggleTheme: () => set((state) => ({
                 theme: state.theme === 'light' ? 'dark' : 'light'
@@ -636,6 +639,7 @@ export function getSyncableState(state) {
             repeatSelection: 1, repeatAya: 1, delayBetweenAyas: 0,
             playbackSpeed: 1.0, scrollWhilePlaying: true
         },
-        lastSyncAt: state.lastSyncAt || 0
+        lastSyncAt: state.lastSyncAt || 0,
+        dailyReadingGoal: state.dailyReadingGoal || 20
     };
 }

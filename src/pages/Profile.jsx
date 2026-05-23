@@ -1,20 +1,66 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { User, Settings, Bookmark, Folder, Download, Moon, Sun, ChevronRight, HardDrive, LogOut, CloudUpload, CloudDownload, Mail, Lock, Loader2 } from 'lucide-react';
+import {
+    User, Settings, Bookmark, Folder, Moon, Sun,
+    ChevronRight, HardDrive, LogOut, CloudUpload, CloudDownload,
+    Loader2, Mic, Languages, TrendingUp, CalendarDays, BookOpen, Brain, ChevronDown
+} from 'lucide-react';
 import { authService, syncService } from '../services/appwrite';
+
+const RECITERS = [
+    { id: 7, name: 'Mishary Rashid Alafasy' },
+    { id: 1, name: 'AbdulBaset AbdulSamad' },
+    { id: 3, name: 'Abdur-Rahman as-Sudais' },
+    { id: 4, name: 'Abu Bakr al-Shatri' },
+];
+const TRANSLATIONS = [
+    { id: 85, name: 'Abdel Haleem' }, { id: 20, name: 'Saheeh Intl' },
+    { id: 22, name: 'Yusuf Ali' }, { id: 84, name: 'Mufti Taqi Usmani' },
+    { id: 32, name: 'Abubakar Gumi' }, { id: 234, name: 'Jalandhari' },
+];
+const GOAL_OPTIONS = [10, 15, 20, 30, 45, 60];
+
+function formatMinutes(sec) {
+    const m = Math.round(sec / 60);
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60), r = m % 60;
+    return r > 0 ? `${h}h ${r}m` : `${h}h`;
+}
+function timeAgo(ts) {
+    if (!ts) return 'Never';
+    const m = Math.floor((Date.now() - ts) / 60000);
+    if (m < 1) return 'Just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+}
+
+/* SVG ring component */
+function GoalRing({ pct, size = 120, stroke = 8 }) {
+    const r = (size - stroke) / 2;
+    const circ = 2 * Math.PI * r;
+    const offset = circ - (Math.min(pct, 100) / 100) * circ;
+    return (
+        <svg width={size} height={size} className="block -rotate-90">
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--h-bone)" strokeWidth={stroke} />
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+                stroke={pct >= 100 ? 'var(--h-green)' : 'var(--h-teal)'}
+                strokeWidth={stroke} strokeLinecap="round"
+                strokeDasharray={circ} strokeDashoffset={offset}
+                style={{ transition: 'stroke-dashoffset 0.8s ease' }} />
+        </svg>
+    );
+}
 
 export default function Profile() {
     const store = useAppStore();
     const {
-        setNavHeaderTitle,
-        setIsSettingsOpen,
-        bookmarks,
-        collections,
-        downloadedSurahs,
-        theme,
-        toggleTheme
+        setNavHeaderTitle, setIsSettingsOpen, bookmarks, collections,
+        theme, toggleTheme, readingSessions, lastSyncAt,
+        reciterId, translationId, dailyReadingGoal, setDailyReadingGoal,
     } = store;
 
     const [user, setUser] = useState(null);
@@ -25,6 +71,8 @@ export default function Profile() {
     const [isLoading, setIsLoading] = useState(true);
     const [syncStatus, setSyncStatus] = useState(null);
     const [authError, setAuthError] = useState('');
+    const [showAuthForm, setShowAuthForm] = useState(false);
+    const [showGoalPicker, setShowGoalPicker] = useState(false);
 
     useEffect(() => {
         setNavHeaderTitle('Profile');
@@ -34,278 +82,280 @@ export default function Profile() {
 
     const checkUser = async () => {
         setIsLoading(true);
-        const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
+        const u = await authService.getCurrentUser();
+        setUser(u);
         setIsLoading(false);
     };
 
     const handleAuth = async (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setAuthError('');
+        e.preventDefault(); setIsLoading(true); setAuthError('');
         try {
-            if (authMode === 'register') {
-                await authService.register(email, password, name);
-                await authService.login(email, password);
-            } else {
-                await authService.login(email, password);
-            }
-            await checkUser();
-            setEmail('');
-            setPassword('');
-            setName('');
-        } catch (error) {
-            setAuthError(error.message || 'Authentication failed');
-        } finally {
-            setIsLoading(false);
-        }
+            if (authMode === 'register') { await authService.register(email, password, name); await authService.login(email, password); }
+            else { await authService.login(email, password); }
+            await checkUser(); setEmail(''); setPassword(''); setName(''); setShowAuthForm(false);
+        } catch (err) { setAuthError(err.message || 'Authentication failed'); }
+        finally { setIsLoading(false); }
     };
 
     const handleLogout = async () => {
         setIsLoading(true);
-        try {
-            await authService.logout();
-            setUser(null);
-        } catch (error) {
-            console.error('Logout error', error);
-        } finally {
-            setIsLoading(false);
-        }
+        try { await authService.logout(); setUser(null); } catch (e) { console.error(e); }
+        finally { setIsLoading(false); }
     };
 
     const handlePushSync = async () => {
-        if (!user) return;
-        setSyncStatus('pushing');
+        if (!user) return; setSyncStatus('pushing');
         try {
-            const state = useAppStore.getState();
-            const dataToSync = {
-                theme: state.theme,
-                translationId: state.translationId,
-                reciterId: state.reciterId,
-                fontSize: state.fontSize,
-                translationFontSize: state.translationFontSize,
-                readingMode: state.readingMode,
-                mushafId: state.mushafId,
-                arabicFontId: state.arabicFontId,
-                tajweedEnabled: state.tajweedEnabled,
-                tafsirId: state.tafsirId,
-                bookmark: state.bookmark,
-                bookmarks: state.bookmarks,
-                memorizedAyahs: state.memorizedAyahs,
-                memorizedSurahs: state.memorizedSurahs,
-                collections: state.collections,
-                recentlyRead: state.recentlyRead,
-                readingSessions: state.readingSessions,
-                pomodoroProfiles: state.pomodoroProfiles,
-                activePomodoroProfileId: state.activePomodoroProfileId,
-                pomodoroHistory: state.pomodoroHistory,
-                pomodoroCompletedFocusCount: state.pomodoroCompletedFocusCount,
-                planners: state.planners,
-                activePlannerId: state.activePlannerId,
-                downloadedSurahs: state.downloadedSurahs,
-            };
-
-            await syncService.pushState(user.$id, dataToSync);
-            setSyncStatus('success');
-            setTimeout(() => setSyncStatus(null), 3000);
-        } catch (error) {
-            console.error(error);
-            setSyncStatus('error');
-            setTimeout(() => setSyncStatus(null), 3000);
-        }
+            const s = useAppStore.getState();
+            await syncService.pushState(user.$id, {
+                theme: s.theme, translationId: s.translationId, reciterId: s.reciterId,
+                fontSize: s.fontSize, translationFontSize: s.translationFontSize,
+                readingMode: s.readingMode, mushafId: s.mushafId, arabicFontId: s.arabicFontId,
+                tajweedEnabled: s.tajweedEnabled, tafsirId: s.tafsirId,
+                bookmark: s.bookmark, bookmarks: s.bookmarks,
+                memorizedAyahs: s.memorizedAyahs, memorizedSurahs: s.memorizedSurahs,
+                collections: s.collections, recentlyRead: s.recentlyRead, readingSessions: s.readingSessions,
+                pomodoroProfiles: s.pomodoroProfiles, activePomodoroProfileId: s.activePomodoroProfileId,
+                pomodoroHistory: s.pomodoroHistory, pomodoroCompletedFocusCount: s.pomodoroCompletedFocusCount,
+                planners: s.planners, activePlannerId: s.activePlannerId, downloadedSurahs: s.downloadedSurahs,
+                dailyReadingGoal: s.dailyReadingGoal,
+            });
+            setSyncStatus('success'); setTimeout(() => setSyncStatus(null), 3000);
+        } catch (e) { console.error(e); setSyncStatus('error'); setTimeout(() => setSyncStatus(null), 3000); }
     };
 
     const handlePullSync = async () => {
-        if (!user) return;
-        setSyncStatus('pulling');
+        if (!user) return; setSyncStatus('pulling');
         try {
-            const remoteState = await syncService.pullState(user.$id);
-            if (remoteState) {
-                useAppStore.setState(remoteState);
-            }
-            setSyncStatus('success');
-            setTimeout(() => setSyncStatus(null), 3000);
-        } catch (error) {
-            console.error(error);
-            setSyncStatus('error');
-            setTimeout(() => setSyncStatus(null), 3000);
-        }
+            const r = await syncService.pullState(user.$id);
+            if (r) useAppStore.setState(r);
+            setSyncStatus('success'); setTimeout(() => setSyncStatus(null), 3000);
+        } catch (e) { console.error(e); setSyncStatus('error'); setTimeout(() => setSyncStatus(null), 3000); }
     };
 
+    // ─── Computed ───
+    const sessions = readingSessions || [];
+    const today = new Date().toISOString().split('T')[0];
+    const todayTotal = useMemo(() => sessions.filter(s => s.date === today).reduce((sum, s) => sum + (s.duration || 0), 0), [sessions, today]);
+    const todayMins = Math.round(todayTotal / 60);
+    const goalMins = dailyReadingGoal || 20;
+    const goalPct = goalMins > 0 ? Math.round((todayMins / goalMins) * 100) : 0;
+
+    const reciterName = useMemo(() => RECITERS.find(r => r.id === reciterId)?.name || 'Unknown', [reciterId]);
+    const translationName = useMemo(() => TRANSLATIONS.find(t => t.id === translationId)?.name || 'Unknown', [translationId]);
+
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+
     if (isLoading && !user && !authError && email === '') {
-        return (
-            <div className="container flex justify-center pt-16">
-                <Loader2 size={32} className="animate-spin text-accent" />
-            </div>
-        );
+        return <div className="flex justify-center pt-16"><Loader2 size={28} className="animate-spin text-[var(--h-gold)]" /></div>;
     }
 
     return (
-        <div className="mx-auto mb-24 max-w-[1000px] px-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <div className="mx-auto max-w-[1200px] px-4 pb-24">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
 
-                {!user ? (
-                    <div className="relative mb-8 overflow-hidden rounded-[28px] border border-[var(--border-color)] bg-gradient-to-br from-[var(--bg-surface)] to-[var(--bg-secondary)] p-10 text-center shadow-[var(--shadow-md)]">
-                        <div className="absolute inset-0 z-0 opacity-[0.08]" style={{ backgroundImage: 'radial-gradient(var(--accent-primary) 1.5px, transparent 1.5px)', backgroundSize: '32px 32px' }} />
-                        <div className="relative z-[2] mb-8">
-                            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[var(--accent-light)] text-accent">
-                                <User size={40} />
+                {/* ═══ HERO ═══ */}
+                <div className="pb-5 pt-5 text-center">
+                    <span className="font-[var(--font-mono)] text-[0.62rem] uppercase tracking-[0.14em] text-[var(--h-ink-muted)]">Your Account</span>
+                    {user ? (
+                        <>
+                            <h1 className="mt-1 font-[var(--font-ui)] text-[1.75rem] font-bold text-[var(--h-ink)]">{user.name || 'Quran Student'}</h1>
+                            <p className="mt-0.5 text-[0.82rem] text-[var(--h-ink-muted)]">{user.email}</p>
+                        </>
+                    ) : (
+                        <>
+                            <h1 className="mt-1 font-[var(--font-ui)] text-[1.75rem] font-bold text-[var(--h-ink)]">{greeting}</h1>
+                            <p className="mt-0.5 text-[0.82rem] text-[var(--h-ink-muted)]">Your personal Quran companion</p>
+                        </>
+                    )}
+                </div>
+
+                {/* ═══ DAILY GOAL RING ═══ */}
+                <div className="mb-5 rounded-2xl border border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-5">
+                    <div className="flex items-center gap-5">
+                        <div className="relative flex-shrink-0">
+                            <GoalRing pct={goalPct} size={100} stroke={7} />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <span className="font-[var(--font-ui)] text-[1.5rem] font-bold leading-none text-[var(--h-ink)]">
+                                    {goalPct >= 100 ? '✓' : `${Math.min(goalPct, 99)}%`}
+                                </span>
+                                <span className="mt-0.5 font-[var(--font-mono)] text-[0.5rem] uppercase tracking-wider text-[var(--h-ink-muted)]">
+                                    {goalPct >= 100 ? 'Complete' : 'of goal'}
+                                </span>
                             </div>
-                            <h1 className="text-[2rem] font-extrabold text-[var(--text-primary)]">Cloud Sync</h1>
-                            <p className="mx-auto mt-2 max-w-[400px] text-[1.05rem] text-[var(--text-secondary)]">
-                                Sign in to save your bookmarks, reading progress, and settings to the cloud. Access them from any device.
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-[var(--font-ui)] text-[1.05rem] font-semibold text-[var(--h-ink)]">Today's Reading</h3>
+                            <p className="mt-0.5 text-[0.82rem] text-[var(--h-ink-muted)]">
+                                {formatMinutes(todayTotal)} of {goalMins}m goal
                             </p>
-                        </div>
-
-                        <form onSubmit={handleAuth} className="relative z-[2] mx-auto mb-8 max-w-[440px] rounded-[24px] border border-black/5 bg-[var(--bg-primary)] p-8 shadow-[var(--shadow-lg)]">
-                            {authError && (
-                                <div className="mb-5 rounded-xl bg-red-500/10 px-4 py-3 text-[0.9rem] font-semibold text-red-500">
-                                    {authError}
-                                </div>
-                            )}
-
-                            {authMode === 'register' && (
-                                <input
-                                    type="text"
-                                    placeholder="Your Name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="mb-4 w-full rounded-2xl border border-black/8 bg-[var(--bg-surface)] px-5 py-4 text-base font-medium text-[var(--text-primary)] outline-none transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_4px_var(--accent-light)]"
-                                    required
-                                />
-                            )}
-                            <input
-                                type="email"
-                                placeholder="Email Address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="mb-4 w-full rounded-2xl border border-black/8 bg-[var(--bg-surface)] px-5 py-4 text-base font-medium text-[var(--text-primary)] outline-none transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_4px_var(--accent-light)]"
-                                required
-                            />
-                            <input
-                                type="password"
-                                placeholder="Password (min 8 chars)"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="mb-4 w-full rounded-2xl border border-black/8 bg-[var(--bg-surface)] px-5 py-4 text-base font-medium text-[var(--text-primary)] outline-none transition-all duration-200 focus:border-accent focus:shadow-[0_0_0_4px_var(--accent-light)]"
-                                minLength={8}
-                                required
-                            />
-
-                            <button type="submit" disabled={isLoading} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-none bg-accent px-4 py-4 text-[1.05rem] font-bold text-white transition-all duration-200 hover:bg-[var(--accent-hover)] hover:shadow-[0_4px_15px_var(--accent-light)] hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-60">
-                                {isLoading ? <Loader2 size={20} className="animate-spin" /> : (authMode === 'login' ? 'Sign In' : 'Create Account')}
-                            </button>
-
                             <button
-                                type="button"
-                                onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}
-                                className="mt-4 w-full cursor-pointer border-none bg-transparent text-[0.9rem] font-semibold text-[var(--text-secondary)] transition-colors duration-200 hover:text-accent"
+                                onClick={() => setShowGoalPicker(!showGoalPicker)}
+                                className="mt-2 inline-flex items-center gap-1 rounded-lg bg-[var(--h-teal-soft)] px-2.5 py-1.5 font-[var(--font-mono)] text-[0.62rem] font-semibold uppercase tracking-wider text-[var(--h-teal)] transition-colors hover:bg-[var(--h-bone)]"
                             >
-                                {authMode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                                Set Goal <ChevronDown size={12} />
                             </button>
-                        </form>
+                        </div>
                     </div>
-                ) : (
-                    <>
-                        <div className="mb-8 flex flex-wrap items-center justify-between gap-6 rounded-[28px] border border-[var(--border-color)] bg-gradient-to-br from-[var(--bg-surface)] to-[var(--bg-secondary)] p-10 shadow-[var(--shadow-md)]">
-                            <div className="flex items-center gap-6">
-                                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full text-white shadow-[0_8px_24px_rgba(198,168,124,0.3)]"
-                                    style={{ background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-hover))' }}
-                                >
-                                    <User size={40} />
+
+                    <AnimatePresence>
+                        {showGoalPicker && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                <div className="mt-4 flex flex-wrap gap-2 border-t border-[var(--h-bone)] pt-3">
+                                    {GOAL_OPTIONS.map(mins => (
+                                        <button key={mins} onClick={() => { setDailyReadingGoal(mins); setShowGoalPicker(false); }}
+                                            className={`rounded-lg px-3 py-1.5 font-[var(--font-mono)] text-[0.68rem] font-semibold transition-colors ${goalMins === mins ? 'bg-[var(--h-teal)] text-white' : 'bg-[var(--h-bone)] text-[var(--h-ink-mid)] hover:bg-[var(--h-bone-dark)]'}`}>
+                                            {mins}m
+                                        </button>
+                                    ))}
                                 </div>
-                                <div>
-                                    <h1 className="mb-1 text-[1.8rem] font-extrabold tracking-tight text-[var(--text-primary)]">
-                                        {user.name || 'Quran Student'}
-                                    </h1>
-                                    <p className="text-[1.05rem] font-medium text-[var(--text-muted)]">{user.email}</p>
-                                </div>
-                            </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
 
-                            <button onClick={handleLogout} disabled={isLoading} className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-[14px] border-2 px-5 py-[0.85rem] font-bold transition-all duration-200 hover:bg-[var(--accent-light)] disabled:pointer-events-none disabled:opacity-50"
-                                style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: 'rgb(239, 68, 68)' }}
-                            >
-                                <LogOut size={18} /> Logout
-                            </button>
-                        </div>
-
-                        <div className="mb-4 flex items-center justify-between gap-6 rounded-[20px] border border-black/4 bg-[var(--bg-primary)] p-6 shadow-[0_4px_15px_rgba(0,0,0,0.03)]">
-                            <div className="flex-1">
-                                <h3 className="mb-1 text-[1.2rem] font-extrabold text-[var(--text-primary)]">Cloud Synchronization</h3>
-                                <p className="text-[0.95rem] leading-[1.5] text-[var(--text-secondary)]">
-                                    Keep your bookmarks, planners, and app settings synced across all your devices seamlessly.
-                                </p>
-
-                                <AnimatePresence mode="wait">
-                                    {syncStatus === 'pushing' && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-2 flex items-center gap-1 text-[0.9rem] font-bold text-accent"><Loader2 size={16} className="animate-spin" /> Saving data securely to cloud...</motion.div>}
-                                    {syncStatus === 'pulling' && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-2 flex items-center gap-1 text-[0.9rem] font-bold text-accent"><Loader2 size={16} className="animate-spin" /> Fetching data from cloud...</motion.div>}
-                                    {syncStatus === 'success' && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-2 text-[0.9rem] font-bold text-green-500">Sync completed successfully!</motion.div>}
-                                    {syncStatus === 'error' && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-2 text-[0.9rem] font-bold text-red-500">Failed to sync. Please try again later.</motion.div>}
-                                </AnimatePresence>
-                            </div>
-                            <div className="flex gap-3 max-sm:w-full max-sm:*:flex-1 max-sm:*:justify-center">
-                                <button onClick={handlePullSync} disabled={!!syncStatus} className="inline-flex cursor-pointer items-center gap-2 rounded-[14px] border-2 border-accent bg-transparent px-5 py-[0.85rem] font-bold text-accent transition-all duration-200 hover:bg-[var(--accent-light)] disabled:pointer-events-none disabled:opacity-50">
-                                    <CloudDownload size={20} /> Restore
-                                </button>
-                                <button onClick={handlePushSync} disabled={!!syncStatus} className="inline-flex cursor-pointer items-center gap-2 rounded-[14px] border-none bg-accent px-5 py-[0.85rem] font-bold text-white transition-all duration-200 hover:bg-[var(--accent-hover)] disabled:pointer-events-none disabled:opacity-50">
-                                    <CloudUpload size={20} /> Backup
-                                </button>
-                            </div>
-                        </div>
-                    </>
-                )}
-
-                <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
+                {/* ═══ QUICK LINKS ═══ */}
+                <div className="mb-5 grid grid-cols-4 gap-2">
                     {[
-                        { icon: Bookmark, label: 'Bookmarks', count: bookmarks.length },
-                        { icon: Folder, label: 'Collections', count: collections.length },
-                        { icon: Download, label: 'Downloads', count: downloadedSurahs.length },
+                        { icon: Bookmark, label: 'Bookmarks', count: (bookmarks || []).length, to: '/library' },
+                        { icon: TrendingUp, label: 'Analytics', to: '/progress' },
+                        { icon: CalendarDays, label: 'Planner', to: '/planner' },
+                        { icon: Brain, label: 'Memorize', to: '/memorize' },
                     ].map((item, i) => (
-                        <div key={i} className="flex flex-col items-center justify-center gap-2 rounded-[24px] border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 shadow-[var(--shadow-sm)]">
-                            <item.icon size={26} className="mb-1 text-accent" />
-                            <span className="text-[1.6rem] font-extrabold text-[var(--text-primary)]">{item.count}</span>
-                            <span className="text-[0.8rem] font-bold uppercase tracking-[0.5px] text-[var(--text-muted)]">{item.label}</span>
-                        </div>
+                        <Link key={i} to={item.to} className="flex flex-col items-center gap-1.5 rounded-xl border border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-3 no-underline transition-colors hover:border-[var(--h-gold)]">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--h-teal-soft)]">
+                                <item.icon size={15} className="text-[var(--h-teal)]" />
+                            </div>
+                            {item.count !== undefined && (
+                                <span className="font-[var(--font-ui)] text-[1.1rem] font-bold leading-none text-[var(--h-ink)]">{item.count}</span>
+                            )}
+                            <span className="font-[var(--font-mono)] text-[0.5rem] uppercase tracking-[0.08em] text-[var(--h-ink-muted)]">{item.label}</span>
+                        </Link>
                     ))}
                 </div>
 
-                <h2 className="mb-5 pl-2 text-[1.15rem] font-extrabold uppercase tracking-[0.05em] text-[var(--text-secondary)]">
-                    Preferences
-                </h2>
-
-                <div className="overflow-hidden rounded-[24px] border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-[var(--shadow-sm)]">
-                    <button onClick={toggleTheme} className="flex w-full cursor-pointer items-center justify-between border-b border-[var(--border-color)] bg-transparent px-7 py-5 text-left text-[var(--text-primary)] no-underline transition-colors duration-200 hover:bg-[var(--bg-primary)] last:border-b-0">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-[var(--accent-light)] text-accent">
-                                {theme === 'light' ? <Moon size={24} /> : <Sun size={24} />}
+                {/* ═══ CLOUD SYNC ═══ */}
+                {!user ? (
+                    <div className="mb-5 rounded-2xl border border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-4">
+                        <button onClick={() => setShowAuthForm(!showAuthForm)}
+                            className="flex w-full items-center justify-between bg-transparent text-left">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--h-teal-soft)]">
+                                    <CloudUpload size={17} className="text-[var(--h-teal)]" />
+                                </div>
+                                <div>
+                                    <span className="text-[0.9rem] font-semibold text-[var(--h-ink)]">Sign in to sync</span>
+                                    <p className="mt-0.5 text-[0.72rem] text-[var(--h-ink-muted)]">Backup bookmarks & settings to cloud</p>
+                                </div>
                             </div>
-                            <span className="text-[1.1rem] font-bold">Appearance</span>
-                        </div>
-                        <div className="flex items-center gap-2 font-semibold text-[var(--text-muted)]">
-                            {theme === 'light' ? 'Light' : 'Dark'}
-                            <ChevronRight size={20} />
-                        </div>
-                    </button>
+                            <ChevronDown size={16} className={`text-[var(--h-ink-muted)] transition-transform ${showAuthForm ? 'rotate-180' : ''}`} />
+                        </button>
 
-                    <button onClick={() => setIsSettingsOpen(true)} className="flex w-full cursor-pointer items-center justify-between border-b border-[var(--border-color)] bg-transparent px-7 py-5 text-left text-[var(--text-primary)] no-underline transition-colors duration-200 hover:bg-[var(--bg-primary)] last:border-b-0">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-[var(--accent-light)] text-accent">
-                                <Settings size={24} />
-                            </div>
-                            <span className="text-[1.1rem] font-bold">Reading Settings</span>
+                        <AnimatePresence>
+                            {showAuthForm && (
+                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                    <form onSubmit={handleAuth} className="mt-4 space-y-2.5 border-t border-[var(--h-bone)] pt-4">
+                                        {authError && <div className="rounded-lg bg-red-500/10 px-3 py-2 text-[0.78rem] font-semibold text-red-500">{authError}</div>}
+                                        {authMode === 'register' && (
+                                            <input type="text" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)}
+                                                className="w-full rounded-xl border border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-2.5 text-[0.85rem] text-[var(--h-ink)] outline-none focus:border-[var(--h-teal)]" required />
+                                        )}
+                                        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
+                                            className="w-full rounded-xl border border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-2.5 text-[0.85rem] text-[var(--h-ink)] outline-none focus:border-[var(--h-teal)]" required />
+                                        <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+                                            className="w-full rounded-xl border border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-2.5 text-[0.85rem] text-[var(--h-ink)] outline-none focus:border-[var(--h-teal)]" minLength={8} required />
+                                        <button type="submit" disabled={isLoading}
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--h-teal)] py-2.5 text-[0.85rem] font-bold text-white hover:bg-[var(--h-teal-mid)] disabled:opacity-50">
+                                            {isLoading ? <Loader2 size={16} className="animate-spin" /> : (authMode === 'login' ? 'Sign In' : 'Create Account')}
+                                        </button>
+                                        <button type="button" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}
+                                            className="w-full bg-transparent text-center text-[0.78rem] font-semibold text-[var(--h-ink-muted)] hover:text-[var(--h-teal)]">
+                                            {authMode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
+                                        </button>
+                                    </form>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                ) : (
+                    <div className="mb-5 rounded-2xl border border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-4">
+                        <div className="mb-3 flex items-center gap-2">
+                            <CloudUpload size={15} className="text-[var(--h-teal)]" />
+                            <h3 className="font-[var(--font-ui)] text-[1.05rem] font-semibold text-[var(--h-ink)]">Cloud Sync</h3>
                         </div>
-                        <ChevronRight size={20} className="text-[var(--text-muted)]" />
-                    </button>
+                        <div className="mb-3 flex items-center gap-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-[var(--h-green)]" />
+                            <span className="font-[var(--font-mono)] text-[0.62rem] text-[var(--h-ink-muted)]">Last synced: {timeAgo(lastSyncAt)}</span>
+                        </div>
+                        <AnimatePresence mode="wait">
+                            {syncStatus === 'pushing' && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-3 flex items-center gap-1.5 text-[0.78rem] font-semibold text-[var(--h-gold)]"><Loader2 size={14} className="animate-spin" /> Saving...</motion.p>}
+                            {syncStatus === 'pulling' && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-3 flex items-center gap-1.5 text-[0.78rem] font-semibold text-[var(--h-gold)]"><Loader2 size={14} className="animate-spin" /> Restoring...</motion.p>}
+                            {syncStatus === 'success' && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-3 text-[0.78rem] font-semibold text-[var(--h-green)]">✓ Sync complete</motion.p>}
+                            {syncStatus === 'error' && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mb-3 text-[0.78rem] font-semibold text-red-500">Failed. Try again.</motion.p>}
+                        </AnimatePresence>
+                        <div className="flex gap-2.5">
+                            <button onClick={handlePullSync} disabled={!!syncStatus} className="flex flex-1 items-center justify-center gap-2 rounded-xl border-[1.5px] border-[var(--h-teal)] bg-transparent py-2.5 text-[0.78rem] font-bold text-[var(--h-teal)] hover:bg-[var(--h-teal-soft)] disabled:opacity-40">
+                                <CloudDownload size={15} /> Restore
+                            </button>
+                            <button onClick={handlePushSync} disabled={!!syncStatus} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--h-teal)] py-2.5 text-[0.78rem] font-bold text-white hover:bg-[var(--h-teal-mid)] disabled:opacity-40">
+                                <CloudUpload size={15} /> Backup
+                            </button>
+                        </div>
+                    </div>
+                )}
 
-                    <Link to="/offline-library" className="flex w-full cursor-pointer items-center justify-between border-b border-[var(--border-color)] bg-transparent px-7 py-5 text-left text-[var(--text-primary)] no-underline transition-colors duration-200 hover:bg-[var(--bg-primary)] last:border-b-0">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-[var(--accent-light)] text-accent">
-                                <HardDrive size={24} />
-                            </div>
-                            <span className="text-[1.1rem] font-bold">Offline Library</span>
+                {/* ═══ PREFERENCES ═══ */}
+                <div className="mb-5">
+                    <h2 className="mb-2 pl-1 font-[var(--font-mono)] text-[0.6rem] uppercase tracking-[0.12em] text-[var(--h-ink-muted)]">Preferences</h2>
+                    <div className="overflow-hidden rounded-2xl border border-[var(--h-bone-dark)] bg-[var(--h-cream)]">
+                        {[
+                            { icon: theme === 'light' ? Moon : Sun, label: 'Appearance', detail: theme === 'light' ? 'Light' : 'Dark', onClick: toggleTheme },
+                            { icon: Settings, label: 'Reading Settings', onClick: () => setIsSettingsOpen(true) },
+                            { icon: Mic, label: 'Reciter', detail: reciterName, onClick: () => setIsSettingsOpen(true) },
+                            { icon: Languages, label: 'Translation', detail: translationName, onClick: () => setIsSettingsOpen(true) },
+                            { icon: HardDrive, label: 'Offline Library', to: '/offline-library' },
+                        ].map((item, i, arr) => {
+                            const Tag = item.to ? Link : 'button';
+                            const props = item.to ? { to: item.to } : { type: 'button', onClick: item.onClick };
+                            return (
+                                <Tag key={i} {...props}
+                                    className={`flex w-full cursor-pointer items-center justify-between bg-transparent px-4 py-3.5 text-left text-[var(--h-ink)] no-underline transition-colors hover:bg-[var(--h-bone)] ${i < arr.length - 1 ? 'border-b border-[var(--h-bone)]' : ''}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--h-teal-soft)] text-[var(--h-teal)]"><item.icon size={17} /></div>
+                                        <span className="text-[0.9rem] font-semibold">{item.label}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        {item.detail && <span className="max-w-[130px] truncate font-[var(--font-mono)] text-[0.68rem] text-[var(--h-ink-muted)]">{item.detail}</span>}
+                                        <ChevronRight size={16} className="text-[var(--h-ink-muted)]" />
+                                    </div>
+                                </Tag>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* ═══ DANGER ZONE ═══ */}
+                {user && (
+                    <div className="mb-5">
+                        <h2 className="mb-2 pl-1 font-[var(--font-mono)] text-[0.6rem] uppercase tracking-[0.12em] text-red-400/70">Danger Zone</h2>
+                        <div className="overflow-hidden rounded-2xl border border-red-500/15 bg-[var(--h-cream)]">
+                            <button type="button" onClick={handleLogout} disabled={isLoading}
+                                className="flex w-full cursor-pointer items-center justify-between bg-transparent px-4 py-3.5 text-left text-red-500 hover:bg-red-500/5 disabled:opacity-40">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-red-500/8 text-red-500"><LogOut size={17} /></div>
+                                    <span className="text-[0.9rem] font-semibold">Sign Out</span>
+                                </div>
+                                <ChevronRight size={16} className="text-red-400/50" />
+                            </button>
                         </div>
-                        <ChevronRight size={20} className="text-[var(--text-muted)]" />
-                    </Link>
+                    </div>
+                )}
+
+                {/* ═══ ABOUT ═══ */}
+                <div className="pt-2 text-center">
+                    <p className="font-[var(--font-mono)] text-[0.58rem] text-[var(--h-ink-muted)]">Quran Nur · v1.0.0</p>
+                    <p className="mt-0.5 font-[var(--font-body)] text-[0.68rem] italic text-[var(--h-ink-muted)]">Made with ♥ for the Ummah</p>
                 </div>
 
             </motion.div>
