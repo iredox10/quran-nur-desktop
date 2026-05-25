@@ -573,6 +573,35 @@ export const useAppStore = create(
 
             lastSyncAt: 0,
             setLastSyncAt: (timestamp) => set({ lastSyncAt: timestamp }),
+
+            prayerTimes: null,
+            setPrayerTimes: (times) => set({ prayerTimes: times }),
+            location: null,
+            setLocation: (loc) => set({ location: loc }),
+
+            shiftPlannerSchedule: (planId, daysToShift) => set((state) => updatePlannerCollection(state, ({ planners, activePlannerId, activePlanner }) => {
+                const targetId = planId || activePlannerId;
+                const nextPlanners = planners.map((p) => {
+                    if (p.id === targetId) {
+                        const currentStart = new Date(p.startDate);
+                        currentStart.setDate(currentStart.getDate() + daysToShift);
+                        
+                        const newAssignments = p.assignments.map(a => {
+                            const d = new Date(currentStart);
+                            d.setDate(d.getDate() + (a.dayNumber - 1));
+                            return { ...a, date: d.toISOString().split('T')[0] };
+                        });
+
+                        return {
+                            ...p,
+                            startDate: currentStart.toISOString().split('T')[0],
+                            assignments: newAssignments
+                        };
+                    }
+                    return p;
+                });
+                return buildPlannerState(nextPlanners, activePlannerId);
+            })),
         }),
         {
             name: 'quran-app-storage',
@@ -640,6 +669,8 @@ export function getSyncableState(state) {
             playbackSpeed: 1.0, scrollWhilePlaying: true
         },
         lastSyncAt: state.lastSyncAt || 0,
-        dailyReadingGoal: state.dailyReadingGoal || 20
+        dailyReadingGoal: state.dailyReadingGoal || 20,
+        prayerTimes: state.prayerTimes || null,
+        location: state.location || null
     };
 }

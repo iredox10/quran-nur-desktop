@@ -147,11 +147,17 @@ export default function PlannerReader() {
     // Day completion effect
     const prevIsCompleteRef = useRef(false);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [insightVerse, setInsightVerse] = useState(null);
     
     useEffect(() => {
         if (progress?.isComplete && !prevIsCompleteRef.current) {
             setShowConfetti(true);
             
+            if (verses && verses.length > 0) {
+                const randIdx = Math.floor(Math.random() * verses.length);
+                setInsightVerse(verses[randIdx]);
+            }
+
             const duration = 3000;
             const end = Date.now() + duration;
 
@@ -178,7 +184,7 @@ export default function PlannerReader() {
             frame();
         }
         prevIsCompleteRef.current = progress?.isComplete || false;
-    }, [progress?.isComplete]);
+    }, [progress?.isComplete, verses]);
 
     // Audio Playback State Let's setup modal
     const [showAudioSetup, setShowAudioSetup] = useState(false);
@@ -239,6 +245,56 @@ export default function PlannerReader() {
         mountPlayTriggerRef.current = playTriggerCount;
     }, [playTriggerCount, handlePlayClick]);
 
+    // Seamless Audio Autoplay
+    const prevIsPlayingRef = useRef(isPlaying);
+    const shouldAutoPlayNextRef = useRef(false);
+
+    useEffect(() => {
+        const wasPlaying = prevIsPlayingRef.current;
+        prevIsPlayingRef.current = isPlaying;
+
+        if (wasPlaying && !isPlaying && isCurrentPagePlaying) {
+            const endIdx = audioSettings.endRange ?? (audioPlaylist.length - 1);
+            if (audioTrackIndex >= endIdx) {
+                if (pageNumber !== null && pageNumber < maxPageNumber) {
+                    shouldAutoPlayNextRef.current = true;
+                    swipeDirectionRef.current = 1;
+                    setPageNumber(pageNumber + 1);
+                }
+            }
+        }
+    }, [isPlaying, isCurrentPagePlaying, audioTrackIndex, audioSettings.endRange, audioPlaylist, pageNumber, maxPageNumber]);
+
+    useEffect(() => {
+        if (shouldAutoPlayNextRef.current && verses.length > 0 && !isPageLoading) {
+            shouldAutoPlayNextRef.current = false;
+            const playlist = verses.map(v => {
+                let url = v.audio?.url ? `https://verses.quran.com/${v.audio.url}` : null;
+                const [surahNum, ayahNum] = v.verse_key.split(':');
+                const fileName = `${String(surahNum).padStart(3, '0')}${String(ayahNum).padStart(3, '0')}.mp3`;
+                if (localAudioDirHandle) {
+                    url = `local-audio://${fileName}`;
+                } else if (customAudioBaseUrl) {
+                    url = `${customAudioBaseUrl.replace(/\/$/, '')}/${fileName}`;
+                }
+                return {
+                    pageNumber: pageNumber,
+                    surahId: parseInt(surahNum),
+                    verseKey: v.verse_key,
+                    verseNumber: v.verse_number,
+                    url
+                };
+            }).filter(v => v.url);
+
+            if (playlist.length > 0) {
+                setAudioPlaylist(playlist, 0);
+                setIsPlaying(true);
+                setIsPlayerVisible(true);
+                updateAudioSettings({ startRange: 0, endRange: playlist.length - 1 });
+            }
+        }
+    }, [verses, isPageLoading, pageNumber, setAudioPlaylist, setIsPlaying, setIsPlayerVisible, updateAudioSettings, localAudioDirHandle, customAudioBaseUrl]);
+
     // Swipe gestures
     const swipeDirectionRef = useRef(0);
     const swipeHandlers = useSwipeable({
@@ -296,6 +352,12 @@ export default function PlannerReader() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [pageNumber, maxPageNumber, minPageNumber]);
 
+    const totalPagesInAssignment = useMemo(() => {
+        if (!assignment) return 0;
+        return assignment.items.reduce((acc, item) => acc + ((item.pageEnd || 1) - (item.pageStart || 1) + 1), 0);
+    }, [assignment]);
+    const estimatedTimeMins = Math.ceil(totalPagesInAssignment * 2.5);
+
     if (!planner || !assignment || pageNumber === null) {
         return (
             <div className="container py-16 text-center text-[var(--text-muted)]">
@@ -324,9 +386,13 @@ export default function PlannerReader() {
                         <Link to="/planner" className="flex items-center justify-center w-10 h-10 rounded-full bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--accent-light)] transition-colors">
                             <ArrowLeft size={20} />
                         </Link>
-                        <div>
+                        <div className="flex-1">
                             <h2 className="m-0 font-ui text-[1.2rem] font-bold text-[var(--text-primary)]">{assignment.title}</h2>
-                            <p className="m-0 text-[0.85rem] text-[var(--text-muted)]">{assignment.subtitle}</p>
+                            <div className="flex items-center gap-2 m-0 text-[0.85rem] text-[var(--text-muted)]">
+                                <span>{assignment.subtitle}</span>
+                                <span>•</span>
+                                <span>⏱️ ~{estimatedTimeMins} mins</span>
+                            </div>
                         </div>
                     </div>
                     
@@ -390,6 +456,16 @@ export default function PlannerReader() {
                         <div className="relative z-10">
                             <h2 className="m-0 mb-2 font-ui text-2xl font-bold">Alhamdulillah! 🎉</h2>
                             <p className="m-0 mb-4 opacity-90 text-[0.95rem]">You have completed Day {assignment.dayNumber}.</p>
+                            
+                            {insightVerse && (
+                                <div className="bg-black/10 rounded-xl p-4 mb-5 text-left backdrop-blur-sm border border-white/10 shadow-inner">
+                                    <p className="m-0 font-ui text-[0.7rem] uppercase tracking-wider text-white/80 mb-2 font-semibold">Takeaway of the Day</p>
+                                    <p className="m-0 font-quran text-[1.3rem] text-white text-right leading-loose mb-3" dir="rtl">{insightVerse.text_uthmani}</p>
+                                    <p className="m-0 font-body text-[0.85rem] text-white/90 leading-relaxed italic">"{insightVerse.translations?.[0]?.text?.replace(/<[^>]+>/g, '')}"</p>
+                                    <p className="m-0 text-[0.75rem] text-white/60 mt-2 font-medium">— Surah {insightVerse.verse_key.replace(':', ', Ayah ')}</p>
+                                </div>
+                            )}
+
                             <div className="flex gap-3 justify-center">
                                 <Link to="/planner" className="px-5 py-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-semibold text-sm no-underline transition-colors">
                                     Return to Planner

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+
+import { MapPin, CalendarPlus } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import {
     PLANNER_UNITS,
@@ -397,8 +399,8 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
 
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
-function buildPrayerSlots(planner, todayAssignment) {
-    if (!todayAssignment) return PRAYER_NAMES.map(name => ({ name, count: 0, doneInSlot: 0, completedUpTo: 0, slotStart: 0, slotRoute: null, status: 'upcoming' }));
+function buildPrayerSlots(planner, todayAssignment, prayerTimes) {
+    if (!todayAssignment) return PRAYER_NAMES.map(name => ({ name, time: null, count: 0, doneInSlot: 0, completedUpTo: 0, slotStart: 0, slotRoute: null, status: 'upcoming' }));
     const progress = getAssignmentProgress(planner, todayAssignment);
     const { completedRangeValues } = progress;
     const items = todayAssignment.items;
@@ -414,7 +416,17 @@ function buildPrayerSlots(planner, todayAssignment) {
         const isCurrent = !isComplete && doneInSlot > 0;
         const firstUnread = slotItems.find(item => !completedRangeValues.includes(item.rangeValue));
         const slotRoute = `/planner/read/${todayAssignment.dayNumber}`;
-        return { name, count, doneInSlot, completedUpTo: slotEnd, slotStartCount: slotStart, slotRoute, status: isComplete ? 'completed' : isCurrent ? 'current' : 'upcoming' };
+        
+        let timeLabel = null;
+        if (prayerTimes?.timings?.[name]) {
+            const [h, m] = prayerTimes.timings[name].split(':');
+            const hNum = parseInt(h, 10);
+            const ampm = hNum >= 12 ? 'PM' : 'AM';
+            const h12 = hNum % 12 || 12;
+            timeLabel = `${h12}:${m} ${ampm}`;
+        }
+
+        return { name, time: timeLabel, count, doneInSlot, completedUpTo: slotEnd, slotStartCount: slotStart, slotRoute, status: isComplete ? 'completed' : isCurrent ? 'current' : 'upcoming' };
     });
     const firstIncomplete = slots.findIndex(s => s.status !== 'completed');
     if (firstIncomplete !== -1 && slots[firstIncomplete].status === 'upcoming') {
@@ -424,16 +436,55 @@ function buildPrayerSlots(planner, todayAssignment) {
 }
 
 function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePlannerDayComplete }) {
+    const { prayerTimes, setPrayerTimes, location, setLocation, shiftPlannerSchedule } = useAppStore();
     const overview = useMemo(() => getPlannerOverview(planner), [planner]);
     const metrics = useMemo(() => getPlannerSuccessMetrics(planner), [planner]);
     const today = formatPlannerDate(new Date());
+
+    useEffect(() => {
+        if (location && (!prayerTimes || prayerTimes.date !== today)) {
+            fetch(`https://api.aladhan.com/v1/timings?latitude=${location.lat}&longitude=${location.lng}&method=2`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        setPrayerTimes({ date: today, timings: data.data.timings });
+                    }
+                })
+                .catch(e => console.error("Prayer API error", e));
+        }
+    }, [location, prayerTimes, today, setPrayerTimes]);
+
+    const requestLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                (err) => alert("Could not access location for prayer times.")
+            );
+        }
+    };
+
+    const handleExportCalendar = () => {
+        if (!planner) return;
+        let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//QuranApp//Planner//EN\n";
+        planner.assignments.forEach(a => {
+            const dateStr = a.date.replace(/-/g, '');
+            icsContent += `BEGIN:VEVENT\nDTSTART;VALUE=DATE:${dateStr}\nDTEND;VALUE=DATE:${dateStr}\nSUMMARY:Quran Plan - Day ${a.dayNumber}\nDESCRIPTION:Read ${a.items.length} ${PLANNER_UNITS[planner.unitType]?.plural}\nEND:VEVENT\n`;
+        });
+        icsContent += "END:VCALENDAR";
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `quran_plan.ics`;
+        link.click();
+    };
 
     const todayAssignment = useMemo(() => {
         if (!planner) return null;
         return planner.assignments.find(a => a.date === today) || planner.assignments[overview?.currentDayNumber - 1] || null;
     }, [planner, today, overview]);
 
-    const prayerSlots = useMemo(() => buildPrayerSlots(planner, todayAssignment), [planner, todayAssignment]);
+    const prayerSlots = useMemo(() => buildPrayerSlots(planner, todayAssignment, prayerTimes), [planner, todayAssignment, prayerTimes]);
 
     const unitsLabel = planner ? PLANNER_UNITS[planner.unitType]?.plural : 'Pages';
     const completionDate = planner ? new Date(`${addDays(planner.startDate, planner.durationDays - 1)}T00:00:00`)
@@ -541,9 +592,16 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                                 if (planDone || !ctaRoute) {
                                     return <button className="w-full cursor-pointer rounded-[40px] border-none bg-[var(--plr-teal)] p-[1.1rem] font-ui text-[1.05rem] font-semibold tracking-[0.02em] text-white shadow-[0_8px_22px_rgba(46,79,74,0.24)] transition-all duration-200 hover:bg-[var(--plr-teal-mid)] hover:shadow-[0_10px_28px_rgba(46,79,74,0.3)] disabled:opacity-70" disabled>{ctaLabel}</button>;
                                 }
-                                return ctaRoute
-                                    ? <Link to={ctaRoute} className="inline-flex w-full items-center justify-center rounded-[40px] bg-[var(--plr-teal)] p-[1.1rem] font-ui text-[1.05rem] font-semibold tracking-[0.02em] text-white no-underline shadow-[0_8px_22px_rgba(46,79,74,0.24)] transition-all duration-200 hover:bg-[var(--plr-teal-mid)] hover:shadow-[0_10px_28px_rgba(46,79,74,0.3)]">{ctaLabel}</Link>
-                                    : <button className="w-full cursor-pointer rounded-[40px] border-none bg-[var(--plr-teal)] p-[1.1rem] font-ui text-[1.05rem] font-semibold tracking-[0.02em] text-white shadow-[0_8px_22px_rgba(46,79,74,0.24)] transition-all duration-200 hover:bg-[var(--plr-teal-mid)] hover:shadow-[0_10px_28px_rgba(46,79,74,0.3)] disabled:opacity-70" disabled>{ctaLabel}</button>;
+                                return (
+                                    <>
+                                        <Link to={ctaRoute} className="inline-flex w-full items-center justify-center rounded-[40px] bg-[var(--plr-teal)] p-[1.1rem] font-ui text-[1.05rem] font-semibold tracking-[0.02em] text-white no-underline shadow-[0_8px_22px_rgba(46,79,74,0.24)] transition-all duration-200 hover:bg-[var(--plr-teal-mid)] hover:shadow-[0_10px_28px_rgba(46,79,74,0.3)]">{ctaLabel}</Link>
+                                        {overview?.overdueDays > 0 && (
+                                            <button onClick={() => shiftPlannerSchedule(planner.id, overview.overdueDays)} className="mt-3 w-full cursor-pointer rounded-[40px] border-2 border-[var(--plr-error)] bg-transparent p-[0.95rem] font-ui text-[0.95rem] font-bold text-[var(--plr-error)] shadow-[0_4px_12px_rgba(192,57,43,0.1)] transition-all duration-200 hover:bg-[var(--plr-error-light)]">
+                                                Catch Up (Shift {overview.overdueDays} Days)
+                                            </button>
+                                        )}
+                                    </>
+                                );
                             })()}
                         </div>
                     </div>
@@ -602,10 +660,16 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                         <div className="mb-6 w-full max-w-[480px] md:max-w-full md:px-0">
                             <div className="mb-4 flex items-center justify-between">
                                 <h2 className="font-ui text-[1.35rem] font-semibold tracking-[0.01em] text-[var(--plr-ink)]">Daily Ritual</h2>
-                                <span className="flex items-center gap-[0.45rem] font-body text-[0.78rem] text-[#7A6540]">
-                                    <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#B8924A]" />
-                                    {todayAssignment && getAssignmentProgress(planner, todayAssignment).isComplete ? 'Complete' : 'In Progress'}
-                                </span>
+                                <div className="flex gap-2">
+                                    <button onClick={handleExportCalendar} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--plr-bone-dark)] bg-transparent text-[var(--plr-ink-muted)] hover:bg-[var(--plr-bone)] hover:text-[var(--plr-ink)] transition-colors" title="Export Calendar">
+                                        <CalendarPlus size={16} />
+                                    </button>
+                                    {!location && (
+                                        <button onClick={requestLocation} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--plr-bone-dark)] bg-transparent text-[var(--plr-ink-muted)] hover:bg-[var(--plr-bone)] hover:text-[var(--plr-ink)] transition-colors" title="Use Location for Prayer Times">
+                                            <MapPin size={16} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="flex flex-col gap-[0.7rem]">
@@ -627,7 +691,10 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                                             {slot.status === 'upcoming' && <ClockIcon />}
                                         </div>
                                         <div className="flex min-w-0 flex-1 flex-col gap-[0.18rem]">
-                                            <span className={`font-ui text-base font-semibold tracking-[0.01em] text-[var(--plr-ink)] ${slot.status === 'completed' ? 'line-through opacity-55' : ''}`}>{slot.name}</span>
+                                            <span className={`font-ui text-base font-semibold tracking-[0.01em] text-[var(--plr-ink)] flex items-center gap-2 ${slot.status === 'completed' ? 'line-through opacity-55' : ''}`}>
+                                                {slot.name}
+                                                {slot.time && <span className="text-[0.7rem] font-mono text-[var(--plr-ink-muted)] bg-[var(--plr-bone)] px-1.5 py-0.5 rounded-sm no-underline opacity-80 inline-block">{slot.time}</span>}
+                                            </span>
                                             <span className={`font-body text-[0.78rem] leading-[1.3] ${slot.status === 'current' ? 'text-[#7A6540]' : 'text-[var(--plr-ink-muted)]'}`}>
                                                 {slot.status === 'completed' && `${slot.doneInSlot}/${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} ✓`}
                                                 {slot.status === 'current' && `${slot.doneInSlot} of ${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} read`}
