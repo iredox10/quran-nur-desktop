@@ -7,6 +7,15 @@ export const PLANNER_UNITS = {
   surah: { label: 'Surah', plural: 'Surahs', max: 114 },
 };
 
+export const PLAN_TEMPLATES = [
+  { id: 'ramadan-last-10', title: 'Ramadan Last 10', durationDays: 10, unitType: 'juz', startUnit: 28, endUnit: 30, description: 'Complete the last 3 Ajza in the last 10 days' },
+  { id: 'juz-amma', title: 'Juz Amma Focus', durationDays: 15, unitType: 'juz', startUnit: 30, endUnit: 30, description: 'Take 15 days to master the 30th Juz' },
+  { id: 'al-kahf', title: 'Surah Al-Kahf Weekly', durationDays: 1, unitType: 'surah', startUnit: 18, endUnit: 18, description: 'The recommended Friday reading' },
+  { id: 'tafsir-deep-dive', title: 'Tafsir Deep Dive', durationDays: 114, unitType: 'surah', startUnit: 1, endUnit: 114, description: 'One Surah per week (requires manually setting days off)' },
+  { id: 'monthly-juz', title: 'Monthly Juz', durationDays: 30, unitType: 'juz', startUnit: 1, endUnit: 30, description: 'One Juz per month (set custom duration when creating)' },
+  { id: 'quick-revision', title: 'Quick Revision', durationDays: 10, unitType: 'juz', startUnit: 1, endUnit: 30, description: 'Full Quran in 10 days for intense revision' }
+];
+
 export function getPlannerUnitItems(unitType, chapters) {
   return buildUnitSource(unitType, chapters);
 }
@@ -556,5 +565,119 @@ export function getAssignmentResumePageNumber(plan, assignment, chapters = []) {
   if (!nextItem) return assignment.pageStart || 1;
   const bounds = resolveItemPageBounds(nextItem, assignment.unitType, chapters);
   return bounds.pageStart || assignment.pageStart || 1;
+}
+
+export function buildRevisionPlanner(completedPlan, chapters) {
+  const newDuration = Math.ceil(completedPlan.durationDays / 2);
+  const today = formatPlannerDate(new Date());
+  
+  return buildReadingPlanner({
+    unitType: completedPlan.unitType,
+    durationDays: newDuration,
+    startDate: today,
+    startUnit: completedPlan.startUnit,
+    endUnit: completedPlan.endUnit,
+    customTitle: `${completedPlan.title} (Revision)`,
+    excludeDays: completedPlan.excludeDays || []
+  }, chapters);
+}
+
+export function getDifficultyIndicators(assignments) {
+  if (!assignments || !assignments.length) return {};
+  
+  const pageCounts = assignments.map(a => {
+    let pages = 0;
+    a.items.forEach(item => {
+      if (item.pageStart && item.pageEnd) {
+        pages += (item.pageEnd - item.pageStart + 1);
+      }
+    });
+    return { dayNumber: a.dayNumber, pages };
+  });
+
+  const totalPages = pageCounts.reduce((sum, item) => sum + item.pages, 0);
+  const avgPages = totalPages / pageCounts.length;
+  
+  const indicators = {};
+  pageCounts.forEach(item => {
+    let level = 'moderate';
+    if (item.pages > avgPages * 1.3) level = 'heavy';
+    else if (item.pages < avgPages * 0.7) level = 'light';
+    indicators[item.dayNumber] = { level, pages: item.pages };
+  });
+  
+  return indicators;
+}
+
+export function getWeeklySummary(planner) {
+  if (!planner || !planner.assignments || !planner.assignments.length) return [];
+  
+  // Group assignments by week (7 day blocks) based on dayNumber
+  const weeks = [];
+  const duration = planner.durationDays;
+  
+  for (let i = 0; i < duration; i += 7) {
+    const weekAssignments = planner.assignments.slice(i, i + 7);
+    if (!weekAssignments.length) break;
+    
+    let totalUnits = 0;
+    let completedUnits = 0;
+    
+    weekAssignments.forEach(a => {
+      // rough estimation of units (pages)
+      let pages = 0;
+      a.items.forEach(item => {
+        if (item.pageStart && item.pageEnd) {
+           pages += (item.pageEnd - item.pageStart + 1);
+        }
+      });
+      totalUnits += pages;
+      if (planner.completedDays?.includes(a.dayNumber)) {
+        completedUnits += pages;
+      }
+    });
+    
+    const weekNum = Math.floor(i / 7) + 1;
+    weeks.push({
+      label: `Week ${weekNum}`,
+      completedUnits,
+      totalUnits: totalUnits || 1 // prevent div by 0
+    });
+  }
+  
+  return weeks;
+}
+
+export function getPlannerAnalytics(planner) {
+  if (!planner || !planner.assignments) {
+    return { onTimeRate: 0, catchUpDaysCount: 0, avgUnitsPerDay: 0 };
+  }
+  
+  const completedAssignments = planner.assignments.filter(a => planner.completedDays?.includes(a.dayNumber));
+  
+  // We don't track exact completion dates vs target dates yet, so we'll simulate 'catch up' 
+  // by checking if there's a big gap or just return 0 for now.
+  // We will assume all completed are on time for this basic version, unless we have completion timestamps.
+  const onTimeRate = completedAssignments.length ? 100 : 0; 
+  const catchUpDaysCount = 0;
+  
+  let totalReadPages = 0;
+  completedAssignments.forEach(a => {
+      let pages = 0;
+      a.items.forEach(item => {
+        if (item.pageStart && item.pageEnd) {
+           pages += (item.pageEnd - item.pageStart + 1);
+        }
+      });
+      totalReadPages += pages;
+  });
+  
+  const avgUnitsPerDay = completedAssignments.length ? (totalReadPages / completedAssignments.length) : 0;
+  
+  return {
+     onTimeRate,
+     catchUpDaysCount,
+     avgUnitsPerDay
+  };
 }
 

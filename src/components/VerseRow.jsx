@@ -22,7 +22,9 @@ const VerseRow = ({
     setActiveTafsir, isTafsirFetching, tafsirId, showPageDivider, tafsirs,
     isAudioPlaying,
     mushaf,
-    onPlayVerse
+    onPlayVerse,
+    onPlannerBookmark,
+    isPlannerBookmark
 }) => {
     const { ref, inView } = useInView({
         threshold: 0.5,
@@ -144,6 +146,16 @@ const VerseRow = ({
                         >
                             <Bookmark size={18} fill={bookmark?.verseKey === verse.verse_key ? 'currentColor' : 'none'} />
                         </button>
+                        {onPlannerBookmark && (
+                            <button
+                                className="flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 hover:bg-[var(--bg-secondary)] hover:shadow-[var(--shadow-sm)]"
+                                style={{ color: isPlannerBookmark ? 'var(--plr-gold)' : 'var(--text-muted)' }}
+                                onClick={() => onPlannerBookmark(verse.verse_key, chapter ? chapter.name_simple : `Surah ${verse.verse_key.split(':')[0]}`)}
+                                title="Add to Plan Highlights"
+                            >
+                                <Bookmark size={18} fill={isPlannerBookmark ? 'currentColor' : 'none'} strokeWidth={isPlannerBookmark ? 2 : 1.5} />
+                            </button>
+                        )}
                         <button
                             className="flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200"
                             style={{

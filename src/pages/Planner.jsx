@@ -16,7 +16,12 @@ import {
     getAssignmentStatus,
     addDays,
     redistributeMissedAssignments,
-    adjustPlannerPace
+    adjustPlannerPace,
+    getDifficultyIndicators,
+    PLAN_TEMPLATES,
+    buildRevisionPlanner,
+    getPlannerAnalytics,
+    getWeeklySummary
 } from '../utils/planner';
 import { getChapters } from '../services/api/quranApi';
 
@@ -314,6 +319,41 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                 )}
             </div>
 
+            {/* Plan Templates Library */}
+            <div className="mx-auto w-full max-w-[520px] px-5 pt-8 md:max-w-[860px] md:px-8">
+                <div className="mb-4 flex items-center justify-between">
+                    <h2 className="font-ui text-[1.2rem] font-semibold tracking-tight text-[var(--plr-ink)]">Plan Templates</h2>
+                    <span className="font-mono text-[0.65rem] uppercase tracking-[0.1em] text-[var(--plr-ink-muted)]">Curated paths</span>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {PLAN_TEMPLATES.map((tmpl) => (
+                        <div key={tmpl.id} className="group relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] border-[1.5px] border-[var(--plr-bone-dark)] bg-[var(--plr-cream)] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-[var(--plr-teal)] hover:shadow-[0_8px_24px_rgba(46,79,74,0.08)]"
+                            onClick={() => {
+                                setUnitType(tmpl.unitType);
+                                setCustomTitle(tmpl.title);
+                                setStartPage(tmpl.startUnit);
+                                setEndPage(tmpl.endUnit);
+                                setPagesPerDay(tmpl.recommendedPace);
+                                setShowCustom(true);
+                            }}>
+                            <div className="absolute -right-4 -top-4 opacity-[0.03] transition-opacity duration-300 group-hover:opacity-[0.08]">
+                                <BookIcon size={80} />
+                            </div>
+                            <h3 className="relative z-10 mb-1 font-ui text-[1.05rem] font-semibold text-[var(--plr-ink)]">{tmpl.title}</h3>
+                            <p className="relative z-10 mb-4 font-body text-[0.82rem] leading-relaxed text-[var(--plr-ink-mid)]">{tmpl.description}</p>
+                            <div className="relative z-10 mt-auto flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="rounded-md bg-[rgba(46,79,74,0.08)] px-2 py-1 font-mono text-[0.65rem] font-medium tracking-[0.05em] text-[var(--plr-teal)]">{tmpl.tags[0]}</span>
+                                </div>
+                                <span className="font-mono text-[0.65rem] text-[var(--plr-ink-muted)]">
+                                    {tmpl.recommendedPace} {PLANNER_UNITS[tmpl.unitType]?.plural || 'units'}/day
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
             <AnimatePresence>
                 {showCustom && (
                     <motion.div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[rgba(30,35,32,0.45)] p-4 backdrop-blur-sm"
@@ -529,10 +569,13 @@ function buildPrayerSlots(planner, todayAssignment, prayerTimes, prayerSettings)
     return slots;
 }
 
-function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePlannerDayComplete }) {
-    const { prayerTimes, setPrayerTimes, location, setLocation, shiftPlannerSchedule, setPlanner, prayerSettings } = useAppStore();
+function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete, setPlannerAssignmentProgress, togglePlannerDayComplete, chapters }) {
+    const { prayerTimes, setPrayerTimes, location, setLocation, shiftPlannerSchedule, setPlanner, prayerSettings, plannerReflections, plannerBookmarks } = useAppStore();
     const overview = useMemo(() => getPlannerOverview(planner), [planner]);
     const metrics = useMemo(() => getPlannerSuccessMetrics(planner), [planner]);
+    const difficulty = useMemo(() => getDifficultyIndicators(planner?.assignments), [planner]);
+    const analytics = useMemo(() => getPlannerAnalytics(planner), [planner]);
+    const weeklySummary = useMemo(() => getWeeklySummary(planner), [planner]);
     const today = formatPlannerDate(new Date());
 
     const [showAdjustPace, setShowAdjustPace] = useState(false);
@@ -627,6 +670,23 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
         setPlannerAssignmentProgress(todayAssignment.dayNumber, slot.slotStartCount);
     };
 
+    const handleShareProgress = async () => {
+        if (!navigator.share) {
+            alert('Sharing is not supported on this device/browser.');
+            return;
+        }
+        
+        try {
+            await navigator.share({
+                title: 'My Quran Reading Plan',
+                text: `I've completed ${completedDays} days of my ${planner.durationDays}-day Quran reading plan on the Quran App! I'm currently on Day ${currentDay}.`,
+                url: window.location.href,
+            });
+        } catch (e) {
+            console.error('Share failed', e);
+        }
+    };
+
     const nextPrayer = prayerSlots.find(s => s.status === 'current' || s.status === 'upcoming');
     const daySubtitle = (() => {
         if (overview?.isFinishedWindow && !nextAssignment) return 'Plan complete! 🎉';
@@ -653,7 +713,25 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                 <div className="flex w-full flex-col items-center gap-0 md:flex-row md:items-start md:gap-10">
                     <div className="w-full max-w-[480px] md:sticky md:top-8 md:max-w-[340px] md:shrink-0 md:basis-[340px]">
                         <div className="mb-8 text-center">
-                            <h1 className="mb-[0.55rem] font-ui text-[clamp(1.9rem,6vw,2.4rem)] font-semibold leading-none tracking-[-0.01em] text-[var(--plr-teal)]">Day {currentDay} of {planner.durationDays}</h1>
+                            {planners && planners.length > 1 ? (
+                                <div className="mb-2 relative inline-block">
+                                    <select 
+                                        value={activePlannerId || ''} 
+                                        onChange={(e) => onSwitchPlan(e.target.value)}
+                                        className="appearance-none bg-transparent border-none font-ui text-[clamp(1.6rem,5vw,2rem)] font-semibold tracking-tight text-[var(--plr-ink)] pr-8 cursor-pointer outline-none text-center"
+                                    >
+                                        {planners.map(p => (
+                                            <option key={p.id} value={p.id}>{p.title || `${p.durationDays} Day Plan`}</option>
+                                        ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--plr-ink)]">
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                </div>
+                            ) : (
+                                <h1 className="mb-2 font-ui text-[clamp(1.7rem,5vw,2.2rem)] font-semibold tracking-tight text-[var(--plr-ink)]">{planner.title || 'Quran Plan'}</h1>
+                            )}
+                            <div className="font-ui text-[1.1rem] font-medium text-[var(--plr-teal)] mb-1">Day {currentDay} of {planner.durationDays}</div>
                             <p className="font-body text-[0.9rem] text-[var(--plr-ink-mid)]">{daySubtitle}</p>
                         </div>
 
@@ -687,7 +765,23 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                                         ? `Continue to Day ${nextAssignment.dayNumber}`
                                         : todayComplete ? 'All Caught Up'
                                             : hasStartedReading ? 'Resume Reading' : 'Open Al-Quran';
-                                if (planDone || !ctaRoute) {
+                                if (planDone) {
+                                    return (
+                                        <button 
+                                            className="w-full cursor-pointer rounded-[40px] border-none bg-[var(--plr-gold)] p-[1.1rem] font-ui text-[1.05rem] font-semibold tracking-[0.02em] text-[var(--plr-ink)] shadow-[0_8px_22px_rgba(184,146,74,0.3)] transition-all duration-200 hover:bg-[var(--plr-gold-soft)] hover:shadow-[0_10px_28px_rgba(184,146,74,0.4)]"
+                                            onClick={() => {
+                                                const rev = buildRevisionPlanner(planner, chapters); 
+                                                if(rev) {
+                                                    const s = useAppStore.getState();
+                                                    s.setPlanner(rev);
+                                                }
+                                            }}
+                                        >
+                                            Start Revision Plan
+                                        </button>
+                                    );
+                                }
+                                if (!ctaRoute) {
                                     return <button className="w-full cursor-pointer rounded-[40px] border-none bg-[var(--plr-teal)] p-[1.1rem] font-ui text-[1.05rem] font-semibold tracking-[0.02em] text-white shadow-[0_8px_22px_rgba(46,79,74,0.24)] transition-all duration-200 hover:bg-[var(--plr-teal-mid)] hover:shadow-[0_10px_28px_rgba(46,79,74,0.3)] disabled:opacity-70" disabled>{ctaLabel}</button>;
                                 }
                                 return (
@@ -739,6 +833,11 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                                             title={`Day ${a.dayNumber}: ${a.title} — ${status === 'completed' ? '✓ Done' : status === 'today' ? `${pct}%` : status}`}
                                             whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
                                             <span className="relative z-10 font-mono text-[0.55rem] font-medium leading-none">{a.dayNumber}</span>
+                                            {difficulty[a.dayNumber] && difficulty[a.dayNumber].level !== 'moderate' && (
+                                                <span className={`absolute top-0 right-0 h-2 w-2 rounded-full border border-white ${
+                                                    difficulty[a.dayNumber].level === 'heavy' ? 'bg-[#c0392b]' : 'bg-[var(--plr-teal-mid)]'
+                                                }`} title={difficulty[a.dayNumber].level === 'heavy' ? 'Heavier reading day' : 'Lighter reading day'} />
+                                            )}
                                             {status === 'completed' && (
                                                 <svg className="absolute bottom-px right-px opacity-85" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                                     <polyline points="20 6 9 17 4 12"/>
@@ -770,6 +869,13 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                             <div className="mb-4 flex items-center justify-between">
                                 <h2 className="font-ui text-[1.35rem] font-semibold tracking-[0.01em] text-[var(--plr-ink)]">Daily Ritual</h2>
                                 <div className="flex gap-2">
+                                    {navigator.share && (
+                                        <button onClick={handleShareProgress} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--plr-bone-dark)] bg-transparent text-[var(--plr-ink-muted)] hover:bg-[var(--plr-bone)] hover:text-[var(--plr-ink)] transition-colors" title="Share Progress">
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                            </svg>
+                                        </button>
+                                    )}
                                     <button onClick={handleExportCalendar} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--plr-bone-dark)] bg-transparent text-[var(--plr-ink-muted)] hover:bg-[var(--plr-bone)] hover:text-[var(--plr-ink)] transition-colors" title="Export Calendar">
                                         <CalendarPlus size={16} />
                                     </button>
@@ -850,6 +956,100 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                         Delete plan
                     </button>
                 </div>
+
+                {/* Reflections & Highlights */}
+                <div className="mt-10 w-full max-w-[480px] md:max-w-[800px]">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {/* Reflections Section */}
+                        <div className="flex flex-col rounded-[20px] bg-[rgba(250,247,240,0.7)] p-5 shadow-[0_4px_16px_rgba(0,0,0,0.03)] backdrop-blur-md">
+                            <h3 className="mb-4 font-ui text-[1.1rem] font-semibold text-[var(--plr-ink)] flex items-center gap-2">
+                                <BookIcon /> Daily Reflections
+                            </h3>
+                            <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {plannerReflections && plannerReflections[planner.id] && Object.keys(plannerReflections[planner.id]).length > 0 ? (
+                                    Object.entries(plannerReflections[planner.id])
+                                        .sort((a, b) => Number(b[0]) - Number(a[0]))
+                                        .map(([dayId, ref]) => (
+                                            <div key={dayId} className="rounded-xl bg-white p-3 shadow-sm">
+                                                <div className="font-mono text-[0.65rem] text-[var(--plr-ink-muted)] mb-1">DAY {dayId}</div>
+                                                <p className="font-body text-[0.85rem] text-[var(--plr-ink)] m-0 leading-relaxed italic">"{ref.text}"</p>
+                                            </div>
+                                        ))
+                                ) : (
+                                    <div className="text-center py-6 text-[var(--plr-ink-muted)] font-body text-[0.85rem]">
+                                        No reflections yet. Complete a day to write one!
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Bookmarks / Highlights Section */}
+                        <div className="flex flex-col rounded-[20px] bg-[rgba(250,247,240,0.7)] p-5 shadow-[0_4px_16px_rgba(0,0,0,0.03)] backdrop-blur-md">
+                            <h3 className="mb-4 font-ui text-[1.1rem] font-semibold text-[var(--plr-ink)] flex items-center gap-2">
+                                <GemIcon /> Plan Highlights
+                            </h3>
+                            <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {plannerBookmarks && plannerBookmarks[planner.id] && plannerBookmarks[planner.id].length > 0 ? (
+                                    plannerBookmarks[planner.id]
+                                        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                                        .map(b => (
+                                            <Link key={b.verseKey} to={`/surah/${b.verseKey.split(':')[0]}?ayah=${b.verseKey.split(':')[1]}`} className="rounded-xl bg-white p-3 shadow-sm border border-[var(--plr-bone-dark)] no-underline transition-colors hover:border-[var(--plr-gold)]">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="font-ui text-[0.85rem] font-bold text-[var(--plr-ink)]">{b.surahName}</span>
+                                                    <span className="font-mono text-[0.7rem] bg-[var(--plr-gold-soft)] text-[var(--plr-gold)] px-2 py-0.5 rounded-md">{b.verseKey}</span>
+                                                </div>
+                                            </Link>
+                                        ))
+                                ) : (
+                                    <div className="text-center py-6 text-[var(--plr-ink-muted)] font-body text-[0.85rem]">
+                                        No highlighted verses. Use the gold bookmark icon while reading!
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Reports & Analytics */}
+                <div className="mt-6 w-full max-w-[480px] md:max-w-[800px]">
+                    <div className="flex flex-col rounded-[20px] bg-[rgba(250,247,240,0.7)] p-5 shadow-[0_4px_16px_rgba(0,0,0,0.03)] backdrop-blur-md">
+                        <h3 className="mb-4 font-ui text-[1.1rem] font-semibold text-[var(--plr-ink)]">Performance Insights</h3>
+                        <div className="grid gap-4 md:grid-cols-3 mb-6">
+                            <div className="flex flex-col gap-1 bg-white p-4 rounded-[14px] shadow-sm">
+                                <span className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-[var(--plr-ink-muted)]">On-Time Completion</span>
+                                <span className="font-ui text-[1.6rem] font-bold text-[var(--plr-teal)]">{analytics.onTimeRate}%</span>
+                            </div>
+                            <div className="flex flex-col gap-1 bg-white p-4 rounded-[14px] shadow-sm">
+                                <span className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-[var(--plr-ink-muted)]">Catch-ups Used</span>
+                                <span className="font-ui text-[1.6rem] font-bold text-[var(--plr-gold)]">{analytics.catchUpDaysCount}</span>
+                            </div>
+                            <div className="flex flex-col gap-1 bg-white p-4 rounded-[14px] shadow-sm">
+                                <span className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-[var(--plr-ink-muted)]">Current Pace</span>
+                                <span className="font-ui text-[1.6rem] font-bold text-[var(--plr-ink)]">{Math.round(analytics.avgUnitsPerDay)} <span className="text-[1rem] text-[var(--plr-ink-muted)] font-medium">u/day</span></span>
+                            </div>
+                        </div>
+
+                        {weeklySummary && weeklySummary.length > 0 && (
+                            <div className="mt-2">
+                                <h4 className="mb-3 font-mono text-[0.75rem] uppercase tracking-[0.1em] text-[var(--plr-ink-muted)]">Weekly Progress</h4>
+                                <div className="flex flex-col gap-2">
+                                    {weeklySummary.slice(-3).map((week, i) => (
+                                        <div key={i} className="flex items-center justify-between bg-[var(--plr-bone)] px-4 py-3 rounded-[12px]">
+                                            <span className="font-body text-[0.85rem] font-medium text-[var(--plr-ink)]">{week.label}</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-mono text-[0.7rem] text-[var(--plr-ink-muted)]">{week.completedUnits} / {week.totalUnits} units</span>
+                                                <div className="w-[80px] h-2 bg-[rgba(43,63,60,0.1)] rounded-full overflow-hidden">
+                                                    <div className="h-full bg-[var(--plr-teal)] rounded-full" style={{ width: `${Math.min(100, Math.round((week.completedUnits / week.totalUnits) * 100))}%` }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
             </motion.div>
 
             <AnimatePresence>
@@ -947,7 +1147,7 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
     );
 }
 
-function ActiveViewWrapper({ planner, onDelete, onBack, setPlannerAssignmentProgress, togglePlannerDayComplete }) {
+function ActiveViewWrapper({ planner, planners, activePlannerId, onSwitchPlan, onDelete, onBack, setPlannerAssignmentProgress, togglePlannerDayComplete, chapters }) {
     return (
         <div style={{ position: 'relative' }}>
             <button className="absolute left-5 top-6 z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-none bg-[rgba(250,247,240,0.7)] text-[var(--plr-teal)] shadow-[0_2px_10px_rgba(43,63,60,0.1)] backdrop-blur-md transition-all duration-200 hover:bg-[rgba(250,247,240,0.95)] hover:-translate-x-0.5" onClick={onBack} aria-label="Back to intention">
@@ -957,9 +1157,13 @@ function ActiveViewWrapper({ planner, onDelete, onBack, setPlannerAssignmentProg
             </button>
             <ActiveView
                 planner={planner}
+                planners={planners}
+                activePlannerId={activePlannerId}
+                onSwitchPlan={onSwitchPlan}
                 onDelete={onDelete}
                 setPlannerAssignmentProgress={setPlannerAssignmentProgress}
                 togglePlannerDayComplete={togglePlannerDayComplete}
+                chapters={chapters}
             />
         </div>
     );
@@ -1021,10 +1225,14 @@ export default function Planner() {
                     <motion.div key="active" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                         <ActiveViewWrapper
                             planner={planner}
+                            planners={planners}
+                            activePlannerId={activePlannerId}
+                            onSwitchPlan={(id) => setActivePlanner(id)}
                             onDelete={() => setConfirmDelete(true)}
                             onBack={() => setView('intention')}
                             setPlannerAssignmentProgress={setPlannerAssignmentProgress}
                             togglePlannerDayComplete={togglePlannerDayComplete}
+                            chapters={chapters}
                         />
                     </motion.div>
                 ) : (

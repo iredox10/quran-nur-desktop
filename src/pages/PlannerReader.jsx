@@ -5,7 +5,7 @@ import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, CheckCircle2, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, ChevronLeft, Check, Timer } from 'lucide-react';
 
 import { getVersesByPage, getTajweedVersesByPage, getChapters } from '../services/api/quranApi';
 import { useAppStore } from '../store/useAppStore';
@@ -52,7 +52,10 @@ export default function PlannerReader() {
         isPlayerVisible, setIsPlayerVisible, playTriggerCount,
         customAudioBaseUrl, localAudioDirHandle,
         bookmark, setBookmark, addRecentlyRead,
-        intentionPromptEnabled
+        intentionPromptEnabled,
+        startPlannerTimer, stopPlannerTimer, plannerSessionTimers,
+        addPlannerReflection, addPlannerBookmark, removePlannerBookmark,
+        plannerBookmarks
     } = useAppStore();
 
     const [showIntention, setShowIntention] = useState(() => useAppStore.getState().intentionPromptEnabled);
@@ -146,6 +149,65 @@ export default function PlannerReader() {
             }
         }
     }, [pageNumber, assignment, progress, planner, markPlannerItemComplete]);
+
+    // Timer logic
+    const [timerSeconds, setTimerSeconds] = useState(0);
+    const [isTimerRunning, setIsTimerRunning] = useState(true);
+
+    useEffect(() => {
+        if (!planner || !assignment) return;
+        startPlannerTimer(planner.id, assignment.dayNumber);
+    }, [planner?.id, assignment?.dayNumber, startPlannerTimer]);
+
+    useEffect(() => {
+        if (!isTimerRunning) return;
+        const interval = setInterval(() => {
+            setTimerSeconds(s => s + 1);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [isTimerRunning]);
+
+    const timerSecondsRef = useRef(timerSeconds);
+    useEffect(() => {
+        timerSecondsRef.current = timerSeconds;
+    }, [timerSeconds]);
+
+    useEffect(() => {
+        if (!planner || !assignment) return;
+        const pid = planner.id;
+        const dnum = assignment.dayNumber;
+        return () => {
+            if (timerSecondsRef.current > 0) {
+               useAppStore.getState().stopPlannerTimer(pid, dnum, timerSecondsRef.current);
+            }
+        };
+    }, [planner?.id, assignment?.dayNumber]);
+
+    const formatTimer = (totalSec) => {
+        const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+        const s = (totalSec % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
+
+    // Bookmarks and Reflections logic
+    const handlePlannerBookmarkToggle = useCallback((verseKey, surahName) => {
+        if (!planner) return;
+        const bookmarks = plannerBookmarks[planner.id] || [];
+        const isBookmarked = bookmarks.some(b => b.verseKey === verseKey);
+        if (isBookmarked) {
+            removePlannerBookmark(planner.id, verseKey);
+        } else {
+            addPlannerBookmark(planner.id, verseKey, surahName, '');
+        }
+    }, [planner, plannerBookmarks, addPlannerBookmark, removePlannerBookmark]);
+
+    const [reflectionText, setReflectionText] = useState('');
+    const handleSaveReflection = () => {
+        if (reflectionText.trim() && planner && assignment) {
+            addPlannerReflection(planner.id, assignment.dayNumber, reflectionText.trim());
+        }
+        navigate('/planner');
+    };
 
     // Day completion effect
     const prevIsCompleteRef = useRef(false);
@@ -397,6 +459,14 @@ export default function PlannerReader() {
                                 <span>⏱️ ~{estimatedTimeMins} mins</span>
                             </div>
                         </div>
+                        <div className="flex items-center justify-center px-3 py-1.5 rounded-full bg-[var(--plr-teal-light)] text-[var(--plr-teal)] font-mono text-sm font-bold opacity-80"
+                             onClick={() => setIsTimerRunning(prev => !prev)}
+                             title={isTimerRunning ? "Pause Timer" : "Resume Timer"}
+                             style={{ cursor: 'pointer' }}
+                        >
+                            <Timer size={14} className="mr-1" />
+                            {formatTimer(timerSeconds)}
+                        </div>
                     </div>
                     
                     <div className="flex items-center gap-3">
@@ -469,10 +539,21 @@ export default function PlannerReader() {
                                 </div>
                             )}
 
+                            <div className="mb-6 text-left">
+                                <label className="block text-white/90 text-sm font-semibold mb-2">Daily Reflection (Optional)</label>
+                                <textarea 
+                                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-white placeholder-white/40 focus:outline-none focus:border-white/50 resize-none font-body text-sm"
+                                    rows={3}
+                                    placeholder="Write a brief reflection for today's reading..."
+                                    value={reflectionText}
+                                    onChange={(e) => setReflectionText(e.target.value)}
+                                />
+                            </div>
+
                             <div className="flex gap-3 justify-center">
-                                <Link to="/planner" className="px-5 py-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white font-semibold text-sm no-underline transition-colors">
-                                    Return to Planner
-                                </Link>
+                                <button onClick={handleSaveReflection} className="px-6 py-2.5 rounded-full bg-white text-[var(--plr-teal)] font-bold text-sm border-none cursor-pointer hover:bg-white/90 transition-colors">
+                                    {reflectionText.trim() ? 'Save & Return' : 'Return to Planner'}
+                                </button>
                             </div>
                         </div>
                         <div className="absolute top-0 right-0 p-4 opacity-20 pointer-events-none">
@@ -545,6 +626,8 @@ export default function PlannerReader() {
                                                 showPageDivider={false}
                                                 mushaf={mushaf}
                                                 isAudioPlaying={activeAudioVerseKey === verse.verse_key}
+                                                onPlannerBookmark={handlePlannerBookmarkToggle}
+                                                isPlannerBookmark={plannerBookmarks[planner?.id]?.some(b => b.verseKey === verse.verse_key)}
                                             />
                                         );
                                     })

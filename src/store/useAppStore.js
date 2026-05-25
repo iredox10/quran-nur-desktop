@@ -89,6 +89,9 @@ export const useAppStore = create(
             planners: [],
             activePlannerId: null,
             planner: null,
+            plannerReflections: {}, // { [plannerId]: { [dayNumber]: { text, createdAt } } }
+            plannerBookmarks: {}, // { [plannerId]: [{ verseKey, surahName, note, createdAt }] }
+            plannerSessionTimers: {}, // { [plannerId]: { [dayNumber]: { startedAt, totalSeconds } } }
             pomodoroProfiles: DEFAULT_POMODORO_PROFILES,
             activePomodoroProfileId: DEFAULT_POMODORO_PROFILES[0].id,
             pomodoroHistory: [], // Array of { date, duration, mode, completedAt }
@@ -377,6 +380,54 @@ export const useAppStore = create(
 
                 set({ pomodoroSecondsLeft: state.pomodoroSecondsLeft - 1 });
             },
+
+            addPlannerReflection: (plannerId, dayNumber, text) => set((state) => {
+                const reflections = { ...state.plannerReflections };
+                if (!reflections[plannerId]) reflections[plannerId] = {};
+                reflections[plannerId][dayNumber] = { text, createdAt: new Date().toISOString() };
+                return { plannerReflections: reflections };
+            }),
+
+            addPlannerBookmark: (plannerId, verseKey, surahName, note) => set((state) => {
+                const bookmarks = { ...state.plannerBookmarks };
+                if (!bookmarks[plannerId]) bookmarks[plannerId] = [];
+                const existing = bookmarks[plannerId].find(b => b.verseKey === verseKey);
+                if (!existing) {
+                    bookmarks[plannerId] = [...bookmarks[plannerId], { verseKey, surahName, note, createdAt: new Date().toISOString() }];
+                } else if (note) {
+                    existing.note = note;
+                }
+                return { plannerBookmarks: bookmarks };
+            }),
+
+            removePlannerBookmark: (plannerId, verseKey) => set((state) => {
+                const bookmarks = { ...state.plannerBookmarks };
+                if (bookmarks[plannerId]) {
+                    bookmarks[plannerId] = bookmarks[plannerId].filter(b => b.verseKey !== verseKey);
+                }
+                return { plannerBookmarks: bookmarks };
+            }),
+
+            startPlannerTimer: (plannerId, dayNumber) => set((state) => {
+                const timers = { ...state.plannerSessionTimers };
+                if (!timers[plannerId]) timers[plannerId] = {};
+                if (!timers[plannerId][dayNumber]) {
+                    timers[plannerId][dayNumber] = { totalSeconds: 0 };
+                }
+                timers[plannerId][dayNumber].startedAt = Date.now();
+                return { plannerSessionTimers: timers };
+            }),
+
+            stopPlannerTimer: (plannerId, dayNumber, additionalSeconds) => set((state) => {
+                const timers = { ...state.plannerSessionTimers };
+                if (!timers[plannerId]) timers[plannerId] = {};
+                if (!timers[plannerId][dayNumber]) {
+                    timers[plannerId][dayNumber] = { totalSeconds: 0 };
+                }
+                timers[plannerId][dayNumber].totalSeconds += additionalSeconds;
+                timers[plannerId][dayNumber].startedAt = null;
+                return { plannerSessionTimers: timers };
+            }),
 
             setPlanner: (planner) => set((state) => {
                 const planners = state.planners || [];
@@ -708,6 +759,9 @@ export function getSyncableState(state) {
         location: state.location || null,
         archivedPlanners: state.archivedPlanners || [],
         prayerSettings: state.prayerSettings || { activePrayers: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'], readPreference: 'After' },
-        intentionPromptEnabled: state.intentionPromptEnabled ?? true
+        intentionPromptEnabled: state.intentionPromptEnabled ?? true,
+        plannerReflections: state.plannerReflections || {},
+        plannerBookmarks: state.plannerBookmarks || {},
+        plannerSessionTimers: state.plannerSessionTimers || {}
     };
 }
