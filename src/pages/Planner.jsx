@@ -945,15 +945,15 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                 <div className="flex flex-col rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] p-5 shadow-[var(--shadow-glass)]">
                                     <h3 className="mb-4 font-ui text-[1.1rem] font-semibold text-[var(--text-primary)]">Performance Insights</h3>
                                     <div className="grid gap-4 md:grid-cols-3 mb-2">
-                                        <div className="flex flex-col gap-1 bg-[var(--bg-primary)] p-4 rounded-[14px] shadow-sm">
+                                        <div className="flex flex-col gap-1 bg-[var(--bg-surface)] border border-[var(--glass-border)] p-4 rounded-[14px] shadow-sm">
                                             <span className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-[var(--text-muted)]">On-Time Completion</span>
                                             <span className="font-ui text-[1.6rem] font-bold text-[#10b981]">{analytics.onTimeRate}%</span>
                                         </div>
-                                        <div className="flex flex-col gap-1 bg-[var(--bg-primary)] p-4 rounded-[14px] shadow-sm">
+                                        <div className="flex flex-col gap-1 bg-[var(--bg-surface)] border border-[var(--glass-border)] p-4 rounded-[14px] shadow-sm">
                                             <span className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-[var(--text-muted)]">Catch-ups Used</span>
                                             <span className="font-ui text-[1.6rem] font-bold text-[var(--accent-primary)]">{analytics.catchUpDaysCount}</span>
                                         </div>
-                                        <div className="flex flex-col gap-1 bg-[var(--bg-primary)] p-4 rounded-[14px] shadow-sm">
+                                        <div className="flex flex-col gap-1 bg-[var(--bg-surface)] border border-[var(--glass-border)] p-4 rounded-[14px] shadow-sm">
                                             <span className="font-mono text-[0.65rem] uppercase tracking-[0.08em] text-[var(--text-muted)]">Current Pace</span>
                                             <span className="font-ui text-[1.6rem] font-bold text-[var(--text-primary)]">{Math.round(analytics.avgUnitsPerDay)} <span className="text-[1rem] text-[var(--text-muted)] font-medium">u/day</span></span>
                                         </div>
@@ -966,7 +966,7 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                         <h4 className="mb-4 font-ui text-[1.1rem] font-semibold text-[var(--text-primary)]">Weekly Progress</h4>
                                         <div className="flex flex-col gap-3">
                                             {weeklySummary.slice(-4).map((week, i) => (
-                                                <div key={i} className="flex items-center justify-between bg-[var(--bg-primary)] px-4 py-3.5 rounded-[12px] shadow-sm">
+                                                <div key={i} className="flex items-center justify-between bg-[var(--bg-surface)] border border-[var(--glass-border)] px-4 py-3.5 rounded-[12px] shadow-sm">
                                                     <span className="font-body text-[0.85rem] font-medium text-[var(--text-primary)]">{week.label}</span>
                                                     <div className="flex items-center gap-4">
                                                         <span className="font-mono text-[0.75rem] text-[var(--text-secondary)]">{week.completedUnits} / {week.totalUnits}</span>
