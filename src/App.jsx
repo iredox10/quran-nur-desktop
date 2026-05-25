@@ -16,6 +16,8 @@ import TajweedTooltip from './components/TajweedTooltip';
 import GlobalAudioPlayer from './components/GlobalAudioPlayer';
 import Profile from './pages/Profile';
 import FloatingPomodoro from './components/FloatingPomodoro';
+import SaukaIndex from './pages/SaukaIndex';
+import SaukaGroup from './pages/SaukaGroup';
 import CloudSync from './components/CloudSync';
 
 function App() {
@@ -67,6 +69,8 @@ function App() {
           <Route path="/offline-library" element={<OfflineLibrary />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/sauka" element={<SaukaIndex />} />
+          <Route path="/sauka/:groupId" element={<SaukaGroup />} />
           <Route path="/surah/:id" element={<Surah />} />
           <Route path="/page/:id" element={<Page />} />
         </Route>

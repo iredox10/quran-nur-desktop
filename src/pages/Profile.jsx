@@ -5,7 +5,7 @@ import { useAppStore } from '../store/useAppStore';
 import {
     User, Settings, Bookmark, Folder, Moon, Sun,
     ChevronRight, HardDrive, LogOut, CloudUpload, CloudDownload,
-    Loader2, Mic, Languages, TrendingUp, CalendarDays, BookOpen, Brain, ChevronDown
+    Loader2, Mic, Languages, TrendingUp, CalendarDays, BookOpen, Brain, ChevronDown, Users
 } from 'lucide-react';
 import { authService, syncService } from '../services/appwrite';
 
@@ -216,12 +216,13 @@ export default function Profile() {
                 </div>
 
                 {/* ═══ QUICK LINKS ═══ */}
-                <div className="mb-5 grid grid-cols-4 gap-2">
+                <div className="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-5">
                     {[
                         { icon: Bookmark, label: 'Bookmarks', count: (bookmarks || []).length, to: '/library' },
                         { icon: TrendingUp, label: 'Analytics', to: '/progress' },
                         { icon: CalendarDays, label: 'Planner', to: '/planner' },
                         { icon: Brain, label: 'Memorize', to: '/memorize' },
+                        { icon: Users, label: 'Sauka', to: '/sauka' },
                     ].map((item, i) => (
                         <Link key={i} to={item.to} className="flex flex-col items-center gap-1.5 rounded-xl border border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-3 no-underline transition-colors hover:border-[var(--h-gold)]">
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--h-teal-soft)]">
