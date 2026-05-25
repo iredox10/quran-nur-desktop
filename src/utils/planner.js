@@ -108,6 +108,24 @@ export function diffDays(startDate, endDate) {
   return Math.floor((end - start) / 86400000);
 }
 
+export function getReadingDate(startDate, index, excludeDays = []) {
+  let date = new Date(`${startDate}T00:00:00`);
+  let daysFound = 0;
+  
+  while (excludeDays.includes(date.getDay())) {
+    date.setDate(date.getDate() + 1);
+  }
+  
+  while (daysFound < index) {
+    date.setDate(date.getDate() + 1);
+    if (!excludeDays.includes(date.getDay())) {
+      daysFound++;
+    }
+  }
+  
+  return formatPlannerDate(date);
+}
+
 function buildUnitSource(unitType, chapters) {
   if (unitType === 'page') {
     return PAGE_GROUPS.map((item) => ({
@@ -242,7 +260,7 @@ function buildAssignmentSubtitle(unitType, items) {
   return `${first.subtitle} · ${last.subtitle}`;
 }
 
-export function buildReadingPlanner({ unitType, durationDays, startDate, startUnit, endUnit, customTitle }, chapters) {
+export function buildReadingPlanner({ unitType, durationDays, startDate, startUnit, endUnit, customTitle, excludeDays = [] }, chapters) {
   const sourceItems = buildUnitSource(unitType, chapters);
   const unitMeta = PLANNER_UNITS[unitType];
 
@@ -264,7 +282,7 @@ export function buildReadingPlanner({ unitType, durationDays, startDate, startUn
 
   const assignments = chunks.map((items, index) => ({
     dayNumber: index + 1,
-    date: addDays(startDate, index),
+    date: getReadingDate(startDate, index, excludeDays),
     unitType,
     title: buildAssignmentTitle(unitType, items),
     subtitle: buildAssignmentSubtitle(unitType, items),
@@ -291,7 +309,100 @@ export function buildReadingPlanner({ unitType, durationDays, startDate, startUn
     assignmentCompletedAt: {},
     completedDays: [],
     assignments,
+    excludeDays,
   };
+}
+
+export function adjustPlannerPace(planner, newDurationDays) {
+  const completedAssignments = planner.assignments.filter(a => planner.completedDays?.includes(a.dayNumber));
+  const uncompletedAssignments = planner.assignments.filter(a => !planner.completedDays?.includes(a.dayNumber));
+  
+  if (!uncompletedAssignments.length) return planner; 
+  
+  const uncompletedItems = uncompletedAssignments.flatMap(a => a.items);
+  const chunks = splitIntoChunks(uncompletedItems, newDurationDays);
+  
+  const todayDate = formatPlannerDate(new Date());
+  let newStartStr = todayDate;
+  if (completedAssignments.length && completedAssignments[completedAssignments.length - 1].date >= todayDate) {
+      newStartStr = addDays(completedAssignments[completedAssignments.length - 1].date, 1);
+  } else if (!completedAssignments.length) {
+      newStartStr = [planner.startDate, todayDate].sort()[1]; // max
+  }
+
+  const newAssignments = chunks.map((items, idx) => {
+      const dayIndex = completedAssignments.length + idx;
+      return {
+          dayNumber: dayIndex + 1,
+          date: getReadingDate(newStartStr, idx, planner.excludeDays || []),
+          unitType: planner.unitType,
+          title: buildAssignmentTitle(planner.unitType, items),
+          subtitle: buildAssignmentSubtitle(planner.unitType, items),
+          startUnit: items[0].rangeValue,
+          endUnit: items[items.length - 1].rangeValue,
+          primaryRoute: items[0].route,
+          pageStart: items.reduce((min, item) => Math.min(min, item.pageStart ?? Number.POSITIVE_INFINITY), Number.POSITIVE_INFINITY),
+          pageEnd: items.reduce((max, item) => Math.max(max, item.pageEnd ?? 0), 0),
+          items,
+      };
+  });
+  
+  return {
+     ...planner,
+     durationDays: completedAssignments.length + newAssignments.length,
+     assignments: [...completedAssignments, ...newAssignments]
+  };
+}
+
+export function redistributeMissedAssignments(planner) {
+    const today = formatPlannerDate(new Date());
+    const uncompletedAssignments = planner.assignments.filter(a => !planner.completedDays?.includes(a.dayNumber));
+    if (!uncompletedAssignments.length) return planner;
+
+    const originalEndDate = planner.assignments[planner.assignments.length - 1].date;
+    
+    if (today > originalEndDate) {
+        return null;
+    }
+
+    const uncompletedItems = uncompletedAssignments.flatMap(a => a.items);
+    
+    let remainingDays = 0;
+    let curr = today;
+    while (curr <= originalEndDate) {
+       const d = new Date(`${curr}T00:00:00`);
+       if (!(planner.excludeDays || []).includes(d.getDay())) {
+           remainingDays++;
+       }
+       curr = addDays(curr, 1);
+    }
+    
+    if (remainingDays <= 0) remainingDays = 1;
+
+    const chunks = splitIntoChunks(uncompletedItems, remainingDays);
+    const completedAssignments = planner.assignments.filter(a => planner.completedDays?.includes(a.dayNumber));
+    
+    const newAssignments = chunks.map((items, idx) => {
+      const dayIndex = completedAssignments.length + idx;
+      return {
+          dayNumber: dayIndex + 1,
+          date: getReadingDate(today, idx, planner.excludeDays || []),
+          unitType: planner.unitType,
+          title: buildAssignmentTitle(planner.unitType, items),
+          subtitle: buildAssignmentSubtitle(planner.unitType, items),
+          startUnit: items[0].rangeValue,
+          endUnit: items[items.length - 1].rangeValue,
+          primaryRoute: items[0].route,
+          pageStart: items.reduce((min, item) => Math.min(min, item.pageStart ?? Number.POSITIVE_INFINITY), Number.POSITIVE_INFINITY),
+          pageEnd: items.reduce((max, item) => Math.max(max, item.pageEnd ?? 0), 0),
+          items,
+      };
+    });
+    
+    return {
+       ...planner,
+       assignments: [...completedAssignments, ...newAssignments]
+    };
 }
 
 export function getPlannerPageContext(plan, pageNumber, chapters = []) {

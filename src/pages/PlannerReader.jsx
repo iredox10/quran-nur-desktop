@@ -52,7 +52,10 @@ export default function PlannerReader() {
         isPlayerVisible, setIsPlayerVisible, playTriggerCount,
         customAudioBaseUrl, localAudioDirHandle,
         bookmark, setBookmark, addRecentlyRead,
+        intentionPromptEnabled
     } = useAppStore();
+
+    const [showIntention, setShowIntention] = useState(() => useAppStore.getState().intentionPromptEnabled);
 
     const mushaf = getMushafById(mushafId);
     const isTajweedActive = isTajweedEnabledForMushaf(mushafId, tajweedEnabled);
@@ -430,8 +433,8 @@ export default function PlannerReader() {
                 
                 {/* Prayer Slots mini-indicator */}
                 <div className="bg-[var(--bg-surface)] px-4 pb-3 flex items-center justify-between gap-1 text-[0.7rem] font-ui text-[var(--text-muted)] uppercase tracking-wider">
-                    {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((name, i) => {
-                        const slotEnd = Math.floor(((i + 1) / 5) * assignment.items.length);
+                    {(useAppStore.getState().prayerSettings?.activePrayers || ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']).map((name, i, arr) => {
+                        const slotEnd = Math.floor(((i + 1) / arr.length) * assignment.items.length);
                         const done = progress.completedCount;
                         const isDone = done >= slotEnd && slotEnd > 0;
                         return (

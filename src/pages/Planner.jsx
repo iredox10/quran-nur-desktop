@@ -15,6 +15,8 @@ import {
     getAssignmentProgress,
     getAssignmentStatus,
     addDays,
+    redistributeMissedAssignments,
+    adjustPlannerPace
 } from '../utils/planner';
 import { getChapters } from '../services/api/quranApi';
 
@@ -75,11 +77,22 @@ function RingProgress({ percent, size = 200, stroke = 9, children }) {
 
 const TOTAL_QURAN_PAGES = 604;
 
-function getPaceStats(durationDays) {
+function getPaceStats(durationDays, excludeDays = [], startDateStr = null) {
     const dailyPages = Math.ceil(TOTAL_QURAN_PAGES / durationDays);
     const perPrayer = Math.ceil(dailyPages / 5);
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + durationDays);
+    let endDate = startDateStr ? new Date(`${startDateStr}T00:00:00`) : new Date();
+    let daysFound = 0;
+    
+    // Add days sequentially, skipping excluded days
+    while (daysFound < durationDays) {
+        if (!excludeDays.includes(endDate.getDay())) {
+            daysFound++;
+        }
+        if (daysFound < durationDays) {
+            endDate.setDate(endDate.getDate() + 1);
+        }
+    }
+    
     const endLabel = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     return { dailyPages, perPrayer, endLabel };
 }
@@ -100,8 +113,8 @@ const PACES = [
     { id: 'devotional', icon: GemIcon,  title: 'Devotional Path', duration: '1 YEAR',   durationDays: 365, badge: null },
 ];
 
-function PaceRing({ durationDays, selected }) {
-    const { dailyPages } = getPaceStats(durationDays);
+function PaceRing({ durationDays, selected, startDate }) {
+    const { dailyPages } = getPaceStats(durationDays, [], startDate);
     const size = 104;
     const stroke = 7;
     const r = (size - stroke * 2) / 2;
@@ -134,6 +147,9 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
     const [startPage, setStartPage] = useState(1);
     const [endPage, setEndPage] = useState(604);
     const [customTitle, setCustomTitle] = useState('');
+    const [excludeDays, setExcludeDays] = useState([]);
+    const [showArchives, setShowArchives] = useState(false);
+    const { archivedPlanners } = useAppStore();
 
     const unitMeta = PLANNER_UNITS[unitType];
     const maxUnit = unitMeta?.max || 604;
@@ -151,7 +167,7 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
         const title = showCustom ? (customTitle.trim() || '') : pace.title;
         try {
             const built = buildReadingPlanner({
-                unitType: unit, durationDays: days, startDate, startUnit: sUnit, endUnit: eUnit, customTitle: title,
+                unitType: unit, durationDays: days, startDate, startUnit: sUnit, endUnit: eUnit, customTitle: title, excludeDays: showCustom ? excludeDays : []
             }, chapters || []);
             onBegin(built);
         } catch (e) {
@@ -161,7 +177,7 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
     };
 
     const activeDays = showCustom ? computedDuration : PACES.find(p => p.id === selected)?.durationDays || 60;
-    const activeStats = getPaceStats(activeDays);
+    const activeStats = getPaceStats(activeDays, showCustom ? excludeDays : [], showCustom ? startDate : undefined);
 
     return (
         <div className="flex min-h-dvh flex-col overflow-hidden bg-[var(--plr-paper)] pb-8 font-body text-[var(--plr-ink)]">
@@ -188,7 +204,7 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                 {PACES.map((pace, i) => {
                     const Icon = pace.icon;
                     const isSelected = selected === pace.id;
-                    const stats = getPaceStats(pace.durationDays);
+                    const stats = getPaceStats(pace.durationDays, [], startDate);
                     return (
                         <motion.div key={pace.id} className={`flex min-w-[260px] shrink-0 cursor-pointer flex-col items-center gap-[0.4rem] rounded-[14px] border-[1.5px] bg-[var(--plr-cream)] px-5 py-6 text-center shadow-[0_3px_14px_rgba(43,63,60,0.04)] transition-all duration-200 hover:-translate-y-px hover:border-[var(--plr-gold)] hover:shadow-[0_6px_24px_rgba(184,146,74,0.12)] ${
                             isSelected ? 'border-[var(--plr-gold)] shadow-[0_8px_28px_rgba(184,146,74,0.16)]' : 'border-[var(--plr-bone-dark)]'
@@ -200,7 +216,7 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                         >
                             {pace.badge && <div className="absolute -top-[13px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[20px] bg-[var(--plr-teal)] px-3.5 py-[5px] font-mono text-[0.6rem] font-normal tracking-[0.12em] text-white shadow-[0_2px_8px_rgba(46,79,74,0.22)]">{pace.badge}</div>}
 
-                            <PaceRing durationDays={pace.durationDays} selected={isSelected} />
+                            <PaceRing durationDays={pace.durationDays} selected={isSelected} startDate={startDate} />
 
                             <p className="font-ui text-[1.05rem] font-semibold tracking-[0.01em] text-[var(--plr-ink)]">{pace.title}</p>
                             <p className="font-mono text-[0.68rem] tracking-[0.03em] text-[var(--plr-ink-mid)]">{stats.dailyPages} pages per day</p>
@@ -246,11 +262,18 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
             <div className="mx-auto mt-6 w-full max-w-[480px] px-5 pb-8">
                 <div className="mb-3 flex items-center justify-between border-b border-[var(--plr-bone-dark)] pb-2">
                     <h2 className="font-ui text-[1.15rem] font-semibold text-[var(--plr-ink)] m-0">My Plans</h2>
-                    <button className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-[1.5px] border-[var(--plr-bone-dark)] bg-transparent text-[var(--plr-teal)] transition-all duration-200 hover:border-[var(--plr-teal)] hover:bg-[var(--plr-teal)] hover:text-white hover:shadow-[0_4px_14px_rgba(46,79,74,0.2)]" onClick={() => setShowCustom(true)} title="Create custom plan">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                    </button>
+                    <div className="flex items-center gap-4">
+                        {archivedPlanners && archivedPlanners.length > 0 && (
+                            <button className="cursor-pointer border-none bg-transparent text-[0.75rem] font-medium tracking-[0.05em] text-[var(--plr-teal)] hover:underline" onClick={() => setShowArchives(true)}>
+                                Archives ({archivedPlanners.length})
+                            </button>
+                        )}
+                        <button className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-[1.5px] border-[var(--plr-bone-dark)] bg-transparent text-[var(--plr-teal)] transition-all duration-200 hover:border-[var(--plr-teal)] hover:bg-[var(--plr-teal)] hover:text-white hover:shadow-[0_4px_14px_rgba(46,79,74,0.2)]" onClick={() => setShowCustom(true)} title="Create custom plan">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 {planners && planners.length > 0 ? (
                     <div className="flex flex-col gap-2.5">
@@ -365,9 +388,25 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                                             className="h-[5px] w-full cursor-pointer appearance-none rounded-[3px] bg-[var(--plr-bone-dark)] outline-none [&::-webkit-slider-thumb]:h-[18px] [&::-webkit-slider-thumb]:w-[18px] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[var(--plr-teal)] [&::-webkit-slider-thumb]:shadow-[0_1px_4px_rgba(0,0,0,0.2)]" />
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-2 mb-5">
                                     <label className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-[var(--plr-ink-muted)]">Start date</label>
                                     <input type="date" className="w-full rounded-[10px] border-[1.5px] border-[var(--plr-bone-dark)] bg-[var(--plr-cream)] px-4 py-3 font-body text-[0.95rem] text-[var(--plr-ink)] outline-none transition-all duration-200 focus:border-[var(--plr-gold)]" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                                </div>
+                                <div className="mb-1 flex flex-col gap-2">
+                                    <label className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-[var(--plr-ink-muted)]">Days Off (Optional)</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => {
+                                            const isSelected = excludeDays.includes(idx);
+                                            return (
+                                                <button key={day} className={`cursor-pointer rounded-[20px] border-[1.5px] px-3 py-1 font-body text-[0.8rem] transition-all duration-200 ${
+                                                    isSelected ? 'border-[var(--plr-teal)] bg-[var(--plr-teal)] text-white' : 'border-[var(--plr-bone-dark)] bg-[var(--plr-cream)] text-[var(--plr-ink-mid)]'
+                                                }`} onClick={() => setExcludeDays(prev => isSelected ? prev.filter(d => d !== idx) : [...prev, idx])}>
+                                                    {day}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <p className="mt-1 font-body text-[0.75rem] text-[var(--plr-ink-muted)]">Reading assignments will skip these days.</p>
                                 </div>
                             </div>
 
@@ -393,28 +432,79 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
                 <p className="font-body text-[0.95rem] italic leading-[1.65] text-[var(--plr-ink-mid)] mb-1">"The best of deeds are those that are consistent, even if they are few."</p>
                 <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-[var(--plr-ink-muted)]">Prophetic Wisdom</span>
             </div>
+
+            <AnimatePresence>
+                {showArchives && (
+                    <motion.div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[rgba(30,35,32,0.45)] p-4 backdrop-blur-sm"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        onClick={e => { if (e.target === e.currentTarget) setShowArchives(false); }}
+                    >
+                        <motion.div className="flex max-h-[90vh] w-full max-w-[460px] flex-col overflow-hidden rounded-[20px] bg-[var(--plr-cream)] shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
+                            initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }}>
+                            <div className="flex items-center justify-between border-b border-[var(--plr-bone-dark)] px-6 py-5">
+                                <h2 className="font-ui text-xl font-semibold text-[var(--plr-ink)]">Past Plans Archive</h2>
+                                <button className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--plr-bone)] text-[var(--plr-ink-mid)] hover:bg-[var(--plr-bone-dark)]" onClick={() => setShowArchives(false)}>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto px-6 py-5">
+                                {!archivedPlanners || archivedPlanners.length === 0 ? (
+                                    <p className="text-center font-body text-[0.85rem] italic text-[var(--plr-ink-muted)]">No archived plans yet.</p>
+                                ) : (
+                                    <div className="flex flex-col gap-3">
+                                        {archivedPlanners.map(p => {
+                                            const isCompleted = p.completedDays?.length === p.durationDays;
+                                            return (
+                                                <div key={p.id + p.archivedAt} className="rounded-xl border-[1.5px] border-[var(--plr-bone-dark)] bg-white p-4 shadow-sm">
+                                                    <div className="flex items-center justify-between">
+                                                        <h3 className="font-body text-[0.95rem] font-semibold text-[var(--plr-ink)]">{p.title || 'Plan'}</h3>
+                                                        <span className={`rounded-full px-2 py-0.5 font-mono text-[0.6rem] font-medium tracking-[0.05em] uppercase ${isCompleted ? 'bg-[rgba(184,146,74,0.15)] text-[var(--plr-gold)]' : 'bg-[var(--plr-bone)] text-[var(--plr-ink-muted)]'}`}>
+                                                            {isCompleted ? 'Completed' : 'Ended'}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mt-1 font-mono text-[0.65rem] tracking-[0.03em] text-[var(--plr-ink-muted)]">
+                                                        {p.durationDays} days · {p.completedDays?.length || 0} days finished
+                                                    </p>
+                                                    <p className="mt-1.5 font-body text-[0.75rem] text-[var(--plr-ink-mid)] italic">
+                                                        Archived on {formatPlannerDateLabel(p.archivedAt.split('T')[0])}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
 
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
-function buildPrayerSlots(planner, todayAssignment, prayerTimes) {
-    if (!todayAssignment) return PRAYER_NAMES.map(name => ({ name, time: null, count: 0, doneInSlot: 0, completedUpTo: 0, slotStart: 0, slotRoute: null, status: 'upcoming' }));
+function buildPrayerSlots(planner, todayAssignment, prayerTimes, prayerSettings) {
+    const activePrayers = prayerSettings?.activePrayers || PRAYER_NAMES;
+    const pref = prayerSettings?.readPreference || 'after';
+    
+    if (!todayAssignment) return activePrayers.map(name => ({ name, time: null, count: 0, doneInSlot: 0, completedUpTo: 0, slotStart: 0, slotRoute: null, status: 'upcoming' }));
+    
     const progress = getAssignmentProgress(planner, todayAssignment);
     const { completedRangeValues } = progress;
     const items = todayAssignment.items;
     const total = items.length;
-    const done = progress.completedCount;
-    const slots = PRAYER_NAMES.map((name, i) => {
-        const slotEnd = Math.floor(((i + 1) / 5) * total);
-        const slotStart = Math.floor((i / 5) * total);
+    
+    const numSlots = activePrayers.length || 1;
+    
+    const slots = activePrayers.map((name, i) => {
+        const slotEnd = Math.floor(((i + 1) / numSlots) * total);
+        const slotStart = Math.floor((i / numSlots) * total);
         const slotItems = items.slice(slotStart, slotEnd);
         const count = Math.max(slotEnd - slotStart, total > 0 ? 0 : 1);
         const doneInSlot = slotItems.filter(item => completedRangeValues.includes(item.rangeValue)).length;
         const isComplete = doneInSlot >= count && count > 0;
         const isCurrent = !isComplete && doneInSlot > 0;
-        const firstUnread = slotItems.find(item => !completedRangeValues.includes(item.rangeValue));
         const slotRoute = `/planner/read/${todayAssignment.dayNumber}`;
         
         let timeLabel = null;
@@ -423,7 +513,11 @@ function buildPrayerSlots(planner, todayAssignment, prayerTimes) {
             const hNum = parseInt(h, 10);
             const ampm = hNum >= 12 ? 'PM' : 'AM';
             const h12 = hNum % 12 || 12;
-            timeLabel = `${h12}:${m} ${ampm}`;
+            let timeStr = `${h12}:${m} ${ampm}`;
+            if (pref === 'before') timeStr = `Before ${timeStr}`;
+            else if (pref === 'after') timeStr = `After ${timeStr}`;
+            else timeStr = `Around ${timeStr}`;
+            timeLabel = timeStr;
         }
 
         return { name, time: timeLabel, count, doneInSlot, completedUpTo: slotEnd, slotStartCount: slotStart, slotRoute, status: isComplete ? 'completed' : isCurrent ? 'current' : 'upcoming' };
@@ -436,10 +530,14 @@ function buildPrayerSlots(planner, todayAssignment, prayerTimes) {
 }
 
 function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePlannerDayComplete }) {
-    const { prayerTimes, setPrayerTimes, location, setLocation, shiftPlannerSchedule } = useAppStore();
+    const { prayerTimes, setPrayerTimes, location, setLocation, shiftPlannerSchedule, setPlanner, prayerSettings } = useAppStore();
     const overview = useMemo(() => getPlannerOverview(planner), [planner]);
     const metrics = useMemo(() => getPlannerSuccessMetrics(planner), [planner]);
     const today = formatPlannerDate(new Date());
+
+    const [showAdjustPace, setShowAdjustPace] = useState(false);
+    const [newDuration, setNewDuration] = useState(planner.durationDays);
+    const [showSettings, setShowSettings] = useState(false);
 
     useEffect(() => {
         if (location && (!prayerTimes || prayerTimes.date !== today)) {
@@ -484,7 +582,7 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
         return planner.assignments.find(a => a.date === today) || planner.assignments[overview?.currentDayNumber - 1] || null;
     }, [planner, today, overview]);
 
-    const prayerSlots = useMemo(() => buildPrayerSlots(planner, todayAssignment, prayerTimes), [planner, todayAssignment, prayerTimes]);
+    const prayerSlots = useMemo(() => buildPrayerSlots(planner, todayAssignment, prayerTimes, prayerSettings), [planner, todayAssignment, prayerTimes, prayerSettings]);
 
     const unitsLabel = planner ? PLANNER_UNITS[planner.unitType]?.plural : 'Pages';
     const completionDate = planner ? new Date(`${addDays(planner.startDate, planner.durationDays - 1)}T00:00:00`)
@@ -596,9 +694,17 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                                     <>
                                         <Link to={ctaRoute} className="inline-flex w-full items-center justify-center rounded-[40px] bg-[var(--plr-teal)] p-[1.1rem] font-ui text-[1.05rem] font-semibold tracking-[0.02em] text-white no-underline shadow-[0_8px_22px_rgba(46,79,74,0.24)] transition-all duration-200 hover:bg-[var(--plr-teal-mid)] hover:shadow-[0_10px_28px_rgba(46,79,74,0.3)]">{ctaLabel}</Link>
                                         {overview?.overdueDays > 0 && (
-                                            <button onClick={() => shiftPlannerSchedule(planner.id, overview.overdueDays)} className="mt-3 w-full cursor-pointer rounded-[40px] border-2 border-[var(--plr-error)] bg-transparent p-[0.95rem] font-ui text-[0.95rem] font-bold text-[var(--plr-error)] shadow-[0_4px_12px_rgba(192,57,43,0.1)] transition-all duration-200 hover:bg-[var(--plr-error-light)]">
-                                                Catch Up (Shift {overview.overdueDays} Days)
-                                            </button>
+                                            <div className="mt-4 flex flex-col gap-2">
+                                                <button onClick={() => shiftPlannerSchedule(planner.id, overview.overdueDays)} className="w-full cursor-pointer rounded-[40px] border-2 border-[var(--plr-error)] bg-transparent p-[0.95rem] font-ui text-[0.95rem] font-bold text-[var(--plr-error)] shadow-[0_4px_12px_rgba(192,57,43,0.1)] transition-all duration-200 hover:bg-[var(--plr-error-light)]">
+                                                    Catch Up (Shift {overview.overdueDays} Days)
+                                                </button>
+                                                <button onClick={() => {
+                                                    const updated = redistributeMissedAssignments(planner);
+                                                    if (updated) setPlanner(updated);
+                                                }} className="w-full cursor-pointer rounded-[40px] border-none bg-[rgba(192,57,43,0.12)] p-[0.95rem] font-ui text-[0.95rem] font-bold text-[#c0392b] shadow-none transition-all duration-200 hover:bg-[rgba(192,57,43,0.18)]" title="Keep the same end date, distribute missed reading across remaining days">
+                                                    Redistribute Missed Pages
+                                                </button>
+                                            </div>
                                         )}
                                     </>
                                 );
@@ -609,8 +715,11 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                     <div className="w-full max-w-[480px] md:min-w-0 md:flex-1 md:max-w-full">
                         <div className="mx-auto mb-5 w-full max-w-[480px] px-0 md:max-w-full md:px-0">
                             <div className="mb-3 flex items-baseline justify-between">
-                                <h2 className="font-ui text-[1.1rem] font-semibold text-[var(--plr-ink)]">Day Tracker</h2>
-                                <span className="font-mono text-[0.62rem] tracking-[0.05em] text-[var(--plr-ink-muted)]">{completedDays} of {planner.durationDays} completed</span>
+                                <h2 className="font-ui text-[1.1rem] font-semibold text-[var(--plr-ink)]">Timeline</h2>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setShowAdjustPace(true)} className="cursor-pointer border-none bg-transparent text-[0.7rem] font-medium tracking-[0.05em] text-[var(--plr-teal)] hover:underline">Adjust Pace</button>
+                                    <span className="font-mono text-[0.62rem] tracking-[0.05em] text-[var(--plr-ink-muted)] hidden md:inline-block">· {completedDays} of {planner.durationDays} done</span>
+                                </div>
                             </div>
                             <div className="flex flex-wrap gap-[6px] rounded-[14px] border border-[var(--plr-bone-dark)] bg-[var(--plr-cream)] p-3 md:gap-[7px]">
                                 {planner.assignments.map(a => {
@@ -669,6 +778,9 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                                             <MapPin size={16} />
                                         </button>
                                     )}
+                                    <button onClick={() => setShowSettings(true)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--plr-bone-dark)] bg-transparent text-[var(--plr-ink-muted)] hover:bg-[var(--plr-bone)] hover:text-[var(--plr-ink)] transition-colors" title="Settings">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                    </button>
                                 </div>
                             </div>
 
@@ -739,6 +851,98 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
                     </button>
                 </div>
             </motion.div>
+
+            <AnimatePresence>
+                {showAdjustPace && (
+                    <motion.div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[rgba(30,35,32,0.45)] p-4 backdrop-blur-sm"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        onClick={e => { if (e.target === e.currentTarget) setShowAdjustPace(false); }}>
+                        <motion.div className="w-full max-w-[400px] rounded-[20px] bg-[var(--plr-cream)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
+                            initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }}>
+                            <h2 className="mb-4 font-ui text-xl font-semibold text-[var(--plr-ink)]">Adjust Pace</h2>
+                            <p className="mb-5 font-body text-[0.85rem] leading-relaxed text-[var(--plr-ink-mid)]">
+                                Change how many days you want to complete your remaining plan in. This will re-calculate your daily assignments.
+                            </p>
+                            <div className="mb-6 flex flex-col gap-2">
+                                <label className="font-mono text-[0.68rem] uppercase tracking-[0.1em] text-[var(--plr-ink-muted)]">New Total Days</label>
+                                <input type="number" min="1" max="1000" className="w-full rounded-[10px] border-[1.5px] border-[var(--plr-bone-dark)] bg-white px-4 py-3 font-body text-[1.1rem] text-[var(--plr-ink)] outline-none focus:border-[var(--plr-teal)]"
+                                    value={newDuration} onChange={e => setNewDuration(parseInt(e.target.value) || 1)} />
+                            </div>
+                            <div className="flex gap-3">
+                                <button className="flex-1 cursor-pointer rounded-xl border border-[var(--plr-bone-dark)] bg-transparent p-3 font-body font-medium text-[var(--plr-ink-mid)] transition-colors hover:bg-[var(--plr-bone)]" onClick={() => setShowAdjustPace(false)}>Cancel</button>
+                                <button className="flex-1 cursor-pointer rounded-xl border-none bg-[var(--plr-teal)] p-3 font-body font-medium text-white transition-colors hover:bg-[var(--plr-teal-mid)]" onClick={() => {
+                                    const updated = adjustPlannerPace(planner, newDuration);
+                                    setPlanner(updated);
+                                    setShowAdjustPace(false);
+                                }}>Apply Changes</button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {showSettings && (
+                    <motion.div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[rgba(30,35,32,0.45)] p-4 backdrop-blur-sm"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        onClick={e => { if (e.target === e.currentTarget) setShowSettings(false); }}>
+                        <motion.div className="w-full max-w-[400px] rounded-[20px] bg-[var(--plr-cream)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
+                            initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.98 }}>
+                            <h2 className="mb-4 font-ui text-xl font-semibold text-[var(--plr-ink)]">Planner Settings</h2>
+                            
+                            <div className="flex flex-col gap-5 mb-6">
+                                <div className="flex flex-col gap-2">
+                                    <h3 className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-[var(--plr-ink-muted)]">Daily Prayers</h3>
+                                    <p className="font-body text-[0.8rem] text-[var(--plr-ink-mid)] mb-1">Select which prayers you want to distribute reading across.</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map(p => {
+                                            const isActive = useAppStore.getState().prayerSettings?.activePrayers?.includes(p) ?? true;
+                                            return (
+                                                <button key={p} className={`cursor-pointer rounded-full border-[1.5px] px-3 py-1 font-body text-[0.8rem] transition-colors ${
+                                                    isActive ? 'border-[var(--plr-teal)] bg-[var(--plr-teal)] text-white' : 'border-[var(--plr-bone-dark)] text-[var(--plr-ink-muted)]'
+                                                }`} onClick={() => {
+                                                    const s = useAppStore.getState();
+                                                    const current = s.prayerSettings?.activePrayers || ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+                                                    const next = current.includes(p) ? current.filter(x => x !== p) : [...current, p];
+                                                    if(next.length === 0) return; // Must have at least 1
+                                                    s.updatePrayerSettings({ activePrayers: next });
+                                                }}>
+                                                    {p}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <h3 className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-[var(--plr-ink-muted)]">Reading Preference</h3>
+                                    <select className="w-full rounded-[10px] border-[1.5px] border-[var(--plr-bone-dark)] bg-white px-3 py-2 font-body text-[0.9rem] text-[var(--plr-ink)] outline-none"
+                                        value={useAppStore.getState().prayerSettings?.readPreference || 'after'}
+                                        onChange={e => useAppStore.getState().updatePrayerSettings({ readPreference: e.target.value })}>
+                                        <option value="after">Read After Prayer</option>
+                                        <option value="before">Read Before Prayer</option>
+                                        <option value="split">Split Before & After</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-center justify-between border-t border-[var(--plr-bone-dark)] pt-4">
+                                    <div className="flex flex-col">
+                                        <h3 className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-[var(--plr-ink-muted)]">Intention Prompts</h3>
+                                        <p className="font-body text-[0.8rem] text-[var(--plr-ink-mid)]">Show a mindfulness prompt before reading.</p>
+                                    </div>
+                                    <button className={`relative h-6 w-11 cursor-pointer rounded-full border-none transition-colors ${
+                                        useAppStore.getState().intentionPromptEnabled ? 'bg-[var(--plr-teal)]' : 'bg-[var(--plr-bone-dark)]'
+                                    }`} onClick={() => useAppStore.getState().toggleIntentionPrompt()}>
+                                        <div className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                                            useAppStore.getState().intentionPromptEnabled ? 'translate-x-5' : 'translate-x-0'
+                                        }`} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button className="w-full cursor-pointer rounded-xl border border-[var(--plr-bone-dark)] bg-[var(--plr-bone)] p-3 font-body font-medium text-[var(--plr-ink)] transition-colors hover:bg-[var(--plr-bone-dark)]" onClick={() => setShowSettings(false)}>Done</button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

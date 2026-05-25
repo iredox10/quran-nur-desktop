@@ -386,6 +386,9 @@ export const useAppStore = create(
                     : [planner, ...planners];
                 return buildPlannerState(nextPlanners, planner.id);
             }),
+            setReadingPreferences: (prefs) => set((state) => ({ readingPreferences: { ...state.readingPreferences, ...prefs } })),
+            updatePrayerSettings: (prefs) => set((state) => ({ prayerSettings: { ...state.prayerSettings, ...prefs } })),
+            toggleIntentionPrompt: () => set((state) => ({ intentionPromptEnabled: !state.intentionPromptEnabled })),
             setActivePlanner: (plannerId) => set((state) => buildPlannerState(state.planners || [], plannerId)),
             deletePlanner: (plannerId) => set((state) => {
                 const nextPlanners = (state.planners || []).filter((planner) => planner.id !== plannerId);
@@ -602,6 +605,37 @@ export const useAppStore = create(
                 });
                 return buildPlannerState(nextPlanners, activePlannerId);
             })),
+
+            updatePlanner: (planId, updates) => set((state) => updatePlannerCollection(state, ({ planners, activePlannerId }) => {
+                const targetId = planId || activePlannerId;
+                const nextPlanners = planners.map(p => p.id === targetId ? { ...p, ...updates } : p);
+                return buildPlannerState(nextPlanners, activePlannerId);
+            })),
+
+            archivePlanner: (planId) => set((state) => {
+                const targetId = planId || state.activePlannerId;
+                const plannerToArchive = state.planners?.find(p => p.id === targetId) || state.planner;
+                
+                if (!plannerToArchive) return state;
+
+                const archivedPlanners = [...(state.archivedPlanners || []), { ...plannerToArchive, archivedAt: new Date().toISOString() }];
+                
+                return updatePlannerCollection(state, ({ planners, activePlannerId }) => {
+                    const nextPlanners = planners.filter(p => p.id !== targetId);
+                    const nextActiveId = activePlannerId === targetId ? (nextPlanners[0]?.id || null) : activePlannerId;
+                    return { ...buildPlannerState(nextPlanners, nextActiveId), archivedPlanners };
+                });
+            }),
+
+            archivedPlanners: [],
+            setArchivedPlanners: (planners) => set({ archivedPlanners: planners }),
+
+            prayerSettings: { activePrayers: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'], readPreference: 'After' },
+            updatePrayerSettings: (settings) => set((state) => ({ prayerSettings: { ...state.prayerSettings, ...settings } })),
+
+            intentionPromptEnabled: true,
+            setIntentionPromptEnabled: (enabled) => set({ intentionPromptEnabled: enabled }),
+
         }),
         {
             name: 'quran-app-storage',
@@ -671,6 +705,9 @@ export function getSyncableState(state) {
         lastSyncAt: state.lastSyncAt || 0,
         dailyReadingGoal: state.dailyReadingGoal || 20,
         prayerTimes: state.prayerTimes || null,
-        location: state.location || null
+        location: state.location || null,
+        archivedPlanners: state.archivedPlanners || [],
+        prayerSettings: state.prayerSettings || { activePrayers: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'], readPreference: 'After' },
+        intentionPromptEnabled: state.intentionPromptEnabled ?? true
     };
 }
