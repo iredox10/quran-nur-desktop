@@ -413,7 +413,7 @@ function buildPrayerSlots(planner, todayAssignment) {
         const isComplete = doneInSlot >= count && count > 0;
         const isCurrent = !isComplete && doneInSlot > 0;
         const firstUnread = slotItems.find(item => !completedRangeValues.includes(item.rangeValue));
-        const slotRoute = (firstUnread || slotItems[0])?.route || null;
+        const slotRoute = `/planner/read/${todayAssignment.dayNumber}`;
         return { name, count, doneInSlot, completedUpTo: slotEnd, slotStartCount: slotStart, slotRoute, status: isComplete ? 'completed' : isCurrent ? 'current' : 'upcoming' };
     });
     const firstIncomplete = slots.findIndex(s => s.status !== 'completed');
@@ -454,14 +454,14 @@ function ActiveView({ planner, onDelete, setPlannerAssignmentProgress, togglePla
 
     const nextAssignmentProgress = nextAssignment ? getAssignmentProgress(planner, nextAssignment) : null;
     const nextReadRoute = todayComplete
-        ? (nextAssignmentProgress?.nextItem?.route || nextAssignment?.primaryRoute || null)
-        : (todayProgress?.nextItem?.route || todayAssignment?.primaryRoute || null);
+        ? (nextAssignment ? `/planner/read/${nextAssignment.dayNumber}` : null)
+        : (todayAssignment ? `/planner/read/${todayAssignment.dayNumber}` : null);
 
     const todayDone = todayProgress?.completedCount ?? 0;
     const todayTotal = todayProgress?.totalCount ?? 1;
     const todayPct = Math.round((todayDone / todayTotal) * 100);
 
-    const resumeRoute = planner?.lastReadPage ? `/page/${planner.lastReadPage}` : nextReadRoute;
+    const resumeRoute = nextReadRoute;
     const hasStartedReading = todayDone > 0 || !!planner?.lastReadPage;
 
     const overallPct = overview ? Math.round(overview.completionRatio * 100) : 0;

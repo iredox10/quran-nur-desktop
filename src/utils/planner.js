@@ -436,3 +436,14 @@ export function getPlannerSuccessMetrics(plan, today = formatPlannerDate(new Dat
     consistencyStreak,
   };
 }
+
+export function getAssignmentResumePageNumber(plan, assignment, chapters = []) {
+  if (!plan || !assignment) return 1;
+  const progress = getAssignmentProgress(plan, assignment);
+  if (progress.isComplete) return assignment.pageStart || 1;
+  const nextItem = progress.nextItem;
+  if (!nextItem) return assignment.pageStart || 1;
+  const bounds = resolveItemPageBounds(nextItem, assignment.unitType, chapters);
+  return bounds.pageStart || assignment.pageStart || 1;
+}
+

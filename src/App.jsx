@@ -11,6 +11,7 @@ import Memorization from './pages/Memorization';
 import Library from './pages/Library';
 import Progress from './pages/Progress';
 import Planner from './pages/Planner';
+import PlannerReader from './pages/PlannerReader';
 import OfflineLibrary from './pages/OfflineLibrary';
 import TajweedTooltip from './components/TajweedTooltip';
 import GlobalAudioPlayer from './components/GlobalAudioPlayer';
@@ -66,6 +67,7 @@ function App() {
           <Route path="/memorize/:id" element={<Memorization />} />
           <Route path="/library" element={<Library />} />
           <Route path="/planner" element={<Planner />} />
+          <Route path="/planner/read/:dayNumber" element={<PlannerReader />} />
           <Route path="/offline-library" element={<OfflineLibrary />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/profile" element={<Profile />} />
