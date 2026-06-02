@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+const fs = require('fs');
+const filePath = '/home/iredox/Desktop/personal-apps/quran-app/src/pages/MemorizeIndex.jsx';
+
+const newContent = `import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getChapters, getJuzs, getChapterAudio } from '../services/api/quranApi';
 import { Link } from 'react-router-dom';
@@ -93,11 +96,11 @@ export default function MemorizeIndex() {
         if (!lastSession) return '';
         const diff = Date.now() - lastSession.timestamp;
         const mins = Math.floor(diff / 60000);
-        if (mins < 60) return `${mins}m ago`;
+        if (mins < 60) return \`\${mins}m ago\`;
         const hrs = Math.floor(mins / 60);
-        if (hrs < 24) return `${hrs}h ago`;
+        if (hrs < 24) return \`\${hrs}h ago\`;
         const days = Math.floor(hrs / 24);
-        return `${days}d ago`;
+        return \`\${days}d ago\`;
     }, [lastSession]);
 
     const handlePlayAudio = async (e, chapterId) => {
@@ -163,7 +166,7 @@ export default function MemorizeIndex() {
                 <h1 className="mb-6 text-center font-ui text-[1.6rem] font-bold text-[var(--text-primary)]">Hifdh Tracker</h1>
 
                 {lastSessionChapter && (
-                    <Link to={`/memorize/${lastSessionChapter.id}`} className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-hover)] px-5 py-4 text-white no-underline transition-all duration-150 hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(46,79,74,0.25)] md:p-5">
+                    <Link to={\`/memorize/\${lastSessionChapter.id}\`} className="mb-6 flex items-center gap-4 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-hover)] px-5 py-4 text-white no-underline transition-all duration-150 hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(46,79,74,0.25)] md:p-5">
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15"><BookOpen size={22} /></div>
                         <div className="min-w-0 flex-1">
                             <div className="mb-[0.15rem] font-ui text-base font-semibold">Continue: {lastSessionChapter.name_simple}</div>
@@ -206,7 +209,7 @@ export default function MemorizeIndex() {
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-2">
                             {needsRevision.map(ayah => (
-                                <Link to={`/memorize/${ayah.split(':')[0]}?verse=${ayah}`} key={ayah} className="flex-shrink-0 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 no-underline shadow-sm transition-colors hover:border-red-400 dark:border-red-800/50 dark:bg-[var(--bg-surface)] dark:text-red-300">
+                                <Link to={\`/memorize/\${ayah.split(':')[0]}?verse=\${ayah}\`} key={ayah} className="flex-shrink-0 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700 no-underline shadow-sm transition-colors hover:border-red-400 dark:border-red-800/50 dark:bg-[var(--bg-surface)] dark:text-red-300">
                                     {chapters?.find(c => c.id == ayah.split(':')[0])?.name_simple} {ayah.split(':')[1]}
                                 </Link>
                             ))}
@@ -241,13 +244,13 @@ export default function MemorizeIndex() {
                 <div className="mb-4 flex items-center justify-between">
                     <div className="flex rounded-lg bg-[var(--bg-secondary)] p-1">
                         <button 
-                            className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-all ${viewMode === 'surah' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)]'}`}
+                            className={\`rounded-md px-4 py-1.5 text-sm font-semibold transition-all \${viewMode === 'surah' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)]'}\`}
                             onClick={() => setViewMode('surah')}
                         >
                             Surahs
                         </button>
                         <button 
-                            className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-all ${viewMode === 'juz' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)]'}`}
+                            className={\`rounded-md px-4 py-1.5 text-sm font-semibold transition-all \${viewMode === 'juz' ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)]'}\`}
                             onClick={() => setViewMode('juz')}
                         >
                             Ajzaa (Juz)
@@ -264,11 +267,11 @@ export default function MemorizeIndex() {
 
                 <div className="mb-5 flex justify-end gap-2">
                     <button
-                        className={`flex cursor-pointer items-center gap-1.5 rounded-[20px] border-[1.5px] px-3.5 py-[7px] text-[0.78rem] font-semibold font-[inherit] transition-all duration-200 ${
+                        className={\`flex cursor-pointer items-center gap-1.5 rounded-[20px] border-[1.5px] px-3.5 py-[7px] text-[0.78rem] font-semibold font-[inherit] transition-all duration-200 \${
                             showOnlyMemorized
                                 ? 'border-[#10b981] bg-[rgba(16, 185, 129, 0.1)] text-[#10b981]'
                                 : 'border-[var(--glass-border)] bg-transparent text-[var(--text-secondary)]'
-                        }`}
+                        }\`}
                         onClick={() => setShowOnlyMemorized(!showOnlyMemorized)}
                     >
                         <Award size={14} />
@@ -286,12 +289,12 @@ export default function MemorizeIndex() {
 
                             return (
                                 <motion.div key={chapter.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                                    <Link to={`/memorize/${chapter.id}`} className={`flex items-center gap-3 overflow-hidden rounded-[14px] border-[1.5px] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md p-4 no-underline text-inherit transition-all duration-150 hover:-translate-y-px hover:border-[var(--accent-primary)] hover:shadow-[0_4px_14px_rgba(46,79,74,0.08)] ${
+                                    <Link to={\`/memorize/\${chapter.id}\`} className={\`flex items-center gap-3 overflow-hidden rounded-[14px] border-[1.5px] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md p-4 no-underline text-inherit transition-all duration-150 hover:-translate-y-px hover:border-[var(--accent-primary)] hover:shadow-[0_4px_14px_rgba(46,79,74,0.08)] \${
                                         isMemorized ? 'border-[#10b981]' : 'border-[var(--glass-border)]'
-                                    }`}>
-                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-mono text-[0.8rem] font-bold ${
+                                    }\`}>
+                                        <div className={\`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-mono text-[0.8rem] font-bold \${
                                             isMemorized ? 'bg-[rgba(16, 185, 129, 0.1)] text-[#10b981]' : 'bg-[var(--bg-secondary)] text-[var(--accent-primary)]'
-                                        }`}>{chapter.id}</div>
+                                        }\`}>{chapter.id}</div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-[0.35rem] font-ui text-[0.95rem] font-semibold text-[var(--text-primary)]">
                                                 {chapter.name_simple}
@@ -306,7 +309,7 @@ export default function MemorizeIndex() {
                                             {(isMemorized || hasPartial) && (
                                                 <div className="mt-1.5 h-[3px] overflow-hidden rounded-sm bg-[var(--glass-border)]">
                                                     <div className="h-full rounded-sm transition-all duration-[0.4s] ease-in-out"
-                                                        style={{ width: `${isMemorized ? 100 : memPct}%`, background: isMemorized ? '#10b981' : 'var(--accent-primary)' }} />
+                                                        style={{ width: \`\${isMemorized ? 100 : memPct}%\`, background: isMemorized ? '#10b981' : 'var(--accent-primary)' }} />
                                                 </div>
                                             )}
                                         </div>
@@ -346,12 +349,12 @@ export default function MemorizeIndex() {
 
                             return (
                                 <motion.div key={juz.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                                    <div className={`flex items-center gap-3 overflow-hidden rounded-[14px] border-[1.5px] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md p-4 text-inherit transition-all duration-150 ${
+                                    <div className={\`flex items-center gap-3 overflow-hidden rounded-[14px] border-[1.5px] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md p-4 text-inherit transition-all duration-150 \${
                                         isMemorized ? 'border-[#10b981]' : 'border-[var(--glass-border)]'
-                                    }`}>
-                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-mono text-[0.8rem] font-bold ${
+                                    }\`}>
+                                        <div className={\`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-mono text-[0.8rem] font-bold \${
                                             isMemorized ? 'bg-[rgba(16, 185, 129, 0.1)] text-[#10b981]' : 'bg-[var(--bg-secondary)] text-[var(--accent-primary)]'
-                                        }`}>{juz.juz_number}</div>
+                                        }\`}>{juz.juz_number}</div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-center gap-[0.35rem] font-ui text-[0.95rem] font-semibold text-[var(--text-primary)]">
                                                 Juz {juz.juz_number}
@@ -362,7 +365,7 @@ export default function MemorizeIndex() {
                                             </div>
                                             <div className="mt-1.5 h-[3px] overflow-hidden rounded-sm bg-[var(--glass-border)]">
                                                 <div className="h-full rounded-sm transition-all duration-[0.4s] ease-in-out"
-                                                    style={{ width: `${memPct}%`, background: isMemorized ? '#10b981' : 'var(--accent-primary)' }} />
+                                                    style={{ width: \`\${memPct}%\`, background: isMemorized ? '#10b981' : 'var(--accent-primary)' }} />
                                             </div>
                                         </div>
                                     </div>
@@ -415,3 +418,7 @@ export default function MemorizeIndex() {
         </div>
     );
 }
+`;
+
+fs.writeFileSync(filePath, newContent);
+console.log("Replaced MemorizeIndex.jsx with new features");

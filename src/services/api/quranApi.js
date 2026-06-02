@@ -133,3 +133,8 @@ export const getTajweedVersesByPage = async (pageNumber) => {
   const data = await fetchWithOfflineCache('/quran/verses/uthmani_tajweed', { page_number: pageNumber });
   return data.verses;
 };
+
+export const getJuzs = async () => {
+  const data = await fetchWithOfflineCache('/juzs');
+  return data.juzs;
+};

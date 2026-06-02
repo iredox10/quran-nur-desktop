@@ -83,6 +83,8 @@ export const useAppStore = create(
             bookmarks: [], // Array of { verseKey, surahName, chapterId }
             memorizedAyahs: [], // Array of verse keys '1:1'
             memorizedSurahs: [], // Array of chapter IDs
+            hifdhHistory: {}, // { [itemId]: { lastReviewed: timestamp, strength: 'strong'|'good'|'weak' } }
+            hifdhGoals: [], // Array of { id, targetType, targetId, targetDate, createdAt }
             collections: [], // Array of { id, name, items: [{ verseKey, surahName, chapterId }] }
             recentlyRead: [], // Array of { chapterId, chapterName, verseKey, timestamp }
             readingSessions: [], // Array of { date (YYYY-MM-DD), duration (seconds), type: 'reading'|'memorizing'|'listening', chapterId }
@@ -179,6 +181,21 @@ export const useAppStore = create(
                     return { memorizedAyahs: [...(state.memorizedAyahs || []), verseKey] };
                 }
             }),
+
+            
+            logHifdhReview: (itemId, strength = 'strong') => set((state) => {
+                const history = { ...(state.hifdhHistory || {}) };
+                history[itemId] = { lastReviewed: Date.now(), strength };
+                return { hifdhHistory: history };
+            }),
+
+            addHifdhGoal: (goal) => set((state) => ({
+                hifdhGoals: [...(state.hifdhGoals || []), { ...goal, id: Date.now(), createdAt: Date.now() }]
+            })),
+
+            deleteHifdhGoal: (id) => set((state) => ({
+                hifdhGoals: (state.hifdhGoals || []).filter(g => g.id !== id)
+            })),
 
             toggleMemorizedSurah: (chapterId) => set((state) => {
                 const isMemorized = (state.memorizedSurahs || []).includes(chapterId);
@@ -731,6 +748,8 @@ export function getSyncableState(state) {
         bookmarks: state.bookmarks || [],
         memorizedAyahs: state.memorizedAyahs || [],
         memorizedSurahs: state.memorizedSurahs || [],
+        hifdhHistory: state.hifdhHistory || {},
+        hifdhGoals: state.hifdhGoals || [],
         collections: state.collections || [],
         recentlyRead: state.recentlyRead || [],
         readingSessions: state.readingSessions || [],
