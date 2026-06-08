@@ -38,12 +38,8 @@ function App() {
       }
     }
 
-    // If already running as installed PWA, request immediately
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-      || window.navigator.standalone;
-    if (isStandalone) {
-      requestPersistentStorage();
-    }
+    // Request persistent storage unconditionally on load to prevent offline data eviction
+    requestPersistentStorage();
 
     // Also request right after the user installs the PWA
     const onInstalled = () => {
