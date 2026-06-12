@@ -282,7 +282,7 @@ export default function Layout() {
                 </div>
             </header>
 
-            <main className="flex-1 px-6 pb-[90px] pt-[calc(52px+2.5rem)]">
+            <main className="flex-1 pb-[90px] pt-[calc(52px+2.5rem)]">
                 <Outlet />
             </main>
 
