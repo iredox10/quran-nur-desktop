@@ -3,6 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { getLocalAudioUrl } from '../utils/localAudio';
 import { Play, Pause, X, Music, SkipBack, SkipForward, Square, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CustomSelect from './ui/CustomSelect';
 
 const DELAY_OPTIONS = [0, 1, 2, 3, 5, 10];
 const REPEAT_OPTIONS = [1, 2, 3, 5, 10, -1];
@@ -23,6 +24,11 @@ export default function GlobalAudioPlayer() {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [currentAyaLoopCount, setCurrentAyaLoopCount] = useState(0);
     const [currentSelectionLoopCount, setCurrentSelectionLoopCount] = useState(0);
+
+    const ayahOptions = audioPlaylist.map((v, i) => ({ value: i, label: v.verseKey || String(i) }));
+    const repeatOptions = REPEAT_OPTIONS.map(opt => ({ value: opt, label: opt === -1 ? '∞ Infinite' : `${opt}×` }));
+    const delayOptions = DELAY_OPTIONS.map(opt => ({ value: opt, label: opt === 0 ? 'None' : `${opt}s` }));
+    const speedOptions = SPEED_OPTIONS.map(opt => ({ value: opt, label: `${opt}×` }));
 
     const hasAudio = !!(currentAudioUrl || audioPlaylist.length > 0);
     const activeUrl = audioPlaylist.length > 0 ? audioPlaylist[audioTrackIndex]?.url : currentAudioUrl;
@@ -140,13 +146,21 @@ export default function GlobalAudioPlayer() {
                 {isPlayerVisible && (
                     <motion.div
                         key="player-pill"
-                        initial={{ y: 100, opacity: 0, x: '-50%' }}
-                        animate={{ y: 0, opacity: 1, x: '-50%' }}
-                        exit={{ y: 100, opacity: 0, x: '-50%' }}
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100vw-1rem)] max-w-[480px] px-3 py-2 bg-[var(--glass-bg)] backdrop-blur-xl border-[var(--glass-border)] z-[900] flex items-center justify-between gap-2 rounded-full shadow-[var(--shadow-xl)]"
+                        className="fixed bottom-8 left-0 right-0 mx-auto w-[calc(100%-1rem)] max-w-[480px] px-3 py-2 bg-[var(--glass-bg)] backdrop-blur-xl border-[var(--glass-border)] z-[900] flex items-center justify-between gap-2 rounded-full shadow-[var(--shadow-xl)]"
                     >
-                        {hasAudio && <audio ref={audioRef} src={activeUrl || ''} onEnded={handleEnded} />}
+                        {hasAudio && (
+                            <audio 
+                                ref={audioRef} 
+                                src={resolvedAudioUrl || activeUrl || ''} 
+                                onEnded={handleEnded}
+                                onPlay={() => setIsPlaying(true)}
+                                onPause={() => setIsPlaying(false)}
+                            />
+                        )}
 
                         {!hasAudio ? (
                             <>
@@ -242,61 +256,93 @@ export default function GlobalAudioPlayer() {
                                 </div>
 
                                 {/* Scrollable body */}
-                                <div className="flex-1 overflow-y-auto px-6 pb-6 grid gap-4">
+                                <div className="flex-1 overflow-y-auto px-6 pb-6 grid gap-6">
                                     {/* Range */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-[0.85rem] text-[var(--text-muted)] mb-1">Start Ayah</label>
-                                            <select className="form-input" value={audioSettings.startRange ?? 0} onChange={(e) => updateAudioSettings({ startRange: Number(e.target.value) })}>
-                                                {audioPlaylist.map((v, i) => <option key={v.verseKey || i} value={i}>{v.verseKey}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-[0.85rem] text-[var(--text-muted)] mb-1">End Ayah</label>
-                                            <select className="form-input" value={audioSettings.endRange ?? audioPlaylist.length - 1} onChange={(e) => updateAudioSettings({ endRange: Number(e.target.value) })}>
-                                                {audioPlaylist.map((v, i) => <option key={v.verseKey || i} value={i}>{v.verseKey}</option>)}
-                                            </select>
+                                    <div>
+                                        <label className="mb-[0.6rem] block text-[0.8rem] font-semibold uppercase tracking-[0.05em] text-[var(--text-muted)]">
+                                            Playback Range
+                                        </label>
+                                        <div className="flex gap-3">
+                                            <div className="flex-1">
+                                                <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">From Ayah</label>
+                                                <CustomSelect 
+                                                    value={audioSettings.startRange ?? 0} 
+                                                    onChange={(val) => updateAudioSettings({ startRange: Number(val) })}
+                                                    options={ayahOptions}
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">To Ayah</label>
+                                                <CustomSelect 
+                                                    value={audioSettings.endRange ?? Math.max(0, audioPlaylist.length - 1)} 
+                                                    onChange={(val) => updateAudioSettings({ endRange: Number(val) })}
+                                                    options={ayahOptions}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* Repeats */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-[0.85rem] text-[var(--text-muted)] mb-1">Repeat Ayah</label>
-                                            <select className="form-input" value={audioSettings.repeatAya} onChange={(e) => updateAudioSettings({ repeatAya: Number(e.target.value) })}>
-                                                {REPEAT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt === -1 ? '∞ Infinite' : `${opt}×`}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-[0.85rem] text-[var(--text-muted)] mb-1">Repeat Selection</label>
-                                            <select className="form-input" value={audioSettings.repeatSelection} onChange={(e) => updateAudioSettings({ repeatSelection: Number(e.target.value) })}>
-                                                {REPEAT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt === -1 ? '∞ Infinite' : `${opt}×`}</option>)}
-                                            </select>
+                                    <div>
+                                        <label className="mb-[0.6rem] block text-[0.8rem] font-semibold uppercase tracking-[0.05em] text-[var(--text-muted)]">
+                                            Repeat
+                                        </label>
+                                        <div className="flex gap-3">
+                                            <div className="flex-1">
+                                                <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">Each Ayah</label>
+                                                <CustomSelect 
+                                                    value={audioSettings.repeatAya ?? 1} 
+                                                    onChange={(val) => updateAudioSettings({ repeatAya: Number(val) })}
+                                                    options={repeatOptions}
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">Full Selection</label>
+                                                <CustomSelect 
+                                                    value={audioSettings.repeatSelection ?? 1} 
+                                                    onChange={(val) => updateAudioSettings({ repeatSelection: Number(val) })}
+                                                    options={repeatOptions}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* Advanced */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-[0.85rem] text-[var(--text-muted)] mb-1">Delay (sec)</label>
-                                            <select className="form-input" value={audioSettings.delayBetweenAyas} onChange={(e) => updateAudioSettings({ delayBetweenAyas: Number(e.target.value) })}>
-                                                {DELAY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt === 0 ? 'None' : `${opt}s`}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-[0.85rem] text-[var(--text-muted)] mb-1">Speed</label>
-                                            <select className="form-input" value={audioSettings.playbackSpeed} onChange={(e) => updateAudioSettings({ playbackSpeed: Number(e.target.value) })}>
-                                                {SPEED_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}×</option>)}
-                                            </select>
+                                    <div>
+                                        <label className="mb-[0.6rem] block text-[0.8rem] font-semibold uppercase tracking-[0.05em] text-[var(--text-muted)]">
+                                            Advanced
+                                        </label>
+                                        <div className="flex gap-3">
+                                            <div className="flex-1">
+                                                <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">Delay Between Ayahs</label>
+                                                <CustomSelect 
+                                                    value={audioSettings.delayBetweenAyas ?? 0} 
+                                                    onChange={(val) => updateAudioSettings({ delayBetweenAyas: Number(val) })}
+                                                    options={delayOptions}
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">Playback Speed</label>
+                                                <CustomSelect 
+                                                    value={audioSettings.playbackSpeed ?? 1.0} 
+                                                    onChange={(val) => updateAudioSettings({ playbackSpeed: Number(val) })}
+                                                    options={speedOptions}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
                                     {/* Auto-scroll toggle */}
-                                    <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-[var(--bg-secondary)]">
-                                        <input type="checkbox" checked={audioSettings.scrollWhilePlaying} onChange={(e) => updateAudioSettings({ scrollWhilePlaying: e.target.checked })} className="w-[18px] h-[18px] accent-[var(--accent-primary)] shrink-0" />
+                                    <label className="group flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] p-4 transition-colors hover:border-[var(--accent-primary)] hover:bg-[var(--accent-light)] mt-2">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={audioSettings.scrollWhilePlaying ?? true} 
+                                            onChange={(e) => updateAudioSettings({ scrollWhilePlaying: e.target.checked })} 
+                                            className="h-5 w-5 rounded border-gray-300 text-[var(--accent-primary)] focus:ring-[var(--accent-primary)]" 
+                                        />
                                         <div>
                                             <div className="text-[0.9rem] font-semibold text-[var(--text-primary)]">Auto-scroll while playing</div>
-                                            <div className="text-xs text-[var(--text-muted)]">Highlights and scrolls to each Ayah</div>
+                                            <div className="text-[0.8rem] text-[var(--text-muted)]">Highlights and scrolls to each Ayah</div>
                                         </div>
                                     </label>
                                 </div>
