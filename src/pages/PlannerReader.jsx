@@ -5,7 +5,7 @@ import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, CheckCircle2, ChevronRight, ChevronLeft, Check, Timer } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, ChevronLeft, Check, Timer, Minus, Plus } from 'lucide-react';
 
 import { getVersesByPage, getTajweedVersesByPage, getChapters } from '../services/api/quranApi';
 import { useAppStore } from '../store/useAppStore';
@@ -55,10 +55,21 @@ export default function PlannerReader() {
         intentionPromptEnabled,
         startPlannerTimer, stopPlannerTimer, plannerSessionTimers,
         addPlannerReflection, addPlannerBookmark, removePlannerBookmark,
-        plannerBookmarks
+        plannerBookmarks,
+        autoScroll, setAutoScroll, autoScrollSpeed, setAutoScrollSpeed
     } = useAppStore();
 
     const [showIntention, setShowIntention] = useState(() => useAppStore.getState().intentionPromptEnabled);
+    const [isScrolled, setIsScrolled] = useState(false);
+    const [isFocusMode, setIsFocusMode] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 40);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const mushaf = getMushafById(mushafId);
     const isTajweedActive = isTajweedEnabledForMushaf(mushafId, tajweedEnabled);
@@ -128,6 +139,61 @@ export default function PlannerReader() {
     useEffect(() => {
         setNavHeaderTitle(assignment ? `Day ${assignment.dayNumber}` : 'Planner Reader');
     }, [assignment, setNavHeaderTitle]);
+
+    // --- AUTO-SCROLL LOGIC ---
+    const scrollRafRef = useRef(null);
+    const lastScrollTimestampRef = useRef(null);
+    const scrollRemainderRef = useRef(0);
+    const [isAutoScrollPaused, setIsAutoScrollPaused] = useState(false);
+
+    useEffect(() => {
+        if (!autoScroll) {
+            if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+            lastScrollTimestampRef.current = null;
+            scrollRemainderRef.current = 0;
+            return;
+        }
+
+        const speedMap = { 1: 5, 2: 10, 3: 18, 4: 36, 5: 60, 6: 108, 7: 180 };
+        const pxPerSecond = speedMap[autoScrollSpeed] || 60;
+
+        const tick = (timestamp) => {
+            if (lastScrollTimestampRef.current == null) {
+                lastScrollTimestampRef.current = timestamp;
+            }
+
+            const deltaMs = timestamp - lastScrollTimestampRef.current;
+            lastScrollTimestampRef.current = timestamp;
+
+            if (!isAutoScrollPaused) {
+                const nextDistance = scrollRemainderRef.current + (pxPerSecond * deltaMs) / 1000;
+                const wholePixels = Math.trunc(nextDistance);
+                scrollRemainderRef.current = nextDistance - wholePixels;
+
+                if (wholePixels !== 0) {
+                    window.scrollBy(0, wholePixels);
+                }
+            }
+            if ((window.innerHeight + window.scrollY) >= document.body.scrollHeight - 10) {
+                setAutoScroll(false);
+                return;
+            }
+            scrollRafRef.current = requestAnimationFrame(tick);
+        };
+
+        scrollRafRef.current = requestAnimationFrame(tick);
+
+        return () => {
+            if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+            lastScrollTimestampRef.current = null;
+            scrollRemainderRef.current = 0;
+        };
+    }, [autoScroll, autoScrollSpeed, setAutoScroll, isAutoScrollPaused]);
+
+    useEffect(() => {
+        return () => setAutoScroll(false);
+    }, [setAutoScroll]);
+    // --- END AUTO-SCROLL LOGIC ---
 
     // Auto-mark current page/item as read when user navigates away
     const prevPageRef = useRef(pageNumber);
@@ -444,78 +510,111 @@ export default function PlannerReader() {
                 <title>{`Day ${assignment.dayNumber} Planner Reader - The Noble Qur'an`}</title>
             </Helmet>
 
+            <style>{`
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
+
             {/* Planner specific header */}
-            <div className="mb-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] overflow-hidden">
-                <div className="p-4 sm:p-5">
-                    <div className="flex items-center gap-4 mb-3">
-                        <Link to="/planner" className="flex items-center justify-center w-10 h-10 rounded-full bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--accent-light)] transition-colors">
-                            <ArrowLeft size={20} />
-                        </Link>
-                        <div className="flex-1">
-                            <h2 className="m-0 font-ui text-[1.2rem] font-bold text-[var(--text-primary)]">{assignment.title}</h2>
-                            <div className="flex items-center gap-2 m-0 text-[0.85rem] text-[var(--text-muted)]">
-                                <span>{assignment.subtitle}</span>
-                                <span>•</span>
-                                <span>⏱️ ~{estimatedTimeMins} mins</span>
-                            </div>
+            <AnimatePresence>
+                {!isFocusMode && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className={`sticky top-[52px] z-50 mb-12 transition-all duration-300 ${isScrolled ? 'pt-0' : 'pt-0'}`}
+                    >
+                        <div className={`mx-auto rounded-[20px] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden transition-all duration-300 ${
+                            isScrolled ? 'bg-[var(--bg-surface)]/90 py-2 px-4' : 'bg-[var(--bg-surface)]/80 p-4 sm:p-5'
+                        }`}>
+                            {isScrolled ? (
+                                // Collapsed Sticky State
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex-1 flex items-center justify-center gap-4">
+                                        <h2 className="m-0 font-ui text-[0.95rem] font-bold text-[var(--text-primary)] truncate max-w-[150px]">{assignment.title}</h2>
+                                        <div className="w-[1px] h-4 bg-[var(--border-color)]"></div>
+                                        <div className="flex-1 h-1.5 max-w-[100px] rounded-full bg-black/5 overflow-hidden">
+                                            <div className="h-full bg-[var(--plr-teal)] transition-all duration-500" style={{ width: `${pct}%` }} />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-center px-2.5 py-1 rounded-full bg-[var(--plr-teal)]/10 text-[var(--plr-teal)] font-mono text-[0.75rem] font-bold cursor-pointer" onClick={() => setIsTimerRunning(prev => !prev)}>
+                                        <Timer size={12} className="mr-1" />
+                                        {formatTimer(timerSeconds)}
+                                    </div>
+                                </div>
+                            ) : (
+                                // Full Expanded State
+                                <div>
+                                    <div className="flex items-start gap-4 mb-4">
+                                        <div className="flex-1 min-w-0">
+                                            <h2 className="m-0 font-ui text-[1.2rem] font-bold text-[var(--text-primary)] truncate">{assignment.title}</h2>
+                                            <div className="flex items-center gap-2 m-0 mt-1 text-[0.8rem] text-[var(--text-muted)] opacity-80">
+                                                <span className="truncate">{assignment.subtitle}</span>
+                                                <span>•</span>
+                                                <span className="whitespace-nowrap">⏱️ ~{estimatedTimeMins} mins</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-2 shrink-0">
+                                            <div className="flex items-center justify-center px-3 py-1.5 rounded-full bg-[var(--plr-teal)]/10 text-[var(--plr-teal)] font-mono text-[0.85rem] font-bold cursor-pointer" onClick={() => setIsTimerRunning(prev => !prev)}>
+                                                {isTimerRunning ? <Timer size={14} className="mr-1.5" /> : <div className="w-1.5 h-1.5 rounded-full bg-[var(--plr-teal)] mr-1.5 animate-pulse" />}
+                                                {formatTimer(timerSeconds)}
+                                            </div>
+                                            <span className="font-ui text-[0.8rem] font-bold text-[var(--plr-teal)]">{pct}% Completed</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Thin sleek progress track */}
+                                    <div className="w-full h-[3px] rounded-full bg-black/5 mb-5 overflow-hidden">
+                                        <div className="h-full bg-[var(--plr-teal)] transition-all duration-500 rounded-full" style={{ width: `${pct}%` }} />
+                                    </div>
+
+                                    {/* Stepper Checklist */}
+                                    <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar scroll-smooth snap-x">
+                                        {assignment.items.map((item, idx) => {
+                                            const isDone = progress.completedRangeValues.includes(item.rangeValue);
+                                            const isCurrent = currentItem.rangeValue === item.rangeValue;
+                                            return (
+                                                <button
+                                                    key={item.rangeValue}
+                                                    onClick={() => setPageNumber(item.pageStart)}
+                                                    className={`snap-center shrink-0 relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-none cursor-pointer transition-all duration-300 ${
+                                                        isCurrent 
+                                                            ? 'bg-[var(--plr-gold)]/10 text-[var(--plr-gold-dark)] font-bold scale-105 shadow-sm' 
+                                                            : isDone 
+                                                                ? 'bg-[var(--plr-teal)]/10 text-[var(--plr-teal)] font-semibold' 
+                                                                : 'bg-white/40 text-[var(--text-muted)] font-medium hover:bg-white/60'
+                                                    }`}
+                                                >
+                                                    {isCurrent && (
+                                                        <motion.div layoutId="activeItemIndicator" className="absolute inset-0 rounded-xl border-[1.5px] border-[var(--plr-gold)]" transition={{ type: 'spring', stiffness: 300, damping: 25 }} />
+                                                    )}
+                                                    {isDone ? <CheckCircle2 size={14} className="opacity-80" /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />}
+                                                    <span className="text-[0.75rem] relative z-10">{item.title.replace('Page ', 'Pg ')}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Prayer Slots mini-indicator */}
+                                    <div className="mt-4 flex items-center gap-1.5 justify-center">
+                                        {(useAppStore.getState().prayerSettings?.activePrayers || ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']).slice().sort((a,b) => ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].indexOf(a) - ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].indexOf(b)).map((name, i, arr) => {
+                                            const slotEnd = Math.floor(((i + 1) / arr.length) * assignment.items.length);
+                                            const done = progress.completedCount;
+                                            const isDone = done >= slotEnd && slotEnd > 0;
+                                            return (
+                                                <div key={name} className="flex items-center gap-1.5" title={name}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isDone ? 'bg-[var(--plr-teal)]' : 'bg-black/10'}`} />
+                                                    {i < arr.length - 1 && <div className="w-4 h-[1px] bg-black/5" />}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <div className="flex items-center justify-center px-3 py-1.5 rounded-full bg-[var(--plr-teal-light)] text-[var(--plr-teal)] font-mono text-sm font-bold opacity-80"
-                             onClick={() => setIsTimerRunning(prev => !prev)}
-                             title={isTimerRunning ? "Pause Timer" : "Resume Timer"}
-                             style={{ cursor: 'pointer' }}
-                        >
-                            <Timer size={14} className="mr-1" />
-                            {formatTimer(timerSeconds)}
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 rounded-full bg-[var(--bg-surface)] overflow-hidden">
-                            <div className="h-full bg-[var(--plr-teal)] transition-all duration-500" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="font-ui text-[0.85rem] font-semibold text-[var(--plr-teal)]">{pct}%</span>
-                    </div>
-                </div>
-                
-                {/* Item Checklist */}
-                <div className="bg-[var(--bg-surface)] px-4 py-3 flex overflow-x-auto gap-2 scrollbar-hide border-t border-[var(--border-color)]">
-                    {assignment.items.map((item, idx) => {
-                        const isDone = progress.completedRangeValues.includes(item.rangeValue);
-                        const isCurrent = currentItem.rangeValue === item.rangeValue;
-                        return (
-                            <button
-                                key={item.rangeValue}
-                                onClick={() => setPageNumber(item.pageStart)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full whitespace-nowrap text-[0.8rem] font-semibold transition-colors border-none cursor-pointer ${
-                                    isCurrent 
-                                        ? 'bg-[var(--plr-gold-soft)] text-[var(--plr-gold)] shadow-[0_0_0_2px_var(--plr-gold)]' 
-                                        : isDone 
-                                            ? 'bg-[var(--plr-teal)] text-white' 
-                                            : 'bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:bg-[var(--border-color)]'
-                                }`}
-                            >
-                                {isDone && <Check size={14} />}
-                                {item.title}
-                            </button>
-                        );
-                    })}
-                </div>
-                
-                {/* Prayer Slots mini-indicator */}
-                <div className="bg-[var(--bg-surface)] px-4 pb-3 flex items-center justify-between gap-1 text-[0.7rem] font-ui text-[var(--text-muted)] uppercase tracking-wider">
-                    {(useAppStore.getState().prayerSettings?.activePrayers || ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']).slice().sort((a,b) => ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].indexOf(a) - ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].indexOf(b)).map((name, i, arr) => {
-                        const slotEnd = Math.floor(((i + 1) / arr.length) * assignment.items.length);
-                        const done = progress.completedCount;
-                        const isDone = done >= slotEnd && slotEnd > 0;
-                        return (
-                            <div key={name} className={`flex items-center gap-1 ${isDone ? 'text-[var(--plr-teal)] font-bold' : ''}`}>
-                                <span>{name}</span>
-                                {isDone && <Check size={12} />}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Confetti / Success Modal */}
             <AnimatePresence>

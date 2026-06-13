@@ -29,9 +29,10 @@ export default function Layout() {
     const isSurahPage = /^\/surah\/\d+/.test(location.pathname);
     const isMemorizePage = /^\/memorize\/\d+/.test(location.pathname);
     const isPagePage = /^\/page\/\d+/.test(location.pathname);
-    const isImmersivePage = isSurahPage || isMemorizePage || isPagePage;
+    const isPlannerReader = /^\/planner\/read\/\d+/.test(location.pathname);
+    const isImmersivePage = isSurahPage || isMemorizePage || isPagePage || isPlannerReader;
     const hasAudio = audioPlaylist.length > 0 || !!currentAudioUrl;
-    const shouldReturnToPlanner = Boolean(location.state?.backToPlanner);
+    const shouldReturnToPlanner = Boolean(location.state?.backToPlanner) || isPlannerReader;
     const shouldForceHomeBack = isSurahPage || isMemorizePage;
 
     const navigateHomeAtTop = useCallback((replace = false) => {
@@ -231,7 +232,7 @@ export default function Layout() {
 
                         {/* ── Right side ── */}
                         <div className="flex items-center gap-1">
-                            {(isSurahPage || isPagePage) && (
+                            {(isSurahPage || isPagePage || isPlannerReader) && (
                                 <>
                                     <IconBtn onClick={() => setAutoScroll(!autoScroll)} active={autoScroll} label={autoScroll ? 'Stop Auto-scroll' : 'Auto-scroll'}>
                                         <ChevronsDown size={18} />
@@ -246,11 +247,11 @@ export default function Layout() {
                                 !['/', '/progress', '/profile'].includes(location.pathname) && (
                                 <IconBtn
                                     onClick={() => {
-                                        if (isSurahPage || isPagePage) { incrementPlayTrigger(); }
+                                        if (isSurahPage || isPagePage || isPlannerReader) { incrementPlayTrigger(); }
                                         else { setIsPlayerVisible(!isPlayerVisible); }
                                     }}
                                     active={isPlayerVisible || isPlaying}
-                                    label={(isSurahPage || isPagePage) ? 'Play / Pause' : isPlayerVisible ? 'Hide Player' : 'Show Player'}
+                                    label={(isSurahPage || isPagePage || isPlannerReader) ? 'Play / Pause' : isPlayerVisible ? 'Hide Player' : 'Show Player'}
                                 >
                                     <Volume2 size={18} />
                                     {isPlaying && (
@@ -282,7 +283,7 @@ export default function Layout() {
                 </div>
             </header>
 
-            <main className="flex-1 pb-[90px] pt-[calc(52px+2.5rem)]">
+            <main className={`flex-1 pb-[90px] ${isPlannerReader ? 'pt-[52px]' : 'pt-[calc(52px+2.5rem)]'}`}>
                 <Outlet />
             </main>
 
