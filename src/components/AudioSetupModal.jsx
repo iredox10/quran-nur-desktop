@@ -1,18 +1,93 @@
-import React from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play } from 'lucide-react';
+import { X, Play, Pause, Loader2 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { RECITERS } from '../config/reciters';
+import CustomSelect from './ui/CustomSelect';
+import * as quranApi from '../services/api/quranApi';
+
+function ReciterPlayButton({ reciterId }) {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const audioRef = useRef(null);
+
+    const togglePlay = async (e) => {
+        e.stopPropagation();
+        if (isPlaying) {
+            audioRef.current?.pause();
+            setIsPlaying(false);
+            return;
+        }
+
+        if (!audioRef.current) {
+            setIsLoading(true);
+            try {
+                const res = await quranApi.getVerses(1, 85, reciterId);
+                if (res?.verses?.[0]?.audio?.url) {
+                    let audioUrl = res.verses[0].audio.url;
+                    if (!audioUrl.startsWith('http')) audioUrl = `https://verses.quran.com/${audioUrl}`;
+                    const audio = new Audio(audioUrl);
+                    audio.onended = () => setIsPlaying(false);
+                    audioRef.current = audio;
+                }
+            } catch (err) { console.error(err); }
+            setIsLoading(false);
+        }
+
+        if (audioRef.current) {
+            audioRef.current.play();
+            setIsPlaying(true);
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
+
+    return (
+        <button type="button" onClick={togglePlay} disabled={isLoading} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--bg-primary)] text-[var(--text-muted)] transition-colors hover:bg-accent hover:text-white" title="Play preview">
+            {isLoading ? <Loader2 size={14} className="animate-spin" /> : isPlaying ? <Pause size={14} /> : <Play size={14} className="ml-[2px]" />}
+        </button>
+    );
+}
 
 export default function AudioSetupModal({
     isOpen,
     onClose,
-    pendingPlaylist,
-    audioSettings,
-    updateAudioSettings,
+    pendingPlaylist = [],
     handleStartPlaying
 }) {
-    const { reciterId, setReciter } = useAppStore();
+    const { reciterId, setReciter, audioSettings, updateAudioSettings } = useAppStore();
+
+    const reciterGroups = useMemo(() => {
+        const grouped = RECITERS.reduce((acc, r) => {
+            const style = r.style || 'Other';
+            if (!acc[style]) acc[style] = { label: style, items: [] };
+            acc[style].items.push({
+                value: r.id,
+                label: r.name,
+                renderRight: () => <ReciterPlayButton reciterId={r.id} />
+            });
+            return acc;
+        }, {});
+        return Object.values(grouped);
+    }, []);
+
+    // Other options
+    const ayahOptions = pendingPlaylist.map((v, i) => ({ value: i, label: v.verseKey }));
+    const repeatOptions = [1, 2, 3, 5, 10, -1].map(opt => ({ value: opt, label: opt === -1 ? '∞ Infinite' : `${opt}×` }));
+    const delayOptions = [0, 1, 2, 3, 5, 10].map(opt => ({ value: opt, label: opt === 0 ? 'None' : `${opt}s` }));
+    const speedOptions = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(opt => ({ value: opt, label: `${opt}×` }));
+
+    const onStartPlay = () => {
+        if (handleStartPlaying) handleStartPlaying();
+        onClose();
+    };
     
     if (!isOpen) return null;
 
@@ -59,15 +134,11 @@ export default function AudioSetupModal({
                                     <label className="mb-[0.6rem] block text-[0.8rem] font-semibold uppercase tracking-[0.05em] text-[var(--text-muted)]">
                                         Reciter
                                     </label>
-                                    <select
-                                        className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] outline-none"
+                                    <CustomSelect
                                         value={reciterId}
-                                        onChange={(e) => setReciter(Number(e.target.value))}
-                                    >
-                                        {RECITERS.map(reciter => (
-                                            <option key={reciter.id} value={reciter.id}>{reciter.name}</option>
-                                        ))}
-                                    </select>
+                                        onChange={setReciter}
+                                        groups={reciterGroups}
+                                    />
                                 </div>
 
                                 <div>
@@ -77,27 +148,19 @@ export default function AudioSetupModal({
                                     <div className="flex gap-3">
                                         <div className="flex-1">
                                             <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">From</label>
-                                            <select
-                                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] outline-none"
+                                            <CustomSelect
                                                 value={audioSettings.startRange ?? 0}
-                                                onChange={(e) => updateAudioSettings({ startRange: Number(e.target.value) })}
-                                            >
-                                                {pendingPlaylist.map((v, i) => (
-                                                    <option key={v.verseKey} value={i}>{v.verseKey}</option>
-                                                ))}
-                                            </select>
+                                                onChange={(val) => updateAudioSettings({ startRange: Number(val) })}
+                                                options={ayahOptions}
+                                            />
                                         </div>
                                         <div className="flex-1">
                                             <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">To</label>
-                                            <select
-                                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] outline-none"
-                                                value={audioSettings.endRange ?? pendingPlaylist.length - 1}
-                                                onChange={(e) => updateAudioSettings({ endRange: Number(e.target.value) })}
-                                            >
-                                                {pendingPlaylist.map((v, i) => (
-                                                    <option key={v.verseKey} value={i}>{v.verseKey}</option>
-                                                ))}
-                                            </select>
+                                            <CustomSelect
+                                                value={audioSettings.endRange ?? Math.max(0, pendingPlaylist.length - 1)}
+                                                onChange={(val) => updateAudioSettings({ endRange: Number(val) })}
+                                                options={ayahOptions}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -109,21 +172,19 @@ export default function AudioSetupModal({
                                     <div className="flex gap-3">
                                         <div className="flex-1">
                                             <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">Each Ayah</label>
-                                            <select className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] outline-none"
-                                                value={audioSettings.repeatAya}
-                                                onChange={(e) => updateAudioSettings({ repeatAya: Number(e.target.value) })}
-                                            >
-                                                {[1, 2, 3, 5, 10, -1].map(opt => <option key={opt} value={opt}>{opt === -1 ? '∞ Infinite' : `${opt}×`}</option>)}
-                                            </select>
+                                            <CustomSelect
+                                                value={audioSettings.repeatAya ?? 1}
+                                                onChange={(val) => updateAudioSettings({ repeatAya: Number(val) })}
+                                                options={repeatOptions}
+                                            />
                                         </div>
                                         <div className="flex-1">
                                             <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">Full Selection</label>
-                                            <select className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] outline-none"
-                                                value={audioSettings.repeatSelection}
-                                                onChange={(e) => updateAudioSettings({ repeatSelection: Number(e.target.value) })}
-                                            >
-                                                {[1, 2, 3, 5, 10, -1].map(opt => <option key={opt} value={opt}>{opt === -1 ? '∞ Infinite' : `${opt}×`}</option>)}
-                                            </select>
+                                            <CustomSelect
+                                                value={audioSettings.repeatSelection ?? 1}
+                                                onChange={(val) => updateAudioSettings({ repeatSelection: Number(val) })}
+                                                options={repeatOptions}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -135,21 +196,19 @@ export default function AudioSetupModal({
                                     <div className="flex gap-3">
                                         <div className="flex-1">
                                             <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">Delay Between Ayahs</label>
-                                            <select className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] outline-none"
-                                                value={audioSettings.delayBetweenAyas}
-                                                onChange={(e) => updateAudioSettings({ delayBetweenAyas: Number(e.target.value) })}
-                                            >
-                                                {[0, 1, 2, 3, 5, 10].map(opt => <option key={opt} value={opt}>{opt === 0 ? 'None' : `${opt}s`}</option>)}
-                                            </select>
+                                            <CustomSelect
+                                                value={audioSettings.delayBetweenAyas ?? 0}
+                                                onChange={(val) => updateAudioSettings({ delayBetweenAyas: Number(val) })}
+                                                options={delayOptions}
+                                            />
                                         </div>
                                         <div className="flex-1">
                                             <label className="mb-1 block text-[0.8rem] text-[var(--text-muted)]">Playback Speed</label>
-                                            <select className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] outline-none"
-                                                value={audioSettings.playbackSpeed}
-                                                onChange={(e) => updateAudioSettings({ playbackSpeed: Number(e.target.value) })}
-                                            >
-                                                {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(opt => <option key={opt} value={opt}>{opt}×</option>)}
-                                            </select>
+                                            <CustomSelect
+                                                value={audioSettings.playbackSpeed ?? 1.0}
+                                                onChange={(val) => updateAudioSettings({ playbackSpeed: Number(val) })}
+                                                options={speedOptions}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -172,7 +231,7 @@ export default function AudioSetupModal({
 
                             <div className="shrink-0 px-6 pb-6 pt-4">
                                 <button
-                                    onClick={handleStartPlaying}
+                                    onClick={onStartPlay}
                                     className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-accent px-4 py-[0.9rem] text-base font-bold text-white transition-all duration-200 hover:bg-[var(--accent-hover)]"
                                 >
                                     <Play size={20} fill="currentColor" />

@@ -162,7 +162,7 @@ export default function Page() {
         } else {
             // Setup the playlist for this page's verses
             const playlist = verses.map(v => {
-                let url = v.audio?.url ? `https://verses.quran.com/${v.audio.url}` : null;
+                let url = v.audio?.url ? (v.audio.url.startsWith('http') ? v.audio.url : `https://verses.quran.com/${v.audio.url}`) : null;
                 const [surahNum, ayahNum] = v.verse_key.split(':');
                 const fileName = `${String(surahNum).padStart(3, '0')}${String(ayahNum).padStart(3, '0')}.mp3`;
 

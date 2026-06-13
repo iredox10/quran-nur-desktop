@@ -446,7 +446,7 @@ export default function Memorization() {
     };
 
     const activeAudioVerse = currentVerses[audioVerseIndex];
-    let audioUrl = activeAudioVerse?.audio?.url ? `https://verses.quran.com/${activeAudioVerse.audio.url}` : null;
+    let audioUrl = activeAudioVerse?.audio?.url ? (activeAudioVerse.audio.url.startsWith('http') ? activeAudioVerse.audio.url : `https://verses.quran.com/${activeAudioVerse.audio.url}`) : null;
 
     if (activeAudioVerse) {
         const [surahNum, ayahNum] = activeAudioVerse.verse_key.split(':');

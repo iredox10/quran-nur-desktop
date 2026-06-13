@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAppStore } from '../store/useAppStore';
 import {
     ArrowLeft, Check, CheckCircle, ChevronDown, ChevronRight,
     FolderOpen, HardDrive, Moon, Sun, Type, WifiOff,
-    Cloud, UploadCloud, DownloadCloud, LogOut,
+    Cloud, UploadCloud, DownloadCloud, LogOut, Play, Pause, Loader2
 } from 'lucide-react';
+import * as quranApi from '../services/api/quranApi';
 import { getMushafById, getMushafFontOptions, isTajweedEnabledForMushaf, MUSHAFS } from '../config/mushaf';
 import { saveLocalAudioDirHandle } from '../utils/localAudio';
 import { getOfflinePackStats } from '../utils/offlineLibrary';
@@ -88,6 +89,79 @@ function PickerOption({ title, subtitle, active, onClick, sampleStyle }) {
                 <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]" style={sampleStyle || {}}>{title}</div>
                 {subtitle && <div className="mt-px text-[0.75rem] text-[var(--sd-ink-muted)]">{subtitle}</div>}
             </div>
+            {active && <Check size={16} className="shrink-0 text-accent" />}
+        </button>
+    );
+}
+
+function ReciterPickerOption({ reciter, active, onClick }) {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const audioRef = useRef(null);
+
+    const togglePlay = async (e) => {
+        e.stopPropagation();
+        if (isPlaying) {
+            audioRef.current?.pause();
+            setIsPlaying(false);
+            return;
+        }
+
+        if (!audioRef.current) {
+            setIsLoading(true);
+            try {
+                const res = await quranApi.getVerses(1, 85, reciter.id);
+                if (res?.verses?.[0]?.audio?.url) {
+                    let audioUrl = res.verses[0].audio.url;
+                    if (!audioUrl.startsWith('http')) {
+                        audioUrl = `https://verses.quran.com/${audioUrl}`;
+                    }
+                    const audio = new Audio(audioUrl);
+                    audio.onended = () => setIsPlaying(false);
+                    audioRef.current = audio;
+                } else {
+                    console.error("Audio URL not found for reciter", reciter.id);
+                    setIsLoading(false);
+                    return;
+                }
+            } catch (err) {
+                console.error("Failed to fetch audio preview", err);
+                setIsLoading(false);
+                return;
+            }
+            setIsLoading(false);
+        }
+
+        audioRef.current.play();
+        setIsPlaying(true);
+    };
+
+    // Cleanup audio on unmount
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+        };
+    }, []);
+
+    return (
+        <button type="button" onClick={onClick} className={`flex w-full cursor-pointer items-center gap-3 border-none px-4 py-3 text-left transition-all duration-200 ${
+            active ? 'rounded-[10px] bg-[var(--sd-gold-soft)]' : 'rounded-[10px] bg-transparent hover:bg-[var(--bg-primary)]'
+        }`}>
+            <div className="min-w-0 flex-1">
+                <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]">{reciter.name}</div>
+            </div>
+            <button 
+                type="button" 
+                onClick={togglePlay} 
+                disabled={isLoading}
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--bg-secondary)] text-[var(--sd-ink-muted)] transition-colors hover:bg-accent hover:text-white"
+                title="Play sample"
+            >
+                {isLoading ? <Loader2 size={14} className="animate-spin" /> : isPlaying ? <Pause size={14} /> : <Play size={14} className="ml-[2px]" />}
+            </button>
             {active && <Check size={16} className="shrink-0 text-accent" />}
         </button>
     );
@@ -278,6 +352,38 @@ export default function SettingsDrawer({ isOpen, onClose }) {
 
         const p = pickers[activeView];
         if (!p) return null;
+
+        if (activeView === VIEWS.reciter) {
+            const groupedReciters = RECITERS.reduce((acc, reciter) => {
+                const style = reciter.style || 'Other';
+                if (!acc[style]) acc[style] = [];
+                acc[style].push(reciter);
+                return acc;
+            }, {});
+
+            return {
+                title: 'Choose Reciter',
+                content: (
+                    <div className="flex flex-col gap-4 px-3 py-3">
+                        {Object.entries(groupedReciters).map(([style, reciters]) => (
+                            <div key={style} className="flex flex-col gap-1">
+                                <div className="px-2 pb-1 text-[0.75rem] font-bold uppercase tracking-wider text-[var(--sd-ink-muted)]">
+                                    {style}
+                                </div>
+                                {reciters.map(reciter => (
+                                    <ReciterPickerOption
+                                        key={reciter.id}
+                                        reciter={reciter}
+                                        active={reciter.id === reciterId}
+                                        onClick={() => { setReciter(reciter.id); setActiveView(VIEWS.root); }}
+                                    />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                )
+            };
+        }
 
         return {
             title: p.title,

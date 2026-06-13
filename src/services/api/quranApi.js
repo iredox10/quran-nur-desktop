@@ -76,11 +76,12 @@ export const getChapter = async (id) => {
 
 export const getVerses = async (chapterId, translationId = 85, reciterId = 7, page = 1, mushafId = 'madani-standard', perPage = 50) => {
   const { mushaf, fields, wordFields } = buildFieldsForMushaf(mushafId);
+  const isEveryAyah = typeof reciterId === 'string';
   const params = {
     language: 'en',
     words: true,
     translations: translationId,
-    audio: reciterId,
+    audio: isEveryAyah ? 7 : reciterId,
     fields,
     word_fields: wordFields,
     mushaf: mushaf.apiMushafId,
@@ -88,6 +89,16 @@ export const getVerses = async (chapterId, translationId = 85, reciterId = 7, pa
     per_page: perPage,
   };
   const data = await fetchWithOfflineCache(`/verses/by_chapter/${chapterId}`, params);
+  
+  if (isEveryAyah) {
+      data.verses.forEach(v => {
+          const [chapter, ayah] = v.verse_key.split(':');
+          const chapterStr = String(chapter).padStart(3, '0');
+          const ayahStr = String(ayah).padStart(3, '0');
+          v.audio = { url: `https://everyayah.com/data/${reciterId}/${chapterStr}${ayahStr}.mp3` };
+      });
+  }
+
   return {
     ...data,
     verses: decorateVerses(data.verses, mushaf),
@@ -96,17 +107,28 @@ export const getVerses = async (chapterId, translationId = 85, reciterId = 7, pa
 
 export const getVersesByPage = async (pageNumber, translationId = 85, reciterId = 7, mushafId = 'madani-standard') => {
   const { mushaf, fields, wordFields } = buildFieldsForMushaf(mushafId);
+  const isEveryAyah = typeof reciterId === 'string';
   const params = {
     language: 'en',
     words: true,
     translations: translationId,
-    audio: reciterId,
+    audio: isEveryAyah ? 7 : reciterId,
     fields,
     word_fields: wordFields,
     mushaf: mushaf.apiMushafId,
     per_page: 50,
   };
   const data = await fetchWithOfflineCache(`/verses/by_page/${pageNumber}`, params);
+  
+  if (isEveryAyah) {
+      data.verses.forEach(v => {
+          const [chapter, ayah] = v.verse_key.split(':');
+          const chapterStr = String(chapter).padStart(3, '0');
+          const ayahStr = String(ayah).padStart(3, '0');
+          v.audio = { url: `https://everyayah.com/data/${reciterId}/${chapterStr}${ayahStr}.mp3` };
+      });
+  }
+
   return {
     ...data,
     verses: decorateVerses(data.verses, mushaf),
