@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { Bookmark, Info, X, Plus, Play, Pause } from 'lucide-react';
+import { Bookmark, Info, X, Plus, Play, Pause, Folder, CheckCircle2, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore';
 import { getVerseArabicText } from '../utils/quranText';
@@ -266,12 +266,21 @@ const VerseRow = ({
                                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                                 className="fixed inset-0 z-[1101] flex items-center justify-center pointer-events-none"
                             >
-                                <div className="w-[calc(100vw-2rem)] max-w-[400px] rounded-[24px] border border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-xl)] pointer-events-auto">
-                                    <div className="mb-4 flex items-center justify-between">
-                                        <h3 className="m-0 text-[1.1rem] font-bold text-[var(--text-primary)]">Add to Collection</h3>
-                                        <button onClick={() => setShowCollectionModal(false)} className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--text-secondary)] transition-all duration-200 hover:bg-[var(--bg-secondary)] hover:text-accent hover:shadow-[var(--shadow-sm)]"><X size={18} /></button>
+                                <div className="w-[calc(100vw-2rem)] max-w-[420px] rounded-[28px] border border-[var(--glass-border)] bg-[var(--bg-surface)] p-6 shadow-2xl pointer-events-auto backdrop-blur-xl flex flex-col">
+                                    <div className="mb-5 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-light)] text-[var(--accent-primary)]">
+                                                <Folder size={18} fill="currentColor" opacity={0.2} />
+                                            </div>
+                                            <h3 className="m-0 text-[1.15rem] font-bold text-[var(--text-primary)] tracking-tight">Save to Collection</h3>
+                                        </div>
+                                        <button onClick={() => setShowCollectionModal(false)} className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-all duration-200 hover:bg-[var(--border-color)] hover:text-[var(--text-primary)]">
+                                            <X size={18} />
+                                        </button>
                                     </div>
-                                    <div className="mb-4 flex max-h-[200px] flex-col gap-2 overflow-y-auto">
+
+                                    {/* Existing Collections List */}
+                                    <div className="mb-5 flex max-h-[260px] flex-col gap-[0.4rem] overflow-y-auto pr-2 custom-scrollbar">
                                         {(collections || []).map(c => {
                                             const isInCollection = c.items?.some(item => item.verseKey === verse.verse_key);
                                             return (
@@ -281,41 +290,72 @@ const VerseRow = ({
                                                         addToCollection(c.id, verse.verse_key, chapter ? chapter.name_simple : `Surah ${verse.verse_key.split(':')[0]}`, chapter?.id);
                                                         setShowCollectionModal(false);
                                                     }}
-                                                    className={`flex cursor-pointer items-center justify-between rounded-xl border-none bg-[var(--bg-secondary)] px-4 py-3 text-left transition-all duration-200 ${
-                                                        isInCollection ? 'font-bold text-[var(--text-primary)]' : 'font-medium text-[var(--text-primary)]'
+                                                    className={`group relative flex w-full cursor-pointer items-center justify-between overflow-hidden rounded-xl border p-3 text-left transition-all duration-300 ${
+                                                        isInCollection 
+                                                            ? 'border-[var(--accent-primary)] bg-[var(--accent-light)] shadow-[0_4px_12px_rgba(var(--accent-rgb),0.1)]' 
+                                                            : 'border-transparent bg-[var(--bg-secondary)] hover:border-[var(--glass-border)] hover:bg-[var(--glass-bg)] hover:shadow-md'
                                                     }`}
                                                 >
-                                                    <span>{c.name}</span>
-                                                    {isInCollection && <span className="text-[0.8rem] text-accent">Added</span>}
+                                                    <div className="flex items-center gap-3 relative z-10">
+                                                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${isInCollection ? 'bg-[var(--accent-primary)] text-white' : 'bg-[var(--border-color)] text-[var(--text-muted)] group-hover:bg-[var(--accent-light)] group-hover:text-[var(--accent-primary)]'}`}>
+                                                            {isInCollection ? <Check size={16} strokeWidth={3} /> : <Folder size={16} />}
+                                                        </div>
+                                                        <span className={`text-[0.95rem] transition-colors ${isInCollection ? 'font-semibold text-[var(--accent-primary)]' : 'font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-primary)]'}`}>
+                                                            {c.name}
+                                                        </span>
+                                                    </div>
                                                 </button>
                                             );
                                         })}
                                         {(!collections || collections.length === 0) && (
-                                            <div className="py-4 text-center text-[0.9rem] text-[var(--text-muted)]">No collections yet</div>
+                                            <div className="flex flex-col items-center justify-center py-8 text-center opacity-70">
+                                                <Folder size={32} className="mb-3 text-[var(--text-muted)]" />
+                                                <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">No collections yet</div>
+                                                <div className="text-[0.8rem] text-[var(--text-muted)]">Create your first one below</div>
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            placeholder="New collection name..."
-                                            value={newCollectionName}
-                                            onChange={(e) => setNewCollectionName(e.target.value)}
-                                            className="min-h-10 flex-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-2 text-[var(--text-primary)] outline-none"
-                                        />
-                                        <button
-                                            className="flex cursor-pointer items-center justify-center rounded-xl bg-accent px-4 font-semibold text-white transition-all duration-200 hover:bg-[var(--accent-hover)]"
-                                            onClick={() => {
-                                                if (newCollectionName.trim()) {
-                                                    const newId = Date.now();
-                                                    addCollection(newCollectionName.trim(), newId);
-                                                    addToCollection(newId, verse.verse_key, chapter ? chapter.name_simple : `Surah ${verse.verse_key.split(':')[0]}`, chapter?.id);
-                                                    setNewCollectionName('');
-                                                    setShowCollectionModal(false);
-                                                }
-                                            }}
-                                        >
-                                            <Plus size={18} />
-                                        </button>
+
+                                    <div className="h-px w-full bg-[var(--border-color)] mb-5 opacity-60" />
+
+                                    {/* Create New Collection */}
+                                    <div>
+                                        <label className="mb-2 block text-[0.8rem] font-semibold uppercase tracking-[0.05em] text-[var(--text-muted)] ml-1">
+                                            New Collection
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Enter name..."
+                                                value={newCollectionName}
+                                                onChange={(e) => setNewCollectionName(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && newCollectionName.trim()) {
+                                                        const newId = Date.now();
+                                                        addCollection(newCollectionName.trim(), newId);
+                                                        addToCollection(newId, verse.verse_key, chapter ? chapter.name_simple : `Surah ${verse.verse_key.split(':')[0]}`, chapter?.id);
+                                                        setNewCollectionName('');
+                                                        setShowCollectionModal(false);
+                                                    }
+                                                }}
+                                                className="min-h-12 flex-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--text-muted)] focus:border-[var(--accent-primary)] focus:bg-[var(--bg-surface)] focus:shadow-[0_0_0_4px_var(--accent-light)]"
+                                            />
+                                            <button
+                                                className={`flex w-12 shrink-0 cursor-pointer items-center justify-center rounded-xl font-bold transition-all duration-300 ${newCollectionName.trim() ? 'bg-[var(--accent-primary)] text-white shadow-[0_4px_14px_rgba(var(--accent-rgb),0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(var(--accent-rgb),0.4)] hover:bg-[var(--accent-hover)]' : 'bg-[var(--border-color)] text-[var(--text-muted)] cursor-not-allowed opacity-70'}`}
+                                                disabled={!newCollectionName.trim()}
+                                                onClick={() => {
+                                                    if (newCollectionName.trim()) {
+                                                        const newId = Date.now();
+                                                        addCollection(newCollectionName.trim(), newId);
+                                                        addToCollection(newId, verse.verse_key, chapter ? chapter.name_simple : `Surah ${verse.verse_key.split(':')[0]}`, chapter?.id);
+                                                        setNewCollectionName('');
+                                                        setShowCollectionModal(false);
+                                                    }
+                                                }}
+                                            >
+                                                <Plus size={20} strokeWidth={2.5} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </motion.div>
