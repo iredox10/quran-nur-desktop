@@ -772,30 +772,36 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                     {/* Stats Header Cards */}
                     <div className="flex w-full gap-[0.7rem] md:gap-4">
                         {[
-                            { label: 'Overall', val: `${overallPct}%` },
-                            { label: 'Finish by', val: completionDate },
-                            { label: 'Streak', val: `${streakDays} Day${streakDays !== 1 ? 's' : ''}` },
+                            { label: 'Overall', val: `${overallPct}%`, icon: <svg className="h-4 w-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg> },
+                            { label: 'Finish by', val: completionDate, icon: <svg className="h-4 w-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg> },
+                            { label: 'Streak', val: `${streakDays} Day${streakDays !== 1 ? 's' : ''}`, icon: <svg className="h-4 w-4 opacity-50 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 7 9a8 8 0 0110.657 9.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 11a2 2 0 11-4 0 2 2 0 014 0z" /></svg> },
                         ].map(s => (
-                            <div key={s.label} className="flex flex-1 flex-col gap-[0.2rem] rounded-xl bg-[var(--glass-bg)] p-3 md:p-4 border border-[var(--glass-border)] shadow-[var(--shadow-glass)] backdrop-blur-md">
-                                <span className="font-body text-[0.75rem] md:text-[0.8rem] text-[var(--text-muted)]">{s.label}</span>
-                                <span className="font-ui text-[1.2rem] md:text-[1.4rem] font-semibold text-[var(--text-primary)]">{s.val}</span>
+                            <div key={s.label} className="relative overflow-hidden flex flex-1 flex-col gap-[0.3rem] rounded-[16px] bg-[rgba(255,255,255,0.03)] p-3.5 md:p-5 border border-white/5 shadow-lg backdrop-blur-xl group transition-all duration-300 hover:bg-[rgba(255,255,255,0.06)] hover:-translate-y-0.5">
+                                <div className="absolute -inset-px rounded-[16px] bg-gradient-to-b from-white/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                                <div className="absolute top-0 right-0 p-3 opacity-20 transition-opacity group-hover:opacity-100">{s.icon}</div>
+                                <span className="relative z-10 font-mono text-[0.65rem] md:text-[0.75rem] font-medium uppercase tracking-[0.05em] text-[var(--text-muted)]">{s.label}</span>
+                                <span className="relative z-10 font-ui text-[1.4rem] md:text-[1.6rem] font-bold text-[var(--text-primary)] tracking-tight">{s.val}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
                 {/* --- TAB NAVIGATION --- */}
-                <div className="flex w-full max-w-[480px] md:max-w-[800px] gap-1 md:gap-2 mb-8 p-1.5 bg-[var(--glass-bg)] rounded-[14px] border border-[var(--glass-border)] shadow-sm backdrop-blur-sm">
-                    {[ {id: 'today', label: 'Dashboard'}, {id: 'journal', label: 'Journal'} ].map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                            className={`flex-1 py-2 md:py-2.5 px-2 md:px-4 rounded-lg font-ui text-[1rem] md:text-[1.05rem] font-semibold transition-all ${
-                                activeTab === tab.id 
-                                    ? 'bg-[var(--bg-primary)] shadow-sm text-[var(--accent-primary)] border border-[var(--border-color)]' 
-                                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                            }`}>
-                            {tab.label}
-                        </button>
-                    ))}
+                <div className="relative flex w-full max-w-[480px] md:max-w-[800px] mb-10 p-[6px] bg-[rgba(0,0,0,0.05)] dark:bg-[rgba(255,255,255,0.03)] rounded-[20px] shadow-inner backdrop-blur-md border border-[var(--glass-border)]">
+                    {[ {id: 'today', label: 'Today'}, {id: 'progress', label: 'Progress'}, {id: 'journal', label: 'Journal'} ].map(tab => {
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                className={`relative flex-1 py-2.5 md:py-3 px-4 rounded-[14px] font-ui text-[1rem] md:text-[1.05rem] font-semibold transition-colors duration-300 z-10 border-none bg-transparent cursor-pointer ${
+                                    isActive ? 'text-[var(--accent-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                                }`}>
+                                {isActive && (
+                                    <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--bg-primary)] rounded-[14px] shadow-sm border border-[var(--border-color)] z-[-1]" transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }} />
+                                )}
+                                {tab.label}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 {/* --- TAB CONTENTS --- */}
@@ -804,53 +810,147 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                     {activeTab === 'today' && (
                         <div className="flex flex-col gap-10">
                             {/* Top Section: Daily Focus */}
-                            <div className="flex flex-col md:flex-row gap-8">
-                                <div className="flex-1 flex justify-center md:justify-start items-center">
-                                    <RingProgress percent={todayPct} size={220} stroke={10}>
-                                        <span className="font-ui text-[3rem] font-semibold leading-none text-[var(--accent-primary)]">{todayPct}%</span>
-                                        <span className="font-mono text-[0.6rem] font-normal tracking-[0.1em] text-[var(--text-secondary)] mt-2">{ringLabel}</span>
-                                    </RingProgress>
+                            <div className="flex flex-col md:flex-row gap-10">
+                                <div className="flex-1 flex justify-center md:justify-start items-center relative">
+                                    <div className="absolute inset-0 flex justify-center items-center pointer-events-none blur-[60px] opacity-20 bg-[var(--accent-primary)] rounded-full w-[220px] h-[220px] mx-auto md:mx-0" />
+                                    <div className="relative drop-shadow-[0_0_20px_rgba(198,168,124,0.3)]">
+                                        <RingProgress percent={todayPct} size={240} stroke={12} color="var(--accent-primary)" emptyColor="rgba(198,168,124,0.1)">
+                                            <span className="font-ui text-[3.5rem] font-bold tracking-tighter text-[var(--accent-primary)] drop-shadow-sm">{todayPct}%</span>
+                                            <span className="font-mono text-[0.65rem] font-medium tracking-[0.15em] text-[var(--text-secondary)] mt-2 uppercase">{ringLabel}</span>
+                                        </RingProgress>
+                                    </div>
                                 </div>
 
                                 <div className="flex-1 w-full">
-                                    <div className="flex flex-col mb-8">
-                                    <div className="mb-3 flex items-baseline justify-between px-1">
-                                        <h2 className="font-ui text-[1.1rem] font-semibold text-[var(--text-primary)]">Timeline</h2>
+                                    <div className="mb-5 flex items-center justify-between">
+                                        <h2 className="font-ui text-[1.5rem] font-bold tracking-tight text-[var(--text-primary)] flex items-center gap-2">
+                                            <span className="w-2 h-6 rounded-full bg-[var(--accent-primary)] inline-block shadow-[0_0_8px_var(--accent-primary)]" />
+                                            Daily Ritual
+                                        </h2>
                                         <div className="flex gap-2">
-                                            <button onClick={() => setShowAdjustPace(true)} className="cursor-pointer border-none bg-transparent text-[0.75rem] font-medium tracking-[0.05em] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:underline">Adjust Pace</button>
-                                            <span className="font-mono text-[0.65rem] tracking-[0.05em] text-[var(--text-muted)] hidden md:inline-block">· {completedDays} of {planner.durationDays} done</span>
+                                            {navigator.share && (
+                                                <button onClick={handleShareProgress} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--glass-border)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors" title="Share Progress">
+                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                                    </svg>
+                                                </button>
+                                            )}
+                                            <button onClick={() => setShowSettings(true)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--glass-border)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors" title="Settings">
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-[6px] rounded-[18px] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-4 md:gap-[8px]">
+                                    <div className="flex flex-col gap-[0.8rem]">
+                                        {prayerSlots.map((slot, i) => {
+                                            const isCurrent = slot.status === 'current';
+                                            const isCompleted = slot.status === 'completed';
+                                            const isUpcoming = slot.status === 'upcoming';
+                                            return (
+                                            <motion.div key={slot.name}
+                                                className={`relative overflow-hidden flex items-center gap-[0.85rem] rounded-[18px] px-4 py-4 shadow-sm transition-all duration-300 ${
+                                                    isCurrent
+                                                        ? 'bg-[var(--bg-surface)] border border-[var(--accent-primary)] shadow-[0_8px_30px_rgba(198,168,124,0.25)] scale-[1.02]'
+                                                        : isCompleted
+                                                            ? 'bg-[rgba(16,185,129,0.03)] border border-[#10b981]/20 opacity-80 scale-95 py-2.5'
+                                                            : 'bg-[var(--glass-bg)] border border-[var(--glass-border)]'
+                                                }`}
+                                                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: 0.05 * i, duration: 0.4, type: 'spring', bounce: 0.3 }}
+                                            >
+                                                {isCurrent && (
+                                                    <div className="absolute inset-0 pointer-events-none border-[2px] border-[var(--accent-primary)] rounded-[18px] opacity-30 animate-pulse" />
+                                                )}
+                                                <div className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full transition-colors duration-200 text-white ${
+                                                    isCompleted ? 'bg-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.4)]' : isCurrent ? 'bg-[var(--accent-primary)] shadow-[0_0_15px_rgba(198,168,124,0.5)]' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                                                }`}>
+                                                    {isCompleted && <CheckIcon size={20} />}
+                                                    {isCurrent && <BookIcon />}
+                                                    {isUpcoming && <ClockIcon />}
+                                                </div>
+                                                <div className="flex min-w-0 flex-1 flex-col gap-[0.25rem]">
+                                                    <span className={`font-ui text-[1.1rem] font-bold tracking-tight text-[var(--text-primary)] flex items-center gap-2 ${isCompleted ? 'line-through opacity-50' : ''}`}>
+                                                        {slot.name}
+                                                        {slot.time && <span className="text-[0.7rem] font-mono text-[var(--text-secondary)] bg-[var(--bg-secondary)] border border-[var(--glass-border)] px-1.5 py-0.5 rounded-[6px] no-underline opacity-90 inline-block">{slot.time}</span>}
+                                                    </span>
+                                                    <span className={`font-mono text-[0.75rem] uppercase tracking-[0.05em] font-medium leading-[1.3] ${isCurrent ? 'text-[var(--accent-primary)]' : 'text-[var(--text-muted)]'}`}>
+                                                        {isCompleted && `${slot.doneInSlot}/${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} ✓`}
+                                                        {isCurrent && `${slot.doneInSlot} of ${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} read`}
+                                                        {isUpcoming && `${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} · pending`}
+                                                    </span>
+                                                </div>
+                                                <div className="shrink-0 z-10">
+                                                    {isCompleted && (
+                                                        <button className="flex h-[32px] w-[32px] cursor-pointer items-center justify-center rounded-full border border-[#10b981]/30 bg-[rgba(16,185,129,0.12)] text-[#10b981] transition-all duration-[0.18s] hover:scale-110 hover:bg-[rgba(220,38,38,0.1)] hover:border-red-500/30 hover:text-[#dc2626]"
+                                                            onClick={() => handleUndoPrayer(slot)} title="Undo this prayer">
+                                                            <CheckIcon size={16} />
+                                                        </button>
+                                                    )}
+                                                    {isCurrent && slot.slotRoute && (
+                                                        <Link to={hasStartedReading ? (resumeRoute || slot.slotRoute) : slot.slotRoute}
+                                                            className="inline-flex cursor-pointer items-center rounded-full border-none bg-[var(--accent-primary)] px-[20px] py-[10px] font-ui text-[0.95rem] font-bold text-white no-underline transition-all duration-200 hover:bg-[var(--accent-hover)] hover:shadow-lg hover:-translate-y-0.5">
+                                                            {hasStartedReading ? 'Resume' : 'Start'}
+                                                        </Link>
+                                                    )}
+                                                    {isUpcoming && (
+                                                        <button className="flex h-[32px] w-[32px] items-center justify-center cursor-pointer border border-[var(--glass-border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-secondary)] transition-colors rounded-full" onClick={() => handleMarkPrayer(slot)} title="Mark done">
+                                                            <div className="h-3 w-3 rounded-full border-[1.5px] border-[var(--text-muted)]" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    )}
+
+                    {/* --- PROGRESS TAB --- */}
+                    {activeTab === 'progress' && (
+                        <div className="flex flex-col gap-10">
+                                <div className="flex flex-col mb-2">
+                                    <div className="mb-4 flex items-baseline justify-between px-2">
+                                        <h2 className="font-ui text-[1.4rem] font-bold text-[var(--text-primary)] flex items-center gap-2">
+                                            <span className="w-1.5 h-5 rounded-full bg-[var(--text-muted)] inline-block" />
+                                            Timeline
+                                        </h2>
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-mono text-[0.7rem] uppercase tracking-[0.05em] text-[var(--text-muted)] hidden md:inline-block">({completedDays}/{planner.durationDays} done)</span>
+                                            <button onClick={() => setShowAdjustPace(true)} className="cursor-pointer border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-1.5 rounded-full text-[0.75rem] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] shadow-sm transition-all duration-200 flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg> Adjust</button>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-[8px] rounded-[24px] border border-white/5 bg-[rgba(255,255,255,0.02)] p-6 shadow-inner backdrop-blur-xl md:gap-[10px]">
                                         {planner.assignments.map(a => {
                                             const status = getAssignmentStatus(planner, a, today);
                                             const progress = getAssignmentProgress(planner, a);
                                             const isToday = a.date === today;
                                             const pct = progress.totalCount ? Math.round((progress.completedCount / progress.totalCount) * 100) : 0;
                                             const statusStyles = {
-                                                completed: 'bg-[var(--accent-primary)] text-white',
-                                                today: 'shadow-[0_0_0_2px_var(--accent-primary)] bg-[var(--accent-light)] text-[var(--accent-primary)]',
-                                                overdue: 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.3)] bg-[rgba(220,38,38,0.1)] text-[#dc2626]',
-                                                upcoming: 'bg-[var(--bg-surface)] text-[var(--text-muted)]',
+                                                completed: 'bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-hover)] text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.2),_0_2px_8px_rgba(198,168,124,0.4)] border-none',
+                                                today: 'bg-[var(--bg-primary)] text-[var(--accent-primary)] border-[2px] border-[var(--accent-primary)] shadow-[0_0_15px_rgba(198,168,124,0.25)]',
+                                                overdue: 'bg-gradient-to-br from-red-500/10 to-red-600/5 text-[#dc2626] border border-red-500/30 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]',
+                                                upcoming: 'bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-muted)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]',
                                             };
                                             return (
                                                 <motion.div key={a.dayNumber}
-                                                    className={`relative flex h-[34px] w-[34px] cursor-default flex-col items-center justify-center rounded-full transition-all duration-200 md:h-[38px] md:w-[38px] ${statusStyles[status] || statusStyles.upcoming}`}
+                                                    className={`relative flex h-[36px] w-[36px] cursor-default flex-col items-center justify-center rounded-full transition-all duration-200 md:h-[42px] md:w-[42px] ${statusStyles[status] || statusStyles.upcoming}`}
                                                     title={`Day ${a.dayNumber}: ${a.title} — ${status === 'completed' ? '✓ Done' : status === 'today' ? `${pct}%` : status}`}
-                                                    whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
-                                                    <span className="relative z-10 font-mono text-[0.55rem] font-medium leading-none">{a.dayNumber}</span>
+                                                    whileHover={{ scale: 1.15, y: -2 }} whileTap={{ scale: 0.9 }}>
+                                                    <span className={`relative z-10 font-mono text-[0.6rem] font-bold ${status === 'completed' ? 'text-white/90' : ''}`}>{a.dayNumber}</span>
                                                     {difficulty[a.dayNumber] && difficulty[a.dayNumber].level !== 'moderate' && (
-                                                        <span className={`absolute top-0 right-0 h-2 w-2 rounded-full border border-[var(--bg-primary)] ${
+                                                        <span className={`absolute top-0 right-0 h-2.5 w-2.5 rounded-full border-[1.5px] border-[var(--bg-primary)] shadow-sm ${
                                                             difficulty[a.dayNumber].level === 'heavy' ? 'bg-[#dc2626]' : 'bg-[#10b981]'
                                                         }`} title={difficulty[a.dayNumber].level === 'heavy' ? 'Heavier reading day' : 'Lighter reading day'} />
                                                     )}
                                                     {status === 'completed' && (
-                                                        <svg className="absolute bottom-px right-px opacity-85" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                                        <svg className="absolute bottom-[2px] right-[2px] text-white opacity-100 drop-shadow-md" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                                             <polyline points="20 6 9 17 4 12"/>
                                                         </svg>
                                                     )}
                                                     {isToday && status !== 'completed' && pct > 0 && (
-                                                        <div className="pointer-events-none absolute inset-0 rounded-full opacity-25" style={{ background: `conic-gradient(var(--accent-primary) ${pct}%, transparent ${pct}%)` }} />
+                                                        <div className="pointer-events-none absolute inset-0 rounded-full opacity-20" style={{ background: `conic-gradient(var(--accent-primary) ${pct}%, transparent ${pct}%)` }} />
                                                     )}
                                                 </motion.div>
                                             );
@@ -870,78 +970,6 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                         ))}
                                     </div>
                                 </div>
-
-                                    <div className="mb-4 flex items-center justify-between">
-                                        <h2 className="font-ui text-[1.35rem] font-semibold tracking-[0.01em] text-[var(--text-primary)]">Daily Ritual</h2>
-                                        <div className="flex gap-2">
-                                            {navigator.share && (
-                                                <button onClick={handleShareProgress} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--glass-border)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors" title="Share Progress">
-                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                                                    </svg>
-                                                </button>
-                                            )}
-                                            <button onClick={() => setShowSettings(true)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--glass-border)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition-colors" title="Settings">
-                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-[0.7rem]">
-                                        {prayerSlots.map((slot, i) => (
-                                            <motion.div key={slot.name}
-                                                className={`flex items-center gap-[0.85rem] rounded-xl px-4 py-4 shadow-sm transition-shadow ${
-                                                    slot.status === 'current'
-                                                        ? 'bg-[var(--bg-surface)] border border-[var(--accent-primary)] shadow-[0_4px_18px_rgba(198,168,124,0.15)]'
-                                                        : 'bg-[var(--glass-bg)] border border-[var(--glass-border)]'
-                                                }`}
-                                                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: 0.05 * i, duration: 0.35 }}
-                                            >
-                                                <div className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full transition-colors duration-200 text-white ${
-                                                    slot.status === 'completed' ? 'bg-[#10b981]' : slot.status === 'current' ? 'bg-[var(--accent-primary)]' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
-                                                }`}>
-                                                    {slot.status === 'completed' && <CheckIcon size={18} />}
-                                                    {slot.status === 'current' && <BookIcon />}
-                                                    {slot.status === 'upcoming' && <ClockIcon />}
-                                                </div>
-                                                <div className="flex min-w-0 flex-1 flex-col gap-[0.18rem]">
-                                                    <span className={`font-ui text-base font-semibold tracking-[0.01em] text-[var(--text-primary)] flex items-center gap-2 ${slot.status === 'completed' ? 'line-through opacity-55' : ''}`}>
-                                                        {slot.name}
-                                                        {slot.time && <span className="text-[0.7rem] font-mono text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-1.5 py-0.5 rounded-sm no-underline opacity-80 inline-block">{slot.time}</span>}
-                                                    </span>
-                                                    <span className={`font-body text-[0.78rem] leading-[1.3] ${slot.status === 'current' ? 'text-[var(--accent-primary)]' : 'text-[var(--text-muted)]'}`}>
-                                                        {slot.status === 'completed' && `${slot.doneInSlot}/${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} ✓`}
-                                                        {slot.status === 'current' && `${slot.doneInSlot} of ${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} read`}
-                                                        {slot.status === 'upcoming' && `${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} · not started`}
-                                                    </span>
-                                                </div>
-                                                <div className="shrink-0">
-                                                    {slot.status === 'completed' && (
-                                                        <button className="flex h-[26px] w-[26px] cursor-pointer items-center justify-center rounded-full border-none bg-[rgba(16,185,129,0.12)] text-[#10b981] transition-all duration-[0.18s] hover:scale-110 hover:bg-[rgba(220,38,38,0.1)] hover:text-[#dc2626]"
-                                                            onClick={() => handleUndoPrayer(slot)} title="Undo this prayer">
-                                                            <CheckIcon size={14} />
-                                                        </button>
-                                                    )}
-                                                    {slot.status === 'current' && slot.slotRoute && (
-                                                        <Link to={hasStartedReading ? (resumeRoute || slot.slotRoute) : slot.slotRoute}
-                                                            className="inline-flex cursor-pointer items-center rounded-full border-none bg-[var(--accent-primary)] px-[18px] py-[7px] font-body text-[0.82rem] italic text-white no-underline transition-all duration-200 hover:bg-[var(--accent-hover)]">
-                                                            {hasStartedReading ? 'Resume' : 'Start'}
-                                                        </Link>
-                                                    )}
-                                                    {slot.status === 'upcoming' && (
-                                                        <button className="flex cursor-pointer items-center border-none bg-transparent p-0.5" onClick={() => handleMarkPrayer(slot)} title="Mark done">
-                                                            <div className="h-5 w-5 rounded-full border-[1.5px] border-[var(--text-muted)]" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Bottom Section: Journey & Analytics */}
-                            <div className="flex flex-col gap-8 border-t border-[var(--glass-border)] pt-8">
                                 <div className="flex flex-col rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] p-5 shadow-[var(--shadow-glass)]">
                                     <h3 className="mb-4 font-ui text-[1.1rem] font-semibold text-[var(--text-primary)]">Performance Insights</h3>
                                     <div className="grid gap-4 md:grid-cols-3 mb-2">
@@ -995,7 +1023,6 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                     </div>
                                 )}
                             </div>
-                        </div>
                     )}
 
                     {/* --- JOURNAL TAB --- */}
