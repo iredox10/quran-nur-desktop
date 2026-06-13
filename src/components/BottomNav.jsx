@@ -8,13 +8,14 @@ export default function BottomNav() {
     const isSurahPage = /^\/surah\/\d+/.test(location.pathname);
     const isMemorizePage = /^\/memorize\/\d+/.test(location.pathname);
     const isPagePage = /^\/page\/\d+/.test(location.pathname);
+    const isPlannerReader = /^\/planner\/read\/\d+/.test(location.pathname);
 
     const isActive = (path) => {
         if (path === '/' && location.pathname !== '/') return false;
         return location.pathname.startsWith(path);
     };
 
-    if (isSurahPage || isMemorizePage || isPagePage) return null;
+    if (isSurahPage || isMemorizePage || isPagePage || isPlannerReader) return null;
 
     const tabs = [
         { path: '/', icon: BookOpen, label: 'Quran' },

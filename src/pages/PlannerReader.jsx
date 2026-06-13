@@ -5,7 +5,7 @@ import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, CheckCircle2, ChevronRight, ChevronLeft, Check, Timer, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, ChevronLeft, Check, Timer, Minus, Plus, Play, Pause, ArrowRight, X } from 'lucide-react';
 
 import { getVersesByPage, getTajweedVersesByPage, getChapters } from '../services/api/quranApi';
 import { useAppStore } from '../store/useAppStore';
@@ -710,8 +710,6 @@ export default function PlannerReader() {
                                                 verse={verse}
                                                 readingMode={readingMode}
                                                 chapter={chapterContext}
-                                                bookmark={bookmark}
-                                                setBookmark={setBookmark}
                                                 addRecentlyRead={addRecentlyRead}
                                                 fontSize={fontSize}
                                                 arabicFont={arabicFont}
@@ -797,6 +795,78 @@ export default function PlannerReader() {
                 updateAudioSettings={updateAudioSettings}
                 handleStartPlaying={handleStartPlaying}
             />
+
+            <AnimatePresence>
+                {autoScroll && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 40 }}
+                        transition={{ duration: 0.25 }}
+                        className="fixed left-0 right-0 mx-auto w-fit z-[200]"
+                        style={{
+                            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 40px)',
+                        }}
+                    >
+                        {/* Controls Panel */}
+                        <div className="flex items-center gap-3 px-4 py-[0.6rem] rounded-full bg-[var(--glass-bg)] backdrop-blur-[16px] border-[var(--glass-border)] shadow-[var(--shadow-xl)]">
+                            {/* Manual scroll buttons */}
+                            <div className="flex gap-1">
+                                <button
+                                    className="btn-icon w-7 h-7 bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                                    onClick={() => window.scrollBy({ top: -200, behavior: 'smooth' })}
+                                >
+                                    <ArrowLeft size={14} className="rotate-90" />
+                                </button>
+                                <button
+                                    className="btn-icon w-7 h-7 bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+                                    onClick={() => window.scrollBy({ top: 200, behavior: 'smooth' })}
+                                >
+                                    <ArrowRight size={14} className="rotate-90" />
+                                </button>
+                            </div>
+
+                            <div className="w-px h-6 bg-[var(--border-color)]" />
+
+                            {/* Speed Control & Pause */}
+                            <button
+                                className="btn-icon w-7 h-7 border border-[var(--border-color)] rounded-full"
+                                onClick={() => setAutoScrollSpeed(Math.max(1, autoScrollSpeed - 1))}
+                            >
+                                <Minus size={14} />
+                            </button>
+                            <span className="font-mono text-[0.8rem] font-bold text-[var(--text-primary)] min-w-[40px] text-center">
+                                {autoScrollSpeed}x
+                            </span>
+                            <button
+                                className="btn-icon w-7 h-7 border border-[var(--border-color)] rounded-full"
+                                onClick={() => setAutoScrollSpeed(Math.min(7, autoScrollSpeed + 1))}
+                            >
+                                <Plus size={14} />
+                            </button>
+
+                            <button
+                                className="btn-icon w-8 h-8 text-accent"
+                                style={{
+                                    background: isAutoScrollPaused ? 'var(--accent-light)' : 'transparent',
+                                }}
+                                onClick={() => setIsAutoScrollPaused(!isAutoScrollPaused)}
+                            >
+                                {isAutoScrollPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
+                            </button>
+
+                            <div className="w-px h-6 bg-[var(--border-color)]" />
+
+                            <button
+                                onClick={() => setAutoScroll(false)}
+                                className="btn-icon w-7 h-7 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

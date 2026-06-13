@@ -138,14 +138,16 @@ const VerseRow = ({
                         >
                             <Plus size={18} />
                         </button>
-                        <button
-                            className="flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 hover:bg-[var(--bg-secondary)] hover:shadow-[var(--shadow-sm)]"
-                            style={{ color: bookmark?.verseKey === verse.verse_key ? 'var(--accent-primary)' : 'var(--text-muted)' }}
-                            onClick={() => setBookmark(verse.verse_key, chapter ? chapter.name_simple : `Surah ${verse.verse_key.split(':')[0]}`, chapter?.id)}
-                            title="Bookmark Verse"
-                        >
-                            <Bookmark size={18} fill={bookmark?.verseKey === verse.verse_key ? 'currentColor' : 'none'} />
-                        </button>
+                        {setBookmark && (
+                            <button
+                                className="flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 hover:bg-[var(--bg-secondary)] hover:shadow-[var(--shadow-sm)]"
+                                style={{ color: bookmark?.verseKey === verse.verse_key ? 'var(--accent-primary)' : 'var(--text-muted)' }}
+                                onClick={() => setBookmark(verse.verse_key, chapter ? chapter.name_simple : `Surah ${verse.verse_key.split(':')[0]}`, chapter?.id)}
+                                title="Bookmark Verse"
+                            >
+                                <Bookmark size={18} fill={bookmark?.verseKey === verse.verse_key ? 'currentColor' : 'none'} />
+                            </button>
+                        )}
                         {onPlannerBookmark && (
                             <button
                                 className="flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 hover:bg-[var(--bg-secondary)] hover:shadow-[var(--shadow-sm)]"
