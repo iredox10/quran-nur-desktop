@@ -527,7 +527,7 @@ function IntentionView({ onBegin, onViewActive, chapters, hasExistingPlan, plann
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
 function buildPrayerSlots(planner, todayAssignment, prayerTimes, prayerSettings) {
-    const activePrayers = prayerSettings?.activePrayers || PRAYER_NAMES;
+    const activePrayers = (prayerSettings?.activePrayers || PRAYER_NAMES).slice().sort((a, b) => PRAYER_NAMES.indexOf(a) - PRAYER_NAMES.indexOf(b));
     const pref = prayerSettings?.readPreference || 'after';
     
     if (!todayAssignment) return activePrayers.map(name => ({ name, time: null, count: 0, doneInSlot: 0, completedUpTo: 0, slotStart: 0, slotRoute: null, status: 'upcoming' }));
@@ -1116,10 +1116,12 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                                     isActive ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)] text-white' : 'border-[var(--glass-border)] text-[var(--text-muted)]'
                                                 }`} onClick={() => {
                                                     const s = useAppStore.getState();
-                                                    const current = s.prayerSettings?.activePrayers || ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+                                                    const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+                                                    const current = s.prayerSettings?.activePrayers || PRAYER_ORDER;
                                                     const next = current.includes(p) ? current.filter(x => x !== p) : [...current, p];
                                                     if(next.length === 0) return; // Must have at least 1
-                                                    s.updatePrayerSettings({ activePrayers: next });
+                                                    const sortedNext = next.sort((a, b) => PRAYER_ORDER.indexOf(a) - PRAYER_ORDER.indexOf(b));
+                                                    s.updatePrayerSettings({ activePrayers: sortedNext });
                                                 }}>
                                                     {p}
                                                 </button>

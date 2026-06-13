@@ -503,7 +503,7 @@ export default function PlannerReader() {
                 
                 {/* Prayer Slots mini-indicator */}
                 <div className="bg-[var(--bg-surface)] px-4 pb-3 flex items-center justify-between gap-1 text-[0.7rem] font-ui text-[var(--text-muted)] uppercase tracking-wider">
-                    {(useAppStore.getState().prayerSettings?.activePrayers || ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']).map((name, i, arr) => {
+                    {(useAppStore.getState().prayerSettings?.activePrayers || ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']).slice().sort((a,b) => ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].indexOf(a) - ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].indexOf(b)).map((name, i, arr) => {
                         const slotEnd = Math.floor(((i + 1) / arr.length) * assignment.items.length);
                         const done = progress.completedCount;
                         const isDone = done >= slotEnd && slotEnd > 0;
