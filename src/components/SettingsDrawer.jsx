@@ -13,12 +13,7 @@ import { getOfflinePackStats } from '../utils/offlineLibrary';
 import { authService, syncService } from '../services/appwrite';
 import { getSyncableState } from '../store/useAppStore';
 
-const RECITERS = [
-    { id: 7, name: 'Mishary Rashid Alafasy' },
-    { id: 1, name: 'AbdulBaset AbdulSamad' },
-    { id: 3, name: 'Abdur-Rahman as-Sudais' },
-    { id: 4, name: 'Abu Bakr al-Shatri' }
-];
+import { RECITERS } from '../config/reciters';
 
 const TRANSLATIONS = [
     { id: 85, name: 'English - M.A.S. Abdel Haleem' },

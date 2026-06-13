@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
+import { RECITERS } from '../config/reciters';
 
 export default function AudioSetupModal({
     isOpen,
@@ -10,6 +12,8 @@ export default function AudioSetupModal({
     updateAudioSettings,
     handleStartPlaying
 }) {
+    const { reciterId, setReciter } = useAppStore();
+    
     if (!isOpen) return null;
 
     return (
@@ -50,6 +54,21 @@ export default function AudioSetupModal({
                             </div>
 
                             <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-6">
+
+                                <div>
+                                    <label className="mb-[0.6rem] block text-[0.8rem] font-semibold uppercase tracking-[0.05em] text-[var(--text-muted)]">
+                                        Reciter
+                                    </label>
+                                    <select
+                                        className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 text-[0.95rem] text-[var(--text-primary)] outline-none"
+                                        value={reciterId}
+                                        onChange={(e) => setReciter(Number(e.target.value))}
+                                    >
+                                        {RECITERS.map(reciter => (
+                                            <option key={reciter.id} value={reciter.id}>{reciter.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
 
                                 <div>
                                     <label className="mb-[0.6rem] block text-[0.8rem] font-semibold uppercase tracking-[0.05em] text-[var(--text-muted)]">

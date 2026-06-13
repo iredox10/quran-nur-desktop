@@ -8,13 +8,8 @@ import {
     Loader2, Mic, Languages, TrendingUp, CalendarDays, BookOpen, Brain, ChevronDown, Users
 } from 'lucide-react';
 import { authService, syncService } from '../services/appwrite';
+import { RECITERS } from '../config/reciters';
 
-const RECITERS = [
-    { id: 7, name: 'Mishary Rashid Alafasy' },
-    { id: 1, name: 'AbdulBaset AbdulSamad' },
-    { id: 3, name: 'Abdur-Rahman as-Sudais' },
-    { id: 4, name: 'Abu Bakr al-Shatri' },
-];
 const TRANSLATIONS = [
     { id: 85, name: 'Abdel Haleem' }, { id: 20, name: 'Saheeh Intl' },
     { id: 22, name: 'Yusuf Ali' }, { id: 84, name: 'Mufti Taqi Usmani' },
