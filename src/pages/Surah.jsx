@@ -333,13 +333,15 @@ export default function Surah() {
             const element = document.getElementById(`verse-${verseKey}`);
             if (element) {
                 hasScrolledRef.current = verseKey; // Track that we've found and scrolled to it
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Briefly highlight it
-                element.style.transition = 'background-color 0.5s';
-                element.style.backgroundColor = 'var(--accent-light)';
                 setTimeout(() => {
-                    element.style.backgroundColor = 'transparent';
-                }, 2000);
+                    element.scrollIntoView({ behavior: 'instant', block: 'center' });
+                    // Briefly highlight it
+                    element.style.transition = 'background-color 0.5s';
+                    element.style.backgroundColor = 'var(--accent-light)';
+                    setTimeout(() => {
+                        element.style.backgroundColor = 'transparent';
+                    }, 2000);
+                }, 50);
             } else if (hasNextPage && !isFetchingNextPage) {
                 // If the element is not found, aggressively fetch the next page until it appears
                 fetchNextPage();
