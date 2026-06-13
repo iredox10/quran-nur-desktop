@@ -502,11 +502,11 @@ export default function Page() {
             <AnimatePresence>
                 {autoScroll && (
                     <motion.div
-                        initial={{ opacity: 0, y: 40, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: 40, x: '-50%' }}
+                        initial={{ opacity: 0, y: 40 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 40 }}
                         transition={{ duration: 0.25 }}
-                        className="fixed left-1/2 -translate-x-1/2 z-[100]"
+                        className="fixed left-0 right-0 mx-auto w-fit z-[100]"
                         style={{
                             bottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)',
                         }}
