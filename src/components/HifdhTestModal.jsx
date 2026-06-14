@@ -54,16 +54,16 @@ export default function HifdhTestModal({ onClose }) {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <motion.div className="flex w-full max-w-[500px] flex-col overflow-hidden rounded-[20px] bg-[var(--bg-surface)] shadow-[var(--shadow-glass)] border border-[var(--glass-border)]"
+            <motion.div className="flex w-full max-w-[500px] flex-col overflow-hidden rounded-[20px] bg-[var(--h-cream)] shadow-xl border-[1.5px] border-[var(--h-bone-dark)]"
                 initial={{ opacity: 0, y: 30, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.96 }}
             >
-                <div className="flex items-center justify-between border-b border-[var(--glass-border)] px-6 py-5">
+                <div className="flex items-center justify-between border-b-[1.5px] border-[var(--h-bone-dark)] px-6 py-5">
                     <h3 className="flex items-center gap-2 font-ui text-[1.15rem] font-semibold text-[var(--text-primary)]">
                         Hifdh Test
                     </h3>
-                    <button className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-none bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--glass-border)]" onClick={onClose}>
+                    <button className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-none bg-[var(--h-white)] text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--h-bone-dark)]" onClick={onClose}>
                         <X size={18} />
                     </button>
                 </div>
@@ -84,7 +84,7 @@ export default function HifdhTestModal({ onClose }) {
                             <p className="mb-6 text-[0.95rem] text-[var(--text-secondary)]">Recite this ayah from memory, then tap to verify.</p>
                             
                             <div 
-                                className="relative mb-8 cursor-pointer overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-6 transition-all"
+                                className="relative mb-8 cursor-pointer overflow-hidden rounded-xl border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] p-6 transition-all"
                                 onClick={() => setIsRevealed(true)}
                             >
                                 <div className={`font-quran text-3xl leading-[2.2] text-[var(--text-primary)] transition-all duration-500 ${!isRevealed ? 'blur-md select-none opacity-50' : ''}`} dir="rtl">
@@ -121,7 +121,7 @@ export default function HifdhTestModal({ onClose }) {
                                     <h4 className="mb-6 font-ui text-lg font-bold text-[var(--text-primary)]">
                                         {result ? 'Mashallah! Keep it up.' : 'Keep practicing!'}
                                     </h4>
-                                    <button onClick={pickRandomAyah} className="w-full rounded-xl bg-[var(--bg-secondary)] px-4 py-3 font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--glass-border)]">
+                                    <button onClick={pickRandomAyah} className="w-full rounded-xl bg-[var(--h-white)] border-[1.5px] border-[var(--h-bone-dark)] px-4 py-3 font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--h-bone)] hover:border-[var(--h-teal)]">
                                         Test Another Ayah
                                     </button>
                                 </motion.div>

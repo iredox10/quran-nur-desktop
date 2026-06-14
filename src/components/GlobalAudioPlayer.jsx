@@ -67,7 +67,7 @@ export default function GlobalAudioPlayer() {
             return;
         }
 
-        if (activeUrl.startsWith('local-audio://') && localAudioDirHandle) {
+        if (typeof activeUrl === 'string' && activeUrl.startsWith('local-audio://') && localAudioDirHandle) {
             const fileName = activeUrl.replace('local-audio://', '');
             getLocalAudioUrl(localAudioDirHandle, fileName).then(url => {
                 setResolvedAudioUrl(url || activeUrl);

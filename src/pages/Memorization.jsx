@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getVerses, getChapter, getTajweedVerses } from '../services/api/quranApi';
 import { useAppStore } from '../store/useAppStore';
-import { EyeOff, Eye, Repeat, ArrowLeft, ArrowRight, X, Play, Pause, ShieldAlert, Award, Languages, Layers, RefreshCw, Clock, Bookmark, FolderPlus, Plus, Folder, Settings2, CheckCircle, ChevronLeft, ChevronRight, Type, MousePointer } from 'lucide-react';
+import { EyeOff, Eye, Repeat, ArrowLeft, ArrowRight, X, Play, Pause, ShieldAlert, Award, Languages, Layers, RefreshCw, Clock, Bookmark, FolderPlus, Plus, Folder, Settings2, CheckCircle, ChevronLeft, ChevronRight, Type, MousePointer, Mic } from 'lucide-react';
 import { getMushafById, isTajweedEnabledForMushaf } from '../config/mushaf';
 import { getVerseArabicText, sanitizeTajweedHtml } from '../utils/quranText';
 import { getLocalAudioUrl } from '../utils/localAudio';
@@ -243,30 +243,20 @@ export default function Memorization() {
     const renderVerseText = useCallback((verse, idx) => {
         const text = getVerseArabicText(verse, mushaf);
         const computedFontSize = `clamp(${0.9 + fontSize * 0.15}rem, ${fontSize * 1.2}vw, ${fontSize * 0.4 + 1.5}rem)`;
-
-        if (isTajweedActive && tajweedMap?.[verse.verse_key] && hideMode !== 'word' && hideMode !== 'firstletter') {
-            return (
-                <div
-                    className={`quran-text tajweed-text leading-[2.2] text-center [direction:rtl] transition-all duration-300 ${isPlayingAudio && audioVerseIndex === idx ? 'text-[var(--mem-teal)]' : ''} ${hideMode === 'blur' ? 'cursor-pointer blur-[8px]' : ''}`}
-                    style={{ fontSize: computedFontSize, fontFamily: arabicFont }}
-                    onClick={() => hideMode === 'blur' && setHideMode('visible')}
-                >
-                    <span dangerouslySetInnerHTML={{ __html: tajweedMap[verse.verse_key] }} />
-                </div>
-            );
-        }
+        const isTajweed = isTajweedActive && tajweedMap?.[verse.verse_key];
 
         if (hideMode === 'word' || hideMode === 'firstletter') {
-            const words = text.split(/\s+/);
+            const words = isTajweed ? (tajweedMap[verse.verse_key].match(/(?:<[^>]+>|\S)+/g) || []) : text.split(/\s+/);
             return (
                 <div
-                    className={`quran-text leading-[2.2] text-center [direction:rtl] transition-all duration-300 ${isPlayingAudio && audioVerseIndex === idx ? 'text-[var(--mem-teal)]' : ''}`}
+                    className={`quran-text ${isTajweed ? 'tajweed-text' : ''} leading-[2.2] text-center [direction:rtl] transition-all duration-300 ${isPlayingAudio && audioVerseIndex === idx ? 'text-[var(--mem-teal)]' : ''}`}
                     style={{ fontSize: computedFontSize, fontFamily: arabicFont, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.4em' }}
                     onClick={() => hideMode === 'blur' && setHideMode('visible')}
                 >
                     {words.map((word, wi) => {
                         const key = `${verse.verse_key}-${wi}`;
                         const isRevealed = revealedWords[key];
+                        const cleanWord = isTajweed ? word.replace(/<[^>]*>?/gm, '') : word;
                         if (hideMode === 'word') {
                             return (
                                 <span
@@ -278,7 +268,7 @@ export default function Memorization() {
                                     } ${isRevealed ? 'mem-word-revealed' : ''}`}
                                     onClick={(e) => { e.stopPropagation(); toggleWordReveal(verse.verse_key, wi); }}
                                 >
-                                    {isRevealed ? word : '▇'.repeat(Math.max(2, Math.ceil(word.length / 3)))}
+                                    {isRevealed ? (isTajweed ? <span dangerouslySetInnerHTML={{ __html: word }} /> : word) : '▇'.repeat(Math.max(2, Math.ceil(cleanWord.length / 3)))}
                                 </span>
                             );
                         }
@@ -292,10 +282,22 @@ export default function Memorization() {
                                 } ${isRevealed ? 'mem-word-revealed' : ''}`}
                                 onClick={(e) => { e.stopPropagation(); toggleWordReveal(verse.verse_key, wi); }}
                             >
-                                {isRevealed ? word : getFirstLetter(word) + '⸱'.repeat(Math.max(1, Math.ceil(word.length / 4)))}
+                                {isRevealed ? (isTajweed ? <span dangerouslySetInnerHTML={{ __html: word }} /> : word) : getFirstLetter(cleanWord) + '⸱'.repeat(Math.max(1, Math.ceil(cleanWord.length / 4)))}
                             </span>
                         );
                     })}
+                </div>
+            );
+        }
+
+        if (isTajweed) {
+            return (
+                <div
+                    className={`quran-text tajweed-text leading-[2.2] text-center [direction:rtl] transition-all duration-300 ${isPlayingAudio && audioVerseIndex === idx ? 'text-[var(--mem-teal)]' : ''} ${hideMode === 'blur' ? 'cursor-pointer blur-[8px]' : ''}`}
+                    style={{ fontSize: computedFontSize, fontFamily: arabicFont }}
+                    onClick={() => hideMode === 'blur' && setHideMode('visible')}
+                >
+                    <span dangerouslySetInnerHTML={{ __html: tajweedMap[verse.verse_key] }} />
                 </div>
             );
         }
@@ -580,6 +582,9 @@ export default function Memorization() {
                         {isPlayingAudio ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" style={{ marginLeft: '2px' }} />}
                     </motion.button>
                     <div className="mx-0.5 h-6 w-px shrink-0 bg-[var(--mem-bone-dark)]" />
+                    <button className={`flex h-[42px] w-[42px] shrink-0 cursor-pointer items-center justify-center rounded-xl border-none bg-transparent transition-all duration-150 ${isRecording ? 'bg-red-100 text-red-500 hover:bg-red-200' : 'text-[var(--mem-ink-mid)] hover:bg-[var(--mem-bone)]'}`} onClick={handleMicToggle}>
+                        <Mic size={18} />
+                    </button>
                     <div className="flex h-[42px] cursor-pointer items-center gap-[0.35rem] rounded-xl border-none bg-transparent px-2 text-[0.78rem] text-[var(--mem-ink-mid)] font-[inherit]">
                         <Layers size={14} />
                         <select value={ayahsPerSwipe} onChange={(e) => {

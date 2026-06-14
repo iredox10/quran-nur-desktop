@@ -104,8 +104,8 @@ export default function MemorizeIndex() {
         e.preventDefault();
         e.stopPropagation();
         try {
-            const audioUrl = await getChapterAudio(chapterId);
-            setAudio(audioUrl);
+            const audioData = await getChapterAudio(chapterId);
+            setAudio(audioData.audio_url);
             setIsPlaying(true);
         } catch (err) {
             console.error("Failed to play audio", err);
@@ -127,7 +127,7 @@ export default function MemorizeIndex() {
             <div className="py-[10vh] text-center text-[var(--text-secondary)]">
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
                     className="mb-4 inline-block h-9 w-9 rounded-full"
-                    style={{ border: '3px solid var(--glass-border)', borderTopColor: 'var(--accent-primary)' }} />
+                    style={{ border: '3px solid var(--h-bone-dark)', borderTopColor: 'var(--accent-primary)' }} />
                 <p>Loading...</p>
             </div>
         </div>
@@ -176,15 +176,15 @@ export default function MemorizeIndex() {
                 )}
 
                 <div className="mb-7 flex gap-2">
-                    <div className="flex-1 cursor-pointer rounded-[14px] border-[1.5px] border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md px-3 py-[0.85rem] text-center transition-all duration-200 hover:border-[#b8924a] hover:shadow-[0_2px_12px_rgba(184,146,74,0.12)]" onClick={() => setShowSurahsModal(true)}>
+                    <div className="flex-1 cursor-pointer rounded-[14px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] shadow-sm px-3 py-[0.85rem] text-center transition-all duration-200 hover:border-[#b8924a] hover:shadow-[0_2px_12px_rgba(184,146,74,0.12)]" onClick={() => setShowSurahsModal(true)}>
                         <div className="font-ui text-2xl font-bold leading-[1.2] text-[var(--text-primary)]">{totalSurahs}<small className="text-[0.7rem] font-normal text-[var(--text-secondary)]">/114</small></div>
                         <div className="mt-[0.2rem] font-mono text-[0.58rem] uppercase tracking-[0.1em] text-[var(--text-secondary)]">Surahs</div>
                     </div>
-                    <div className="flex-1 cursor-pointer rounded-[14px] border-[1.5px] border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md px-3 py-[0.85rem] text-center transition-all duration-200 hover:border-[#b8924a] hover:shadow-[0_2px_12px_rgba(184,146,74,0.12)]" onClick={() => setShowAyahsModal(true)}>
+                    <div className="flex-1 cursor-pointer rounded-[14px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] shadow-sm px-3 py-[0.85rem] text-center transition-all duration-200 hover:border-[#b8924a] hover:shadow-[0_2px_12px_rgba(184,146,74,0.12)]" onClick={() => setShowAyahsModal(true)}>
                         <div className="font-ui text-2xl font-bold leading-[1.2] text-[var(--text-primary)]">{totalAyahs}<small className="text-[0.7rem] font-normal text-[var(--text-secondary)]">/6236</small></div>
                         <div className="mt-[0.2rem] font-mono text-[0.58rem] uppercase tracking-[0.1em] text-[var(--text-secondary)]">Ayahs</div>
                     </div>
-                    <div className="flex-1 rounded-[14px] border-[1.5px] border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md px-3 py-[0.85rem] text-center">
+                    <div className="flex-1 rounded-[14px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] shadow-sm px-3 py-[0.85rem] text-center">
                         <div className="font-ui text-2xl font-bold leading-[1.2] text-[var(--text-primary)]">{totalSurahs > 0 ? Math.round((totalAyahs / 6236) * 100) : 0}<small className="text-[0.7rem] font-normal text-[var(--text-secondary)]">%</small></div>
                         <div className="mt-[0.2rem] font-mono text-[0.58rem] uppercase tracking-[0.1em] text-[var(--text-secondary)]">Progress</div>
                     </div>
@@ -194,7 +194,7 @@ export default function MemorizeIndex() {
                     <button onClick={() => setShowTestModal(true)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--accent-primary)] px-4 py-3 font-semibold text-white shadow-lg transition-colors hover:bg-[var(--accent-hover)]">
                         <RefreshCw size={18} /> Test My Hifdh
                     </button>
-                    <button onClick={() => setShowGoalModal(true)} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 font-semibold text-[var(--text-primary)] shadow-[var(--shadow-glass)] transition-colors hover:border-[#b8924a]">
+                    <button onClick={() => setShowGoalModal(true)} className="flex flex-1 items-center justify-center gap-2 rounded-xl border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 font-semibold text-[var(--text-primary)] shadow-sm transition-colors hover:border-[#b8924a]">
                         <Target size={18} /> Set Goal
                     </button>
                 </div>
@@ -255,7 +255,7 @@ export default function MemorizeIndex() {
                     </div>
                 </div>
 
-                <div className="mb-4 flex items-center gap-3 rounded-[14px] border-[1.5px] border-[var(--glass-border)] bg-[var(--glass-bg)] px-[1.15rem] py-[0.85rem] transition-colors duration-200 focus-within:border-[var(--accent-primary)] md:px-5">
+                <div className="mb-4 flex items-center gap-3 rounded-[14px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] px-[1.15rem] py-[0.85rem] transition-colors duration-200 focus-within:border-[var(--accent-primary)] md:px-5">
                     <Search size={18} className="shrink-0 text-[var(--text-secondary)]" />
                     <input type="text" placeholder="Search..." value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
@@ -267,7 +267,7 @@ export default function MemorizeIndex() {
                         className={`flex cursor-pointer items-center gap-1.5 rounded-[20px] border-[1.5px] px-3.5 py-[7px] text-[0.78rem] font-semibold font-[inherit] transition-all duration-200 ${
                             showOnlyMemorized
                                 ? 'border-[#10b981] bg-[rgba(16, 185, 129, 0.1)] text-[#10b981]'
-                                : 'border-[var(--glass-border)] bg-transparent text-[var(--text-secondary)]'
+                                : 'border-[var(--h-bone-dark)] bg-[var(--h-white)] text-[var(--text-secondary)]'
                         }`}
                         onClick={() => setShowOnlyMemorized(!showOnlyMemorized)}
                     >
@@ -286,8 +286,8 @@ export default function MemorizeIndex() {
 
                             return (
                                 <motion.div key={chapter.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                                    <Link to={`/memorize/${chapter.id}`} className={`flex items-center gap-3 overflow-hidden rounded-[14px] border-[1.5px] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md p-4 no-underline text-inherit transition-all duration-150 hover:-translate-y-px hover:border-[var(--accent-primary)] hover:shadow-[0_4px_14px_rgba(46,79,74,0.08)] ${
-                                        isMemorized ? 'border-[#10b981]' : 'border-[var(--glass-border)]'
+                                    <Link to={`/memorize/${chapter.id}`} className={`flex items-center gap-3 overflow-hidden rounded-[14px] border-[1.5px] bg-[var(--h-cream)] shadow-sm p-4 no-underline text-inherit transition-all duration-150 hover:-translate-y-px hover:border-[var(--accent-primary)] hover:shadow-md ${
+                                        isMemorized ? 'border-[#10b981]' : 'border-[var(--h-bone-dark)]'
                                     }`}>
                                         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-mono text-[0.8rem] font-bold ${
                                             isMemorized ? 'bg-[rgba(16, 185, 129, 0.1)] text-[#10b981]' : 'bg-[var(--bg-secondary)] text-[var(--accent-primary)]'
@@ -304,7 +304,7 @@ export default function MemorizeIndex() {
                                                 )}
                                             </div>
                                             {(isMemorized || hasPartial) && (
-                                                <div className="mt-1.5 h-[3px] overflow-hidden rounded-sm bg-[var(--glass-border)]">
+                                                <div className="mt-1.5 h-[3px] overflow-hidden rounded-sm bg-[var(--h-bone-dark)]">
                                                     <div className="h-full rounded-sm transition-all duration-[0.4s] ease-in-out"
                                                         style={{ width: `${isMemorized ? 100 : memPct}%`, background: isMemorized ? '#10b981' : 'var(--accent-primary)' }} />
                                                 </div>
@@ -346,8 +346,8 @@ export default function MemorizeIndex() {
 
                             return (
                                 <motion.div key={juz.id} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                                    <div className={`flex items-center gap-3 overflow-hidden rounded-[14px] border-[1.5px] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md p-4 text-inherit transition-all duration-150 ${
-                                        isMemorized ? 'border-[#10b981]' : 'border-[var(--glass-border)]'
+                                    <div className={`flex items-center gap-3 overflow-hidden rounded-[14px] border-[1.5px] bg-[var(--h-cream)] shadow-sm p-4 text-inherit transition-all duration-150 ${
+                                        isMemorized ? 'border-[#10b981]' : 'border-[var(--h-bone-dark)]'
                                     }`}>
                                         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-mono text-[0.8rem] font-bold ${
                                             isMemorized ? 'bg-[rgba(16, 185, 129, 0.1)] text-[#10b981]' : 'bg-[var(--bg-secondary)] text-[var(--accent-primary)]'
@@ -360,7 +360,7 @@ export default function MemorizeIndex() {
                                             <div className="mt-[0.15rem] flex items-center gap-2 text-[0.72rem] text-[var(--text-secondary)]">
                                                 <span>{memJuzAyahs} / {totalJuzAyahs} Ayahs</span>
                                             </div>
-                                            <div className="mt-1.5 h-[3px] overflow-hidden rounded-sm bg-[var(--glass-border)]">
+                                            <div className="mt-1.5 h-[3px] overflow-hidden rounded-sm bg-[var(--h-bone-dark)]">
                                                 <div className="h-full rounded-sm transition-all duration-[0.4s] ease-in-out"
                                                     style={{ width: `${memPct}%`, background: isMemorized ? '#10b981' : 'var(--accent-primary)' }} />
                                             </div>
@@ -382,14 +382,14 @@ export default function MemorizeIndex() {
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         onClick={e => { if (e.target === e.currentTarget) setShowGoalModal(false); }}
                     >
-                        <motion.div className="flex w-full max-w-[400px] flex-col overflow-hidden rounded-[20px] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-glass)]"
+                        <motion.div className="flex w-full max-w-[400px] flex-col overflow-hidden rounded-[20px] bg-[var(--h-cream)] p-6 shadow-xl border-[1.5px] border-[var(--h-bone-dark)]"
                             initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.96 }}
                         >
                             <h3 className="mb-4 font-ui text-xl font-bold text-[var(--text-primary)]">Set Hifdh Goal</h3>
                             <div className="mb-4">
                                 <label className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">Target Surah</label>
                                 <select 
-                                    className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-3 text-[var(--text-primary)] outline-none"
+                                    className="w-full rounded-xl border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
                                     value={goalTarget} onChange={e => setGoalTarget(e.target.value)}
                                 >
                                     <option value="">Select Surah...</option>
@@ -400,7 +400,7 @@ export default function MemorizeIndex() {
                                 <label className="mb-2 block text-sm font-semibold text-[var(--text-secondary)]">Target Date</label>
                                 <input 
                                     type="date" 
-                                    className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--bg-secondary)] px-4 py-3 text-[var(--text-primary)] outline-none"
+                                    className="w-full rounded-xl border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)]"
                                     value={goalDate} onChange={e => setGoalDate(e.target.value)}
                                     min={new Date().toISOString().split('T')[0]}
                                 />
