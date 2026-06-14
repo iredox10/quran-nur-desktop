@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, XCircle, RefreshCw, Eye } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import { getVerses } from '../services/api/quranApi';
+import { getVerses, getChapters } from '../services/api/quranApi';
 
 export default function HifdhTestModal({ onClose }) {
-    const { memorizedAyahs, logHifdhReview } = useAppStore();
+    const { memorizedAyahs, memorizedSurahs, logHifdhReview } = useAppStore();
     const [testAyah, setTestAyah] = useState(null);
     const [verseData, setVerseData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -18,17 +18,35 @@ export default function HifdhTestModal({ onClose }) {
         setResult(null);
         setVerseData(null);
         
-        if (!memorizedAyahs || memorizedAyahs.length === 0) {
-            setIsLoading(false);
-            return;
-        }
-
-        const randomIndex = Math.floor(Math.random() * memorizedAyahs.length);
-        const randomKey = memorizedAyahs[randomIndex];
-        setTestAyah(randomKey);
-
-        const [chapterId, ayahNum] = randomKey.split(':');
         try {
+            const chapters = await getChapters();
+            let allMemorized = [...(memorizedAyahs || [])];
+
+            if (memorizedSurahs && memorizedSurahs.length > 0) {
+                memorizedSurahs.forEach(surahId => {
+                    const chapter = chapters.find(c => String(c.id) === String(surahId));
+                    if (chapter) {
+                        for (let i = 1; i <= chapter.verses_count; i++) {
+                            const key = `${surahId}:${i}`;
+                            if (!allMemorized.includes(key)) {
+                                allMemorized.push(key);
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (allMemorized.length === 0) {
+                setIsLoading(false);
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * allMemorized.length);
+            const randomKey = allMemorized[randomIndex];
+            setTestAyah(randomKey);
+
+            const [chapterId, ayahNum] = randomKey.split(':');
+            
             // Fetch verses for this chapter to find the specific ayah
             const data = await getVerses(chapterId, 85, 7, 1, 'madani-standard', 286); // get all ayahs
             const verse = data.verses.find(v => v.verse_key === randomKey);
@@ -69,7 +87,7 @@ export default function HifdhTestModal({ onClose }) {
                 </div>
                 
                 <div className="flex-1 p-6 text-center">
-                    {!memorizedAyahs?.length ? (
+                    {(!memorizedAyahs?.length && !memorizedSurahs?.length) ? (
                         <div className="py-8 italic text-[var(--text-secondary)]">You haven't memorized any ayahs yet!</div>
                     ) : isLoading ? (
                         <div className="py-12">
