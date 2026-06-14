@@ -25,7 +25,9 @@ const VerseRow = ({
     mushaf,
     onPlayVerse,
     onPlannerBookmark,
-    isPlannerBookmark
+    isPlannerBookmark,
+    isHeatmapMode,
+    hifdhHistory
 }) => {
     const { ref, inView } = useInView({
         threshold: 0.5,
