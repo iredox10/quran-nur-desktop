@@ -4,9 +4,10 @@ import { getChapters, getJuzs, getChapterAudio } from '../services/api/quranApi'
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore';
-import { Search, Award, X, ArrowRight, CheckCircle, Folder, BookOpen, Play, Target, AlertCircle, Calendar, RefreshCw } from 'lucide-react';
+import { Search, Award, X, ArrowRight, CheckCircle, Folder, BookOpen, Play, Target, AlertCircle, Calendar, RefreshCw, BookMarked, Library, Clock } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import HifdhTestModal from '../components/HifdhTestModal';
+import { State } from 'ts-fsrs';
 
 export default function MemorizeIndex() {
     const { 
@@ -64,19 +65,41 @@ export default function MemorizeIndex() {
         return counts;
     }, [memorizedAyahs]);
 
-    const needsRevision = useMemo(() => {
-        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-        const now = Date.now();
-        const items = [];
-        
+    const { sabaqCount, sabqiCount, manzilCount, dueSabaq, dueSabqi, dueManzil } = useMemo(() => {
+        const now = new Date();
+        const sabaq = [];
+        const sabqi = [];
+        const manzil = [];
+
         (memorizedAyahs || []).forEach(ayah => {
             const history = hifdhHistory?.[ayah];
-            if (!history || (now - history.lastReviewed > SEVEN_DAYS) || history.strength === 'weak') {
-                items.push(ayah);
+            const chapterId = ayah.split(':')[0];
+            const isSabqiSurah = lastSessionChapter && String(lastSessionChapter.id) === chapterId;
+
+            if (!history || !history.card || history.card.state === State.New || history.card.state === State.Learning || history.card.reps < 3) {
+                sabaq.push(ayah);
+            } else if (isSabqiSurah) {
+                sabqi.push(ayah);
+            } else {
+                manzil.push(ayah);
             }
         });
-        return items.slice(0, 10); // top 10 to review
-    }, [memorizedAyahs, hifdhHistory]);
+
+        const isDue = (ayah) => {
+            const history = hifdhHistory?.[ayah];
+            if (!history || !history.card) return true;
+            return new Date(history.card.due) <= now;
+        };
+
+        return {
+            sabaqCount: sabaq.length,
+            sabqiCount: sabqi.length,
+            manzilCount: manzil.length,
+            dueSabaq: sabaq.filter(isDue),
+            dueSabqi: sabqi.filter(isDue),
+            dueManzil: manzil.filter(isDue)
+        };
+    }, [memorizedAyahs, hifdhHistory, lastSessionChapter]);
 
     const memorizedAyahsGrouped = useMemo(() => {
         const acc = {};
@@ -220,20 +243,40 @@ export default function MemorizeIndex() {
                     </button>
                 </div>
 
-                {needsRevision.length > 0 && (
-                    <div className="mb-10 rounded-[20px] border-[1.5px] border-[#fca5a5] bg-gradient-to-br from-[#fef2f2] to-[#fee2e2] p-5 shadow-sm dark:border-[#7f1d1d] dark:from-[#450a0a] dark:to-[#220505]">
-                        <div className="mb-4 flex items-center gap-2.5 font-ui text-[1.1rem] font-bold text-[#b91c1c] dark:text-[#f87171]">
-                            <AlertCircle size={20} /> Needs Revision
+                <div className="mb-10 grid gap-4 grid-cols-1 md:grid-cols-3">
+                    <div className="rounded-[20px] border-[1.5px] border-[#bbf7d0] bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] p-5 shadow-sm dark:border-[#14532d] dark:from-[#052e16] dark:to-[#022c22]">
+                        <div className="mb-2 flex items-center justify-between font-ui text-[1.1rem] font-bold text-[#166534] dark:text-[#4ade80]">
+                            <div className="flex items-center gap-2"><Clock size={20} /> Sabaq (New)</div>
+                            <span className="text-[1.2rem]">{dueSabaq.length}</span>
                         </div>
-                        <div className="flex gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                            {needsRevision.map(ayah => (
-                                <Link to={`/memorize/${ayah.split(':')[0]}?verse=${ayah}`} key={ayah} className="flex-shrink-0 rounded-xl border border-[#fecaca] bg-white px-4 py-2.5 text-[0.85rem] font-semibold text-[#b91c1c] no-underline shadow-sm transition-all hover:-translate-y-px hover:border-[#f87171] hover:shadow-md dark:border-[#991b1b] dark:bg-[var(--h-cream)] dark:text-[#fca5a5]">
-                                    {chapters?.find(c => c.id == ayah.split(':')[0])?.name_simple} {ayah.split(':')[1]}
-                                </Link>
-                            ))}
-                        </div>
+                        <p className="mb-4 text-xs font-mono text-[#15803d] dark:text-[#22c55e] opacity-80 uppercase tracking-widest">{sabaqCount} total</p>
+                        <button onClick={() => { /* Review Sabaq logic */ setShowTestModal(true) }} className="w-full rounded-xl bg-white/60 px-4 py-2 text-sm font-semibold text-[#166534] hover:bg-white/90 dark:bg-black/20 dark:text-[#4ade80] dark:hover:bg-black/40 transition-colors">
+                            Review Due
+                        </button>
                     </div>
-                )}
+
+                    <div className="rounded-[20px] border-[1.5px] border-[#fef08a] bg-gradient-to-br from-[#fefce8] to-[#fef9c3] p-5 shadow-sm dark:border-[#713f12] dark:from-[#422006] dark:to-[#3b1704]">
+                        <div className="mb-2 flex items-center justify-between font-ui text-[1.1rem] font-bold text-[#854d0e] dark:text-[#facc15]">
+                            <div className="flex items-center gap-2"><BookMarked size={20} /> Sabqi (Recent)</div>
+                            <span className="text-[1.2rem]">{dueSabqi.length}</span>
+                        </div>
+                        <p className="mb-4 text-xs font-mono text-[#a16207] dark:text-[#eab308] opacity-80 uppercase tracking-widest">{sabqiCount} total</p>
+                        <button onClick={() => { /* Review Sabqi logic */ setShowTestModal(true) }} className="w-full rounded-xl bg-white/60 px-4 py-2 text-sm font-semibold text-[#854d0e] hover:bg-white/90 dark:bg-black/20 dark:text-[#facc15] dark:hover:bg-black/40 transition-colors">
+                            Review Due
+                        </button>
+                    </div>
+
+                    <div className="rounded-[20px] border-[1.5px] border-[#bae6fd] bg-gradient-to-br from-[#f0f9ff] to-[#e0f2fe] p-5 shadow-sm dark:border-[#0c4a6e] dark:from-[#082f49] dark:to-[#042f2e]">
+                        <div className="mb-2 flex items-center justify-between font-ui text-[1.1rem] font-bold text-[#075985] dark:text-[#38bdf8]">
+                            <div className="flex items-center gap-2"><Library size={20} /> Manzil (Old)</div>
+                            <span className="text-[1.2rem]">{dueManzil.length}</span>
+                        </div>
+                        <p className="mb-4 text-xs font-mono text-[#0369a1] dark:text-[#0ea5e9] opacity-80 uppercase tracking-widest">{manzilCount} total</p>
+                        <button onClick={() => { /* Review Manzil logic */ setShowTestModal(true) }} className="w-full rounded-xl bg-white/60 px-4 py-2 text-sm font-semibold text-[#075985] hover:bg-white/90 dark:bg-black/20 dark:text-[#38bdf8] dark:hover:bg-black/40 transition-colors">
+                            Review Due
+                        </button>
+                    </div>
+                </div>
 
                 {(hifdhGoals?.length > 0) && (
                     <div className="mb-10">

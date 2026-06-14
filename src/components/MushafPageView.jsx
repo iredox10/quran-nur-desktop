@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { getWordArabicText } from '../utils/quranText';
+import { State } from 'ts-fsrs';
 
-export default function MushafPageView({ verses, mushaf, arabicFont, fontSize, activeAudioVerseKey }) {
+export default function MushafPageView({ verses, mushaf, arabicFont, fontSize, activeAudioVerseKey, isHeatmapMode, hifdhHistory }) {
   const lines = useMemo(() => {
     const lineMap = new Map();
 
@@ -34,6 +35,26 @@ export default function MushafPageView({ verses, mushaf, arabicFont, fontSize, a
     return null;
   }
 
+  const getHeatmapColor = (verseKey) => {
+    if (!isHeatmapMode || !hifdhHistory) return null;
+    const history = hifdhHistory[verseKey];
+    if (!history || !history.card) return 'rgba(128, 128, 128, 0.05)';
+    
+    const card = history.card;
+    if (card.state === State.New || card.state === State.Learning || card.state === State.Relearning) {
+      return 'rgba(239, 68, 68, 0.15)';
+    }
+    
+    const stability = card.stability;
+    if (stability < 7) {
+      return 'rgba(245, 158, 11, 0.15)';
+    } else if (stability < 21) {
+      return 'rgba(132, 204, 22, 0.15)';
+    } else {
+      return 'rgba(34, 197, 94, 0.15)';
+    }
+  };
+
   return (
     <div className="mx-auto max-w-[840px] rounded-[24px] border border-[var(--border-color)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-md)]">
       <div className="mb-4 text-[0.8rem] uppercase tracking-[0.08em] text-[var(--text-muted)]">
@@ -56,7 +77,9 @@ export default function MushafPageView({ verses, mushaf, arabicFont, fontSize, a
                   fontSize: `${fontSize * 0.4 + 1.35}rem`,
                   lineHeight: 1.95,
                   whiteSpace: 'nowrap',
-                  transition: 'color 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  backgroundColor: word.verseKey === activeAudioVerseKey ? 'var(--accent-light)' : (getHeatmapColor(word.verseKey) || 'transparent'),
+                  borderRadius: '4px'
                 }}
                 className={
                   word.verseKey === activeAudioVerseKey || word.charType === 'end'

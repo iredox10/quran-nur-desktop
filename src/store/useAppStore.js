@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { fsrs, createEmptyCard, Rating } from 'ts-fsrs';
+
+const f = fsrs({});
+
 import {
     DEFAULT_MUSHAF,
     getArabicFontByFamily,
@@ -183,10 +187,36 @@ export const useAppStore = create(
             }),
 
             
-            logHifdhReview: (itemId, strength = 'strong') => set((state) => {
+            logHifdhReview: (itemId, ratingValue = Rating.Good) => set((state) => {
                 const history = { ...(state.hifdhHistory || {}) };
-                history[itemId] = { lastReviewed: Date.now(), strength };
-                return { hifdhHistory: history };
+                const transitions = { ...(state.transitionLinks || {}) };
+                
+                // If we have an old 'strength' based object, we convert or start fresh
+                let card;
+                if (history[itemId] && history[itemId].card) {
+                    card = history[itemId].card;
+                } else {
+                    card = createEmptyCard(new Date());
+                }
+                
+                const now = new Date();
+                const recordLog = f.next(card, now, ratingValue);
+                const newCard = recordLog.card;
+
+                history[itemId] = { 
+                    ...history[itemId],
+                    card: newCard,
+                    lastReviewed: Date.now(), 
+                    strength: ratingValue === Rating.Easy ? 'strong' : (ratingValue === Rating.Again ? 'weak' : 'medium')
+                };
+
+                if (ratingValue === Rating.Again) {
+                    transitions[itemId] = true;
+                } else if (ratingValue === Rating.Easy || ratingValue === Rating.Good) {
+                    delete transitions[itemId];
+                }
+
+                return { hifdhHistory: history, transitionLinks: transitions };
             }),
 
             addHifdhGoal: (goal) => set((state) => ({

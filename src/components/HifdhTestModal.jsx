@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, XCircle, RefreshCw, Eye } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { getVerses, getChapters } from '../services/api/quranApi';
+import { Rating } from 'ts-fsrs';
 
 export default function HifdhTestModal({ onClose }) {
-    const { memorizedAyahs, memorizedSurahs, logHifdhReview } = useAppStore();
+    const { memorizedAyahs, memorizedSurahs, logHifdhReview, transitionLinks } = useAppStore();
     const [testAyah, setTestAyah] = useState(null);
     const [verseData, setVerseData] = useState(null);
+    const [previousAyahData, setPreviousAyahData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isRevealed, setIsRevealed] = useState(false);
     const [result, setResult] = useState(null);
@@ -17,6 +19,7 @@ export default function HifdhTestModal({ onClose }) {
         setIsRevealed(false);
         setResult(null);
         setVerseData(null);
+        setPreviousAyahData(null);
         
         try {
             const chapters = await getChapters();
@@ -51,6 +54,15 @@ export default function HifdhTestModal({ onClose }) {
             const data = await getVerses(chapterId, 85, 7, 1, 'madani-standard', 286); // get all ayahs
             const verse = data.verses.find(v => v.verse_key === randomKey);
             setVerseData(verse);
+            
+            // Check for weak transitions
+            if (transitionLinks && transitionLinks[randomKey] && Number(ayahNum) > 1) {
+                const prevKey = `${chapterId}:${Number(ayahNum) - 1}`;
+                const prevVerse = data.verses.find(v => v.verse_key === prevKey);
+                setPreviousAyahData(prevVerse || null);
+            } else {
+                setPreviousAyahData(null);
+            }
         } catch (error) {
             console.error('Failed to fetch test ayah', error);
         } finally {
@@ -62,9 +74,9 @@ export default function HifdhTestModal({ onClose }) {
         pickRandomAyah();
     }, []);
 
-    const handleResult = (success) => {
-        setResult(success);
-        logHifdhReview(testAyah, success ? 'strong' : 'weak');
+    const handleResult = (ratingValue) => {
+        setResult(ratingValue);
+        logHifdhReview(testAyah, ratingValue);
     };
 
     return (
@@ -99,6 +111,19 @@ export default function HifdhTestModal({ onClose }) {
                             <div className="mb-4 inline-block rounded-full bg-[var(--bg-secondary)] px-4 py-1.5 font-mono text-sm font-semibold text-[var(--accent-primary)]">
                                 Surah {testAyah.split(':')[0]}, Ayah {testAyah.split(':')[1]}
                             </div>
+                            
+                            {previousAyahData && !isRevealed && (
+                                <motion.div initial={{opacity:0, height:0}} animate={{opacity:1, height:'auto'}} className="mb-4 rounded-xl bg-orange-50 p-4 border border-orange-200 dark:bg-orange-900/20 dark:border-orange-800">
+                                    <div className="flex items-center justify-center gap-2 mb-2 text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+                                        <RefreshCw size={14} /> Weak Transition Detected
+                                    </div>
+                                    <p className="text-sm text-[var(--text-secondary)] mb-2">Start reciting from the end of the previous Ayah:</p>
+                                    <div className="font-quran text-2xl leading-[2.2] text-[var(--text-primary)]" dir="rtl">
+                                        ...{previousAyahData.arabic_text.split(' ').slice(-4).join(' ')}
+                                    </div>
+                                </motion.div>
+                            )}
+
                             <p className="mb-6 text-[0.95rem] text-[var(--text-secondary)]">Recite this ayah from memory, then tap to verify.</p>
                             
                             <div 
@@ -119,13 +144,23 @@ export default function HifdhTestModal({ onClose }) {
 
                             {isRevealed && result === null && (
                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-3">
-                                    <h4 className="font-ui text-lg font-semibold text-[var(--text-primary)]">Did you get it right?</h4>
-                                    <div className="flex gap-3">
-                                        <button onClick={() => handleResult(false)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-100 px-4 py-3 font-semibold text-red-700 transition-colors hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400">
-                                            <XCircle size={18} /> Needs Work
+                                    <h4 className="font-ui text-lg font-semibold text-[var(--text-primary)]">How well did you remember this?</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => handleResult(Rating.Again)} className="flex flex-col items-center justify-center gap-1 rounded-xl bg-red-100 px-3 py-3 font-semibold text-red-700 transition-colors hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400">
+                                            <span className="text-sm">Complete Blank</span>
+                                            <span className="text-[10px] font-normal opacity-70">Again</span>
                                         </button>
-                                        <button onClick={() => handleResult(true)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-100 px-4 py-3 font-semibold text-green-700 transition-colors hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400">
-                                            <CheckCircle size={18} /> Perfect
+                                        <button onClick={() => handleResult(Rating.Hard)} className="flex flex-col items-center justify-center gap-1 rounded-xl bg-orange-100 px-3 py-3 font-semibold text-orange-700 transition-colors hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400">
+                                            <span className="text-sm">Needed Prompt</span>
+                                            <span className="text-[10px] font-normal opacity-70">Hard</span>
+                                        </button>
+                                        <button onClick={() => handleResult(Rating.Good)} className="flex flex-col items-center justify-center gap-1 rounded-xl bg-blue-100 px-3 py-3 font-semibold text-blue-700 transition-colors hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400">
+                                            <span className="text-sm">Hesitated</span>
+                                            <span className="text-[10px] font-normal opacity-70">Good</span>
+                                        </button>
+                                        <button onClick={() => handleResult(Rating.Easy)} className="flex flex-col items-center justify-center gap-1 rounded-xl bg-green-100 px-3 py-3 font-semibold text-green-700 transition-colors hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400">
+                                            <span className="text-sm">Perfect</span>
+                                            <span className="text-[10px] font-normal opacity-70">Easy</span>
                                         </button>
                                     </div>
                                 </motion.div>
@@ -133,11 +168,11 @@ export default function HifdhTestModal({ onClose }) {
 
                             {result !== null && (
                                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="py-4">
-                                    <div className={`mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full ${result ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'}`}>
-                                        {result ? <CheckCircle size={32} /> : <RefreshCw size={32} />}
+                                    <div className={`mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full ${result >= Rating.Good ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'}`}>
+                                        {result >= Rating.Good ? <CheckCircle size={32} /> : <RefreshCw size={32} />}
                                     </div>
                                     <h4 className="mb-6 font-ui text-lg font-bold text-[var(--text-primary)]">
-                                        {result ? 'Mashallah! Keep it up.' : 'Keep practicing!'}
+                                        {result >= Rating.Good ? 'Mashallah! Keep it up.' : 'Keep practicing!'}
                                     </h4>
                                     <button onClick={pickRandomAyah} className="w-full rounded-xl bg-[var(--h-white)] border-[1.5px] border-[var(--h-bone-dark)] px-4 py-3 font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--h-bone)] hover:border-[var(--h-teal)]">
                                         Test Another Ayah

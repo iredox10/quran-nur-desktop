@@ -4,6 +4,7 @@ import { Bookmark, Info, X, Plus, Play, Pause, Folder, CheckCircle2, Check } fro
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore';
 import { getVerseArabicText } from '../utils/quranText';
+import { State } from 'ts-fsrs';
 
 
 const TAFSIR_NAMES = {
@@ -64,6 +65,26 @@ const VerseRow = ({
         </div>
     ) : null;
 
+    const getHeatmapColor = (verseKey) => {
+        if (!isHeatmapMode || !hifdhHistory) return null;
+        const history = hifdhHistory[verseKey];
+        if (!history || !history.card) return 'rgba(128, 128, 128, 0.05)'; // slight gray for unmemorized
+        
+        const card = history.card;
+        if (card.state === State.New || card.state === State.Learning || card.state === State.Relearning) {
+            return 'rgba(239, 68, 68, 0.15)'; // red for learning/relearning
+        }
+        
+        const stability = card.stability;
+        if (stability < 7) {
+            return 'rgba(245, 158, 11, 0.15)'; // amber for low stability
+        } else if (stability < 21) {
+            return 'rgba(132, 204, 22, 0.15)'; // lime for medium stability
+        } else {
+            return 'rgba(34, 197, 94, 0.15)'; // green for high stability
+        }
+    };
+
     if (readingMode) {
         const verseArabicText = getVerseArabicText(verse, mushaf);
 
@@ -80,7 +101,7 @@ const VerseRow = ({
                         marginRight: '0.4rem',
                         display: 'inline',
                         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                        backgroundColor: isAudioPlaying ? 'var(--accent-light)' : 'transparent',
+                        backgroundColor: isAudioPlaying ? 'var(--accent-light)' : (getHeatmapColor(verse.verse_key) || 'transparent'),
                         borderRadius: '8px',
                         padding: '0 0.25rem',
                         wordBreak: 'break-word'
@@ -117,7 +138,7 @@ const VerseRow = ({
                     flexDirection: 'column',
                     gap: '1.25rem',
                     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                    backgroundColor: isAudioPlaying ? 'var(--accent-light)' : 'transparent',
+                    backgroundColor: isAudioPlaying ? 'var(--accent-light)' : (getHeatmapColor(verse.verse_key) || 'transparent'),
                     transform: isAudioPlaying ? 'scale(1.01)' : 'scale(1)',
                     boxShadow: isAudioPlaying ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
                     borderRadius: '16px'
