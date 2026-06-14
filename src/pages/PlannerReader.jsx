@@ -16,6 +16,7 @@ import { getAssignmentProgress, getAssignmentResumePageNumber } from '../utils/p
 import VerseRow from '../components/VerseRow';
 import MushafPageView from '../components/MushafPageView';
 import AudioSetupModal from '../components/AudioSetupModal';
+import AutoScroller from '../components/AutoScroller';
 
 const pageVariants = {
     enter: (direction) => ({
@@ -142,58 +143,6 @@ export default function PlannerReader() {
 
     // --- AUTO-SCROLL LOGIC ---
     const scrollRafRef = useRef(null);
-    const lastScrollTimestampRef = useRef(null);
-    const scrollRemainderRef = useRef(0);
-    const [isAutoScrollPaused, setIsAutoScrollPaused] = useState(false);
-
-    useEffect(() => {
-        if (!autoScroll) {
-            if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
-            lastScrollTimestampRef.current = null;
-            scrollRemainderRef.current = 0;
-            return;
-        }
-
-        const speedMap = { 1: 5, 2: 10, 3: 18, 4: 36, 5: 60, 6: 108, 7: 180 };
-        const pxPerSecond = speedMap[autoScrollSpeed] || 60;
-
-        const tick = (timestamp) => {
-            if (lastScrollTimestampRef.current == null) {
-                lastScrollTimestampRef.current = timestamp;
-            }
-
-            const deltaMs = timestamp - lastScrollTimestampRef.current;
-            lastScrollTimestampRef.current = timestamp;
-
-            if (!isAutoScrollPaused) {
-                const nextDistance = scrollRemainderRef.current + (pxPerSecond * deltaMs) / 1000;
-                const wholePixels = Math.trunc(nextDistance);
-                scrollRemainderRef.current = nextDistance - wholePixels;
-
-                if (wholePixels !== 0) {
-                    window.scrollBy(0, wholePixels);
-                }
-            }
-            if ((window.innerHeight + window.scrollY) >= document.body.scrollHeight - 10) {
-                setAutoScroll(false);
-                return;
-            }
-            scrollRafRef.current = requestAnimationFrame(tick);
-        };
-
-        scrollRafRef.current = requestAnimationFrame(tick);
-
-        return () => {
-            if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
-            lastScrollTimestampRef.current = null;
-            scrollRemainderRef.current = 0;
-        };
-    }, [autoScroll, autoScrollSpeed, setAutoScroll, isAutoScrollPaused]);
-
-    useEffect(() => {
-        return () => setAutoScroll(false);
-    }, [setAutoScroll]);
-    // --- END AUTO-SCROLL LOGIC ---
 
 
 
@@ -822,77 +771,7 @@ export default function PlannerReader() {
                 handleStartPlaying={handleStartPlaying}
             />
 
-            <AnimatePresence>
-                {autoScroll && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 40 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 40 }}
-                        transition={{ duration: 0.25 }}
-                        className="fixed left-0 right-0 mx-auto w-fit z-[200]"
-                        style={{
-                            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 40px)',
-                        }}
-                    >
-                        {/* Controls Panel */}
-                        <div className="flex items-center gap-3 px-4 py-[0.6rem] rounded-full bg-[var(--h-cream)] border-[1.5px] border-[var(--h-bone-dark)] shadow-sm">
-                            {/* Manual scroll buttons */}
-                            <div className="flex gap-1">
-                                <button
-                                    className="btn-icon w-7 h-7 bg-[var(--bg-secondary)] text-[var(--text-primary)]"
-                                    onClick={() => window.scrollBy({ top: -200, behavior: 'smooth' })}
-                                >
-                                    <ArrowLeft size={14} className="rotate-90" />
-                                </button>
-                                <button
-                                    className="btn-icon w-7 h-7 bg-[var(--bg-secondary)] text-[var(--text-primary)]"
-                                    onClick={() => window.scrollBy({ top: 200, behavior: 'smooth' })}
-                                >
-                                    <ArrowRight size={14} className="rotate-90" />
-                                </button>
-                            </div>
-
-                            <div className="w-px h-6 bg-[var(--border-color)]" />
-
-                            {/* Speed Control & Pause */}
-                            <button
-                                className="btn-icon w-7 h-7 border border-[var(--border-color)] rounded-full"
-                                onClick={() => setAutoScrollSpeed(Math.max(1, autoScrollSpeed - 1))}
-                            >
-                                <Minus size={14} />
-                            </button>
-                            <span className="font-mono text-[0.8rem] font-bold text-[var(--text-primary)] min-w-[40px] text-center">
-                                {autoScrollSpeed}x
-                            </span>
-                            <button
-                                className="btn-icon w-7 h-7 border border-[var(--border-color)] rounded-full"
-                                onClick={() => setAutoScrollSpeed(Math.min(7, autoScrollSpeed + 1))}
-                            >
-                                <Plus size={14} />
-                            </button>
-
-                            <button
-                                className="btn-icon w-8 h-8 text-accent"
-                                style={{
-                                    background: isAutoScrollPaused ? 'var(--accent-light)' : 'transparent',
-                                }}
-                                onClick={() => setIsAutoScrollPaused(!isAutoScrollPaused)}
-                            >
-                                {isAutoScrollPaused ? <Play size={16} fill="currentColor" /> : <Pause size={16} fill="currentColor" />}
-                            </button>
-
-                            <div className="w-px h-6 bg-[var(--border-color)]" />
-
-                            <button
-                                onClick={() => setAutoScroll(false)}
-                                className="btn-icon w-7 h-7 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"
-                            >
-                                <X size={14} />
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <AutoScroller />
         </div>
     );
 }
