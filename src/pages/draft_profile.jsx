@@ -169,7 +169,7 @@ export default function Profile() {
                 </div>
 
                 {/* ═══ SLEEK GOAL CARD ═══ */}
-                <div className="mb-6 rounded-[24px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-5">
+                <div className="mb-6 rounded-[24px] border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-xl p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-[var(--accent-primary)]/10 flex items-center justify-center text-[var(--accent-primary)]">
@@ -182,7 +182,7 @@ export default function Profile() {
                         </div>
                         <button
                             onClick={() => setShowGoalPicker(!showGoalPicker)}
-                            className="w-8 h-8 rounded-full bg-[var(--bg-surface)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border-[1.5px] border-[var(--h-bone-dark)]"
+                            className="w-8 h-8 rounded-full bg-[var(--bg-surface)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-[var(--glass-border)]"
                         >
                             <Settings size={14} className={showGoalPicker ? 'rotate-90 transition-transform' : 'transition-transform'} />
                         </button>
@@ -198,10 +198,10 @@ export default function Profile() {
                     <AnimatePresence>
                         {showGoalPicker && (
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t-[1.5px] border-[var(--h-bone-dark)]">
+                                <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t border-[var(--glass-border)]">
                                     {GOAL_OPTIONS.map(mins => (
                                         <button key={mins} onClick={() => { setDailyReadingGoal(mins); setShowGoalPicker(false); }}
-                                            className={`rounded-full px-4 py-1.5 font-mono text-[0.65rem] uppercase tracking-wider font-semibold transition-all ${goalMins === mins ? 'bg-[var(--accent-primary)] text-[var(--bg-main)] shadow-[0_0_10px_var(--accent-light)]' : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--h-bone)] hover:text-[var(--text-primary)] border-[1.5px] border-[var(--h-bone-dark)]'}`}>
+                                            className={`rounded-full px-4 py-1.5 font-mono text-[0.65rem] uppercase tracking-wider font-semibold transition-all ${goalMins === mins ? 'bg-[var(--accent-primary)] text-[var(--bg-main)] shadow-[0_0_10px_var(--accent-light)]' : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] hover:text-[var(--text-primary)] border border-[var(--glass-border)]'}`}>
                                             {mins}m
                                         </button>
                                     ))}
@@ -221,7 +221,7 @@ export default function Profile() {
                             { icon: Brain, label: 'Memorize', to: '/memorize' },
                             { icon: Users, label: 'Sauka', to: '/sauka' },
                         ].map((item, i) => (
-                            <Link key={i} to={item.to} className="flex items-center gap-3 rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] px-4 py-3 no-underline transition-all hover:border-[var(--accent-hover)] hover:-translate-y-0.5">
+                            <Link key={i} to={item.to} className="flex items-center gap-3 rounded-[16px] border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-md px-4 py-3 no-underline transition-all hover:border-[var(--accent-hover)] hover:-translate-y-0.5">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]">
                                     <item.icon size={16} />
                                 </div>
@@ -234,14 +234,14 @@ export default function Profile() {
                 {/* ═══ READING EXPERIENCE ═══ */}
                 <div className="mb-6">
                     <h2 className="mb-2 pl-2 font-mono text-[0.6rem] uppercase tracking-[0.15em] text-[var(--text-secondary)]">Reading Experience</h2>
-                    <div className="overflow-hidden rounded-[24px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)]">
+                    <div className="overflow-hidden rounded-[24px] border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-xl">
                         {[
                             { icon: Settings, label: 'Reading Settings', onClick: () => setIsSettingsOpen(true) },
                             { icon: Mic, label: 'Reciter', detail: reciterName, onClick: () => setIsSettingsOpen(true) },
                             { icon: Languages, label: 'Translation', detail: translationName, onClick: () => setIsSettingsOpen(true) },
                         ].map((item, i, arr) => (
                             <button key={i} onClick={item.onClick}
-                                className={`flex w-full items-center justify-between bg-transparent px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface)] ${i < arr.length - 1 ? 'border-b-[1.5px] border-[var(--h-bone-dark)]' : ''}`}>
+                                className={`flex w-full items-center justify-between bg-transparent px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface)] ${i < arr.length - 1 ? 'border-b border-[var(--glass-border)]' : ''}`}>
                                 <div className="flex items-center gap-4">
                                     <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]"><item.icon size={18} /></div>
                                     <span className="text-[0.95rem] font-bold text-[var(--text-primary)]">{item.label}</span>
@@ -258,7 +258,7 @@ export default function Profile() {
                 {/* ═══ APP & STORAGE ═══ */}
                 <div className="mb-6">
                     <h2 className="mb-2 pl-2 font-mono text-[0.6rem] uppercase tracking-[0.15em] text-[var(--text-secondary)]">App & Storage</h2>
-                    <div className="overflow-hidden rounded-[24px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)]">
+                    <div className="overflow-hidden rounded-[24px] border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-xl">
                         {[
                             { icon: theme === 'light' ? Moon : Sun, label: 'Appearance', detail: theme === 'light' ? 'Light' : 'Dark', onClick: toggleTheme },
                             { icon: HardDrive, label: 'Offline Library', to: '/offline-library' },
@@ -267,7 +267,7 @@ export default function Profile() {
                             const props = item.to ? { to: item.to } : { type: 'button', onClick: item.onClick };
                             return (
                                 <Tag key={i} {...props}
-                                    className={`flex w-full items-center justify-between bg-transparent px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface)] ${i < arr.length - 1 ? 'border-b-[1.5px] border-[var(--h-bone-dark)]' : ''}`}>
+                                    className={`flex w-full items-center justify-between bg-transparent px-5 py-4 text-left transition-colors hover:bg-[var(--bg-surface)] ${i < arr.length - 1 ? 'border-b border-[var(--glass-border)]' : ''}`}>
                                     <div className="flex items-center gap-4">
                                         <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]"><item.icon size={18} /></div>
                                         <span className="text-[0.95rem] font-bold text-[var(--text-primary)]">{item.label}</span>
@@ -286,7 +286,7 @@ export default function Profile() {
                 <div className="mb-6">
                     <h2 className="mb-2 pl-2 font-mono text-[0.6rem] uppercase tracking-[0.15em] text-[var(--text-secondary)]">Cloud Sync</h2>
                     {!user ? (
-                        <div className="rounded-[24px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-5">
+                        <div className="rounded-[24px] border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-xl p-5">
                             <button onClick={() => setShowAuthForm(!showAuthForm)}
                                 className="flex w-full items-center justify-between bg-transparent text-left">
                                 <div className="flex items-center gap-4">
@@ -304,16 +304,16 @@ export default function Profile() {
                             <AnimatePresence>
                                 {showAuthForm && (
                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                                        <form onSubmit={handleAuth} className="mt-5 space-y-3 border-t-[1.5px] border-[var(--h-bone-dark)] pt-5">
+                                        <form onSubmit={handleAuth} className="mt-5 space-y-3 border-t border-[var(--glass-border)] pt-5">
                                             {authError && <div className="rounded-[12px] bg-red-500/10 px-4 py-3 text-[0.8rem] font-bold text-red-500 border border-red-500/20">{authError}</div>}
                                             {authMode === 'register' && (
                                                 <input type="text" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)}
-                                                    className="w-full rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" required />
+                                                    className="w-full rounded-[16px] border border-[var(--glass-border)] bg-[var(--bg-surface)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" required />
                                             )}
                                             <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-                                                className="w-full rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" required />
+                                                className="w-full rounded-[16px] border border-[var(--glass-border)] bg-[var(--bg-surface)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" required />
                                             <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-                                                className="w-full rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" minLength={8} required />
+                                                className="w-full rounded-[16px] border border-[var(--glass-border)] bg-[var(--bg-surface)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" minLength={8} required />
                                             <button type="submit" disabled={isLoading}
                                                 className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-[var(--text-primary)] py-3 text-[0.9rem] font-bold text-[var(--bg-main)] hover:scale-[0.98] transition-transform disabled:opacity-50 mt-2">
                                                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : (authMode === 'login' ? 'Sign In' : 'Create Account')}
@@ -328,7 +328,7 @@ export default function Profile() {
                             </AnimatePresence>
                         </div>
                     ) : (
-                        <div className="rounded-[24px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-5">
+                        <div className="rounded-[24px] border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-xl p-5">
                             <div className="mb-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]">
@@ -349,7 +349,7 @@ export default function Profile() {
                             </AnimatePresence>
                             
                             <div className="flex gap-3">
-                                <button onClick={handlePullSync} disabled={!!syncStatus} className="flex flex-1 items-center justify-center gap-2 rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] py-3 text-[0.85rem] font-bold text-[var(--text-primary)] hover:bg-[var(--h-bone)] transition-colors disabled:opacity-50">
+                                <button onClick={handlePullSync} disabled={!!syncStatus} className="flex flex-1 items-center justify-center gap-2 rounded-[16px] border border-[var(--glass-border)] bg-[var(--bg-surface)] py-3 text-[0.85rem] font-bold text-[var(--text-primary)] hover:bg-[var(--glass-bg)] transition-colors disabled:opacity-50">
                                     <CloudDownload size={16} /> Restore
                                 </button>
                                 <button onClick={handlePushSync} disabled={!!syncStatus} className="flex flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--text-primary)] py-3 text-[0.85rem] font-bold text-[var(--bg-main)] hover:scale-[0.98] transition-transform disabled:opacity-50">
@@ -364,7 +364,7 @@ export default function Profile() {
                 {user && (
                     <div className="mb-8">
                         <h2 className="mb-2 pl-2 font-mono text-[0.6rem] uppercase tracking-[0.15em] text-red-500/70">Danger Zone</h2>
-                        <div className="overflow-hidden rounded-[24px] border-[1.5px] border-red-500/20 bg-[var(--h-cream)]">
+                        <div className="overflow-hidden rounded-[24px] border border-red-500/20 bg-[var(--glass-bg)] shadow-[var(--shadow-glass)] backdrop-blur-xl">
                             <button type="button" onClick={handleLogout} disabled={isLoading}
                                 className="flex w-full cursor-pointer items-center justify-between bg-transparent px-5 py-4 text-left hover:bg-red-500/5 transition-colors disabled:opacity-40">
                                 <div className="flex items-center gap-4">
