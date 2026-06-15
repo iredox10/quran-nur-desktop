@@ -104,6 +104,16 @@ export default function PlannerReader() {
         }
     }, [assignment, planner, chapters, pageNumber]);
 
+    const currentChapter = useMemo(() => {
+        if (!chapters || !pageNumber) return null;
+        return chapters.find(c => {
+            if (!c.pages || !c.pages.length) return false;
+            const start = c.pages[0];
+            const end = c.pages[1] || start;
+            return pageNumber >= start && pageNumber <= end;
+        });
+    }, [chapters, pageNumber]);
+
     // Track the current page in the planner for "Resume" functionality
     const prevTrackedRef = useRef({ page: null, day: null });
     useEffect(() => {
@@ -476,94 +486,44 @@ export default function PlannerReader() {
                         <div className={`mx-auto rounded-[20px] backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden transition-all duration-300 ${
                             isScrolled ? 'bg-[var(--bg-surface)]/90 py-2 px-4' : 'bg-[var(--bg-surface)]/80 p-4 sm:p-5'
                         }`}>
-                            {isScrolled ? (
-                                // Collapsed Sticky State
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="flex-1 flex items-center justify-center gap-4">
-                                        <h2 className="m-0 font-ui text-[0.95rem] font-bold text-[var(--text-primary)] truncate max-w-[150px]">{assignment.title}</h2>
-                                        <div className="w-[1px] h-4 bg-[var(--border-color)]"></div>
-                                        <div className="flex-1 h-1.5 max-w-[100px] rounded-full bg-black/5 overflow-hidden">
-                                            <div className="h-full bg-[var(--plr-teal)] transition-all duration-500" style={{ width: `${pct}%` }} />
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-center px-2.5 py-1 rounded-full bg-[var(--plr-teal)]/10 text-[var(--plr-teal)] font-mono text-[0.75rem] font-bold cursor-pointer" onClick={() => setIsTimerRunning(prev => !prev)}>
-                                        <Timer size={12} className="mr-1" />
-                                        {formatTimer(timerSeconds)}
-                                    </div>
-                                </div>
-                            ) : (
-                                // Full Expanded State
-                                <div>
-                                    <div className="flex items-start gap-4 mb-4">
-                                        <div className="flex-1 min-w-0">
-                                            <h2 className="m-0 font-ui text-[1.2rem] font-bold text-[var(--text-primary)] truncate">{assignment.title}</h2>
-                                            <div className="flex items-center gap-2 m-0 mt-1 text-[0.8rem] text-[var(--text-muted)] opacity-80">
-                                                <span className="truncate">
-                                                    {assignment.subtitle?.includes(' · ') && assignment.subtitle.split(' · ')[0] === assignment.subtitle.split(' · ')[1] 
-                                                        ? assignment.subtitle.split(' · ')[0] 
-                                                        : assignment.subtitle}
-                                                </span>
-                                                <span>•</span>
-                                                <span className="whitespace-nowrap">⏱️ ~{estimatedTimeMins} mins</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-2 shrink-0">
-                                            <div className="flex items-center justify-center px-3 py-1.5 rounded-full bg-[var(--plr-teal)]/10 text-[var(--plr-teal)] font-mono text-[0.85rem] font-bold cursor-pointer" onClick={() => setIsTimerRunning(prev => !prev)}>
-                                                {isTimerRunning ? <Timer size={14} className="mr-1.5" /> : <div className="w-1.5 h-1.5 rounded-full bg-[var(--plr-teal)] mr-1.5 animate-pulse" />}
-                                                {formatTimer(timerSeconds)}
-                                            </div>
-                                            <span className="font-ui text-[0.8rem] font-bold text-[var(--plr-teal)]">{pct}% Completed</span>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Thin sleek progress track */}
-                                    <div className="w-full h-[3px] rounded-full bg-black/5 mb-5 overflow-hidden">
-                                        <div className="h-full bg-[var(--plr-teal)] transition-all duration-500 rounded-full" style={{ width: `${pct}%` }} />
-                                    </div>
-
-                                    {/* Stepper Checklist */}
-                                    <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar scroll-smooth snap-x">
-                                        {assignment.items.map((item, idx) => {
-                                            const isDone = progress.completedRangeValues.includes(item.rangeValue);
-                                            const isCurrent = currentItem.rangeValue === item.rangeValue;
-                                            return (
-                                                <button
-                                                    key={item.rangeValue}
-                                                    onClick={() => setPageNumber(item.pageStart)}
-                                                    className={`snap-center shrink-0 relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border-none cursor-pointer transition-all duration-300 ${
-                                                        isCurrent 
-                                                            ? 'bg-[var(--plr-gold)]/10 text-[var(--plr-gold-dark)] font-bold scale-105 shadow-sm' 
-                                                            : isDone 
-                                                                ? 'bg-[var(--plr-teal)]/10 text-[var(--plr-teal)] font-semibold' 
-                                                                : 'bg-white/40 text-[var(--text-muted)] font-medium hover:bg-white/60'
-                                                    }`}
-                                                >
-                                                    {isCurrent && (
-                                                        <motion.div layoutId="activeItemIndicator" className="absolute inset-0 rounded-xl border-[1.5px] border-[var(--plr-gold)]" transition={{ type: 'spring', stiffness: 300, damping: 25 }} />
-                                                    )}
-                                                    {isDone ? <CheckCircle2 size={14} className="opacity-80" /> : <div className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />}
-                                                    <span className="text-[0.75rem] relative z-10">{item.title.replace('Page ', 'Pg ')}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* Prayer Slots mini-indicator */}
-                                    <div className="mt-4 flex items-center gap-1.5 justify-center">
-                                        {(useAppStore.getState().prayerSettings?.activePrayers || ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']).slice().sort((a,b) => ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].indexOf(a) - ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].indexOf(b)).map((name, i, arr) => {
-                                            const slotEnd = Math.floor(((i + 1) / arr.length) * assignment.items.length);
-                                            const done = progress.completedCount;
-                                            const isDone = done >= slotEnd && slotEnd > 0;
-                                            return (
-                                                <div key={name} className="flex items-center gap-1.5" title={name}>
-                                                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${isDone ? 'bg-[var(--plr-teal)]' : 'bg-black/10'}`} />
-                                                    {i < arr.length - 1 && <div className="w-4 h-[1px] bg-black/5" />}
+                            <div className="flex flex-col gap-3">
+                                <div className="flex items-center justify-between gap-2 sm:gap-3">
+                                    <div className="flex-1 min-w-0">
+                                        {planner.unitType === 'page' ? (
+                                            <h2 className="m-0 font-ui text-[1.1rem] sm:text-[1.2rem] font-bold text-[var(--text-primary)] truncate">
+                                                Page {pageNumber} / {assignment.items[assignment.items.length - 1].pageEnd || assignment.items[assignment.items.length - 1].pageStart}
+                                            </h2>
+                                        ) : (
+                                            <>
+                                                <h2 className="m-0 font-ui text-[1rem] sm:text-[1.1rem] font-bold text-[var(--text-primary)] truncate">{assignment.title}</h2>
+                                                <div className="text-[0.75rem] sm:text-[0.8rem] font-medium text-[var(--text-muted)] truncate mt-0.5">
+                                                    {assignment.subtitle ? (
+                                                        <span>{assignment.subtitle.split(' · ')[0]} • </span>
+                                                    ) : null}
+                                                    <span>Page {pageNumber} / {assignment.items[assignment.items.length - 1].pageEnd || assignment.items[assignment.items.length - 1].pageStart}</span>
                                                 </div>
-                                            );
-                                        })}
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {currentChapter && (
+                                        <div className="shrink-0 flex items-center justify-center bg-[var(--plr-teal)]/10 px-2.5 sm:px-3 py-1 rounded-full border border-[var(--plr-teal)]/20">
+                                            <span className="font-ui text-[0.75rem] sm:text-[0.85rem] font-bold text-[var(--plr-teal)] whitespace-nowrap">
+                                                {currentChapter.id}. Surah {currentChapter.name_simple}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex-1 flex flex-col items-end shrink-0 min-w-0">
+                                        <div className="font-ui text-[0.95rem] sm:text-[1rem] font-bold text-[var(--plr-teal)] whitespace-nowrap">
+                                            {pct}% Achieved
+                                        </div>
                                     </div>
                                 </div>
-                            )}
+                                <div className="w-full h-[3px] rounded-full bg-black/5 overflow-hidden">
+                                    <div className="h-full bg-[var(--plr-teal)] transition-all duration-500 rounded-full" style={{ width: `${pct}%` }} />
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
                 )}
