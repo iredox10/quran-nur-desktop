@@ -146,6 +146,11 @@ export const getChapterTafsirs = async (chapterId, tafsirId = 169) => {
   return data.tafsirs;
 };
 
+export const getPageTafsirs = async (pageNumber, tafsirId = 169) => {
+  const data = await fetchWithOfflineCache(`/tafsirs/${tafsirId}/by_page/${pageNumber}`);
+  return data.tafsirs;
+};
+
 export const getTajweedVerses = async (chapterId) => {
   const data = await fetchWithOfflineCache('/quran/verses/uthmani_tajweed', { chapter_number: chapterId });
   return data.verses; // Array of { id, verse_key, text_uthmani_tajweed }

@@ -7,7 +7,7 @@ import { Helmet } from 'react-helmet-async';
 import confetti from 'canvas-confetti';
 import { ArrowLeft, CheckCircle2, ChevronRight, ChevronLeft, Check, Timer, Minus, Plus, Play, Pause, ArrowRight, X } from 'lucide-react';
 
-import { getVersesByPage, getTajweedVersesByPage, getChapters } from '../services/api/quranApi';
+import { getVersesByPage, getTajweedVersesByPage, getChapters, getPageTafsirs } from '../services/api/quranApi';
 import { useAppStore } from '../store/useAppStore';
 import { getMushafById, isTajweedEnabledForMushaf } from '../config/mushaf';
 import { sanitizeTajweedHtml } from '../utils/quranText';
@@ -113,6 +113,19 @@ export default function PlannerReader() {
             return pageNumber >= start && pageNumber <= end;
         });
     }, [chapters, pageNumber]);
+
+    const [activeTafsir, setActiveTafsir] = useState(null); // stores { verse_key, text }
+
+    const { data: tafsirs, isFetching: isTafsirFetching } = useQuery({
+        queryKey: ['tafsirs', 'page', pageNumber, tafsirId],
+        queryFn: () => getPageTafsirs(pageNumber, tafsirId),
+        enabled: pageNumber !== null,
+        placeholderData: keepPreviousData,
+    });
+
+    useEffect(() => {
+        setActiveTafsir(null);
+    }, [tafsirId, pageNumber]);
 
     // Track the current page in the planner for "Resume" functionality
     const prevTrackedRef = useRef({ page: null, day: null });
@@ -307,6 +320,39 @@ export default function PlannerReader() {
             }
         }
     }, [verses, isCurrentPagePlaying, isPlaying, pageNumber, localAudioDirHandle, customAudioBaseUrl, setIsPlaying, setIsPlayerVisible, updateAudioSettings]);
+
+    const handlePlayVerse = useCallback((verse) => {
+        const playlist = verses.map(v => {
+            let url = v.audio?.url ? (v.audio.url.startsWith('http') ? v.audio.url : `https://verses.quran.com/${v.audio.url}`) : null;
+            const [surahNum, ayahNum] = v.verse_key.split(':');
+            const fileName = `${String(surahNum).padStart(3, '0')}${String(ayahNum).padStart(3, '0')}.mp3`;
+
+            if (localAudioDirHandle) {
+                url = `local-audio://${fileName}`;
+            } else if (customAudioBaseUrl) {
+                url = `${customAudioBaseUrl.replace(/\/$/, '')}/${fileName}`;
+            }
+
+            return { surahId: currentChapter?.id || Number(surahNum), verseKey: v.verse_key, verseNumber: v.verse_number, url };
+        }).filter(v => v.url);
+
+        if (playlist.length === 0) return;
+
+        const startIndex = playlist.findIndex(p => p.verseKey === verse.verse_key);
+        const targetIndex = startIndex >= 0 ? startIndex : 0;
+
+        // If this verse is already the active one, toggle play/pause
+        if (isCurrentPagePlaying && audioPlaylist[audioTrackIndex]?.verseKey === verse.verse_key) {
+            setIsPlaying(!isPlaying);
+            setIsPlayerVisible(true);
+            return;
+        }
+
+        setAudioPlaylist(playlist, targetIndex);
+        setIsPlaying(true);
+        setIsPlayerVisible(true);
+        updateAudioSettings({ startRange: 0, endRange: playlist.length - 1 });
+    }, [verses, isCurrentPagePlaying, isPlaying, audioPlaylist, audioTrackIndex, localAudioDirHandle, customAudioBaseUrl, currentChapter, setAudioPlaylist, setIsPlaying, setIsPlayerVisible, updateAudioSettings]);
 
     const handleStartPlaying = () => {
         if (pendingPlaylist.length === 0) return;
@@ -656,14 +702,15 @@ export default function PlannerReader() {
                                                     arabicFont={arabicFont}
                                                     tajweedEnabled={isTajweedActive}
                                                     tajweedMap={tajweedMap}
-                                                    activeTafsir={null}
-                                                    setActiveTafsir={() => { }}
-                                                    isTafsirFetching={false}
-                                                    tafsirs={[]}
+                                                    activeTafsir={activeTafsir}
+                                                    setActiveTafsir={setActiveTafsir}
+                                                    isTafsirFetching={isTafsirFetching}
+                                                    tafsirs={tafsirs}
                                                     tafsirId={tafsirId}
                                                     showPageDivider={false}
                                                     mushaf={mushaf}
                                                     isAudioPlaying={activeAudioVerseKey === verse.verse_key}
+                                                    onPlayVerse={handlePlayVerse}
                                                     onPlannerBookmark={handlePlannerBookmarkToggle}
                                                     isPlannerBookmark={plannerBookmarks[planner?.id]?.some(b => b.verseKey === verse.verse_key)}
                                                 />
@@ -738,7 +785,52 @@ export default function PlannerReader() {
                 handleStartPlaying={handleStartPlaying}
             />
 
+            {/* Tafsir Bottom Drawer */}
+            <AnimatePresence>
+                {activeTafsir && (
+                    <>
+                        {/* Overlay */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setActiveTafsir(null)}
+                            className="fixed inset-0 bg-black/50 z-[999] backdrop-blur-sm"
+                        />
+                        {/* Drawer */}
+                        <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="fixed bottom-0 left-0 right-0 max-h-[85vh] bg-[var(--bg-surface)] rounded-t-[24px] shadow-2xl z-[1000] flex flex-col p-6"
+                        >
+                            <div className="w-10 h-[5px] bg-[var(--border-color)] rounded-[3px] mx-auto mb-6" />
+
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-ui text-2xl font-bold text-[var(--text-primary)] m-0">
+                                    Tafsir (Ayah {activeTafsir.verse_key.split(':')[1]})
+                                </h3>
+                                <button
+                                    className="btn-icon bg-[var(--bg-secondary)]"
+                                    onClick={() => setActiveTafsir(null)}
+                                    aria-label="Close Tafsir"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div
+                                className="tafsir-content overflow-y-auto pr-2 text-[var(--text-secondary)] leading-[1.8] text-base"
+                                dangerouslySetInnerHTML={{ __html: activeTafsir.text }}
+                            />
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
             <AutoScroller />
         </div>
     );
 }
+
