@@ -47,7 +47,7 @@ export default function PlannerReader() {
         planner, setNavHeaderTitle, markPlannerItemComplete, markPlannerPageRead,
         translationId, reciterId, fontSize, readingMode,
         mushafId, arabicFont, tajweedEnabled, tafsirId,
-        setPlannerLastPage,
+        setPlannerLastPosition,
         isPlaying, setIsPlaying, audioPlaylist, setAudioPlaylist,
         audioTrackIndex, audioSettings, updateAudioSettings,
         isPlayerVisible, setIsPlayerVisible, playTriggerCount,
@@ -127,19 +127,19 @@ export default function PlannerReader() {
         setActiveTafsir(null);
     }, [tafsirId, pageNumber]);
 
-    // Track the current page in the planner for "Resume" functionality
+    // Track the current page and verse in the planner for "Resume" functionality
     const prevTrackedRef = useRef({ page: null, day: null });
     useEffect(() => {
         if (pageNumber !== null && assignment) {
             const currentDay = assignment.dayNumber;
             if (prevTrackedRef.current.page !== pageNumber || prevTrackedRef.current.day !== currentDay) {
-                if (setPlannerLastPage) setPlannerLastPage(pageNumber);
+                if (setPlannerLastPosition) setPlannerLastPosition(pageNumber); // Will be updated with verse later by observer
                 if (markPlannerPageRead) markPlannerPageRead(currentDay, pageNumber);
                 
                 prevTrackedRef.current = { page: pageNumber, day: currentDay };
             }
         }
-    }, [pageNumber, assignment?.dayNumber, setPlannerLastPage, markPlannerPageRead]);
+    }, [pageNumber, planner, assignment, setPlannerLastPosition, markPlannerPageRead]);
 
     // Data fetching
     const { data: pageData, isLoading: isPageLoading } = useQuery({
@@ -166,6 +166,63 @@ export default function PlannerReader() {
     const verses = pageData?.verses || [];
     const maxPageNumber = assignment?.pageEnd || 604;
     const minPageNumber = assignment?.pageStart || 1;
+
+    // Track active verse on scroll to save exactly where the user left off
+    useEffect(() => {
+        if (!verses || verses.length === 0 || isPageLoading) return;
+        
+        let timeoutId;
+        const observer = new IntersectionObserver((entries) => {
+            const visible = entries.filter(e => e.isIntersecting);
+            if (visible.length > 0) {
+                // Sort to find the top-most visible verse
+                visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+                const targetId = visible[0].target.id;
+                if (targetId && targetId.startsWith('verse-')) {
+                    const verseKey = targetId.replace('verse-', '');
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => {
+                        if (planner && pageNumber !== null && setPlannerLastPosition) {
+                            setPlannerLastPosition(pageNumber, verseKey);
+                        }
+                    }, 1000); // Debounce store updates
+                }
+            }
+        }, {
+            root: null,
+            rootMargin: '-20% 0px -40% 0px', // Target middle-top of the screen
+        });
+
+        // Query all verse containers (VerseRow uses id="verse-XXX")
+        const elements = document.querySelectorAll('[id^="verse-"]');
+        elements.forEach(el => observer.observe(el));
+
+        return () => {
+            observer.disconnect();
+            clearTimeout(timeoutId);
+        };
+    }, [verses, pageNumber, isPageLoading, planner, setPlannerLastPosition]);
+
+    // Scroll to the last read verse on initial load
+    const hasAutoScrolledRef = useRef(false);
+    useEffect(() => {
+        if (!isPageLoading && verses && verses.length > 0 && planner?.lastReadVerseKey && !hasAutoScrolledRef.current) {
+            // Check if the saved verse is on the current page
+            const verseExists = verses.some(v => v.verse_key === planner.lastReadVerseKey);
+            if (verseExists) {
+                setTimeout(() => {
+                    const el = document.getElementById(`verse-${planner.lastReadVerseKey}`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    hasAutoScrolledRef.current = true;
+                }, 100);
+            } else {
+                hasAutoScrolledRef.current = true; // Mark as done even if not found to prevent looping
+            }
+        }
+    }, [isPageLoading, verses, planner?.lastReadVerseKey]);
+
 
     useEffect(() => {
         setNavHeaderTitle(assignment ? `Day ${assignment.dayNumber}` : 'Planner Reader');
@@ -533,16 +590,16 @@ export default function PlannerReader() {
                             isScrolled ? 'bg-[var(--bg-surface)]/90 py-2 px-4' : 'bg-[var(--bg-surface)]/80 p-4 sm:p-5'
                         }`}>
                             <div className="flex flex-col gap-3">
-                                <div className="flex items-center justify-between gap-2 sm:gap-3">
-                                    <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-1 sm:gap-3">
+                                    <div className="shrink-0 min-w-0">
                                         {planner.unitType === 'page' ? (
-                                            <h2 className="m-0 font-ui text-[1.1rem] sm:text-[1.2rem] font-bold text-[var(--text-primary)] truncate">
+                                            <h2 className="m-0 font-ui text-[0.95rem] sm:text-[1.2rem] font-bold text-[var(--text-primary)] whitespace-nowrap">
                                                 Page {pageNumber} / {assignment.items[assignment.items.length - 1].pageEnd || assignment.items[assignment.items.length - 1].pageStart}
                                             </h2>
                                         ) : (
                                             <>
-                                                <h2 className="m-0 font-ui text-[1rem] sm:text-[1.1rem] font-bold text-[var(--text-primary)] truncate">{assignment.title}</h2>
-                                                <div className="text-[0.75rem] sm:text-[0.8rem] font-medium text-[var(--text-muted)] truncate mt-0.5">
+                                                <h2 className="m-0 font-ui text-[0.95rem] sm:text-[1.1rem] font-bold text-[var(--text-primary)] whitespace-nowrap">{assignment.title}</h2>
+                                                <div className="text-[0.7rem] sm:text-[0.8rem] font-medium text-[var(--text-muted)] whitespace-nowrap mt-0.5">
                                                     {assignment.subtitle ? (
                                                         <span>{assignment.subtitle.split(' · ')[0]} • </span>
                                                     ) : null}
@@ -553,16 +610,16 @@ export default function PlannerReader() {
                                     </div>
 
                                     {currentChapter && (
-                                        <div className="shrink-0 flex items-center justify-center bg-[var(--plr-teal)]/10 px-2.5 sm:px-3 py-1 rounded-full border border-[var(--plr-teal)]/20">
-                                            <span className="font-ui text-[0.75rem] sm:text-[0.85rem] font-bold text-[var(--plr-teal)] whitespace-nowrap">
+                                        <div className="shrink-0 flex items-center justify-center bg-[var(--plr-teal)]/10 px-2 sm:px-3 py-1 rounded-full border border-[var(--plr-teal)]/20 mx-auto sm:mx-0">
+                                            <span className="font-ui text-[0.7rem] sm:text-[0.85rem] font-bold text-[var(--plr-teal)] whitespace-nowrap">
                                                 {currentChapter.id}. Surah {currentChapter.name_simple}
                                             </span>
                                         </div>
                                     )}
 
-                                    <div className="flex-1 flex flex-col items-end shrink-0 min-w-0">
-                                        <div className="font-ui text-[0.95rem] sm:text-[1rem] font-bold text-[var(--plr-teal)] whitespace-nowrap">
-                                            {pct}% Achieved
+                                    <div className="flex flex-col items-end shrink-0 min-w-0">
+                                        <div className="font-ui text-[0.9rem] sm:text-[1rem] font-bold text-[var(--plr-teal)] whitespace-nowrap">
+                                            {pct}% <span className="hidden sm:inline">Achieved</span>
                                         </div>
                                     </div>
                                 </div>

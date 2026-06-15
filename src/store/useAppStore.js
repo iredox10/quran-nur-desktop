@@ -627,9 +627,10 @@ export const useAppStore = create(
                 };
             })),
 
-            setPlannerLastPage: (pageNumber) => set((state) => replaceActivePlanner(state, (activePlanner) => ({
+            setPlannerLastPosition: (pageNumber, verseKey) => set((state) => replaceActivePlanner(state, (activePlanner) => ({
                 ...activePlanner,
                 lastReadPage: pageNumber,
+                lastReadVerseKey: verseKey !== undefined ? verseKey : activePlanner.lastReadVerseKey,
             }))),
 
             // Advanced Audio State
