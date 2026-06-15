@@ -571,7 +571,7 @@ function buildPrayerSlots(planner, todayAssignment, prayerTimes, prayerSettings)
     return slots;
 }
 
-function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete, setPlannerAssignmentProgress, togglePlannerDayComplete, chapters }) {
+function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete, setPlannerAssignmentProgress, togglePlannerDayComplete, chapters, onBack }) {
     const { prayerTimes, setPrayerTimes, location, setLocation, shiftPlannerSchedule, setPlanner, prayerSettings, plannerReflections, plannerBookmarks, rebalanceActivePlanner } = useAppStore();
     const overview = useMemo(() => getPlannerOverview(planner), [planner]);
     const metrics = useMemo(() => getPlannerSuccessMetrics(planner), [planner]);
@@ -736,8 +736,18 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                 
                 {/* --- GLOBAL HEADER (Always Visible) --- */}
                 <div className="w-full max-w-[480px] md:max-w-[800px] mb-8">
-                    <div className="mb-6 text-center md:text-left flex flex-col md:flex-row md:justify-between md:items-end">
-                        <div>
+                    <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-end">
+                        <div className="flex items-start gap-3 md:gap-4">
+                            <button 
+                                className="flex shrink-0 h-[42px] w-[42px] mt-1 cursor-pointer items-center justify-center rounded-full border border-[var(--plr-bone-dark)] bg-white/60 text-[var(--plr-teal)] shadow-sm backdrop-blur-md transition-all duration-200 hover:bg-white hover:-translate-x-0.5" 
+                                onClick={onBack} 
+                                aria-label="Back to intention"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="15 18 9 12 15 6"/>
+                                </svg>
+                            </button>
+                            <div className="text-left">
                             {planners && planners.length > 1 ? (
                                 <div className="mb-2 relative inline-block">
                                     <select 
@@ -758,6 +768,7 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                             )}
                             <div className="font-ui text-[1.1rem] font-medium text-[var(--accent-primary)] mb-1">Day {currentDay} of {planner.durationDays}</div>
                             <p className="font-body text-[0.9rem] text-[var(--text-secondary)]">{daySubtitle}</p>
+                            </div>
                         </div>
                         
                         <div className="mt-4 md:mt-0 md:min-w-[200px]">
@@ -1338,23 +1349,17 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
 }
 function ActiveViewWrapper({ planner, planners, activePlannerId, onSwitchPlan, onDelete, onBack, setPlannerAssignmentProgress, togglePlannerDayComplete, chapters }) {
     return (
-        <div style={{ position: 'relative' }}>
-            <button className="absolute left-5 top-6 z-10 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-none bg-[rgba(250,247,240,0.7)] text-[var(--plr-teal)] shadow-[0_2px_10px_rgba(43,63,60,0.1)] backdrop-blur-md transition-all duration-200 hover:bg-[rgba(250,247,240,0.95)] hover:-translate-x-0.5" onClick={onBack} aria-label="Back to intention">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="15 18 9 12 15 6"/>
-                </svg>
-            </button>
-            <ActiveView
-                planner={planner}
-                planners={planners}
-                activePlannerId={activePlannerId}
-                onSwitchPlan={onSwitchPlan}
-                onDelete={onDelete}
-                setPlannerAssignmentProgress={setPlannerAssignmentProgress}
-                togglePlannerDayComplete={togglePlannerDayComplete}
-                chapters={chapters}
-            />
-        </div>
+        <ActiveView
+            planner={planner}
+            planners={planners}
+            activePlannerId={activePlannerId}
+            onSwitchPlan={onSwitchPlan}
+            onDelete={onDelete}
+            onBack={onBack}
+            setPlannerAssignmentProgress={setPlannerAssignmentProgress}
+            togglePlannerDayComplete={togglePlannerDayComplete}
+            chapters={chapters}
+        />
     );
 }
 

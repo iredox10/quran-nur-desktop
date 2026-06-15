@@ -1,4 +1,4 @@
-import { HIZB_STARTS, JUZ_STARTS, PAGE_GROUPS } from '../data/quranNavigation';
+const HIZB_STARTS=[]; const JUZ_STARTS=[]; const PAGE_GROUPS=[];
 
 export const PLANNER_UNITS = {
   page: { label: 'Page', plural: 'Pages', max: 604 },
@@ -534,41 +534,7 @@ export function rebalancePlanner(planner, strategy) {
         }
     });
     
-    let hasPartialToday = false;
-    planner.assignments.forEach(a => {
-        const prog = getAssignmentProgress(planner, a);
-        if (prog.isComplete) return;
-        
-        const explicitReadPages = Array.isArray(planner?.assignmentReadPages?.[a.dayNumber])
-            ? planner.assignmentReadPages[a.dayNumber]
-            : [];
-        let readPages = []; let unreadPages = [];
-        
-        a.items.forEach(item => {
-            const pStart = item.pageStart || 1;
-            const pEnd = item.pageEnd || pStart;
-            for (let p = pStart; p <= pEnd; p++) {
-                if (explicitReadPages.includes(p) || prog.completedRangeValues?.includes(item.rangeValue)) {
-                    readPages.push(p);
-                } else {
-                    unreadPages.push(p);
-                }
-            }
-        });
-        
-        if (readPages.length > 0 && unreadPages.length > 0 && a.date === today) {
-            hasPartialToday = true;
-        }
-    });
-    
-    let newStartDate = today;
-    if (strategy === 'extend') {
-        if (lastPreservedDate) {
-            newStartDate = addDays(lastPreservedDate, 1);
-            if (hasPartialToday) newStartDate = today;
-            if (newStartDate < today) newStartDate = today; // Clamp to today
-        }
-    }
+    const newStartDate = strategy === 'spread' ? today : (lastPreservedDate ? addDays(lastPreservedDate, 1) : today);
     
     // Build the final assignments with sequential dayNumbers
     const newAssignmentProgress = {};
