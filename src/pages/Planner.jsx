@@ -540,13 +540,13 @@ function buildPrayerSlots(planner, todayAssignment, prayerTimes, prayerSettings)
     const numSlots = activePrayers.length || 1;
     
     const slots = activePrayers.map((name, i) => {
-        const slotEnd = Math.floor(((i + 1) / numSlots) * total);
-        const slotStart = Math.floor((i / numSlots) * total);
+        const slotEnd = Math.ceil(((i + 1) / numSlots) * total);
+        const slotStart = Math.ceil((i / numSlots) * total);
         const slotItems = items.slice(slotStart, slotEnd);
-        const count = Math.max(slotEnd - slotStart, total > 0 ? 0 : 1);
+        const count = Math.max(slotEnd - slotStart, 0);
         const doneInSlot = slotItems.filter(item => completedRangeValues.includes(item.rangeValue)).length;
-        const isComplete = doneInSlot >= count && count > 0;
-        const isCurrent = !isComplete && doneInSlot > 0;
+        const isComplete = count > 0 && doneInSlot >= count;
+        const isCurrent = count > 0 && !isComplete && doneInSlot > 0;
         const slotRoute = `/planner/read/${todayAssignment.dayNumber}`;
         
         let timeLabel = null;
@@ -562,9 +562,9 @@ function buildPrayerSlots(planner, todayAssignment, prayerTimes, prayerSettings)
             timeLabel = timeStr;
         }
 
-        return { name, time: timeLabel, count, doneInSlot, completedUpTo: slotEnd, slotStartCount: slotStart, slotRoute, status: isComplete ? 'completed' : isCurrent ? 'current' : 'upcoming' };
+        return { name, time: timeLabel, count, doneInSlot, completedUpTo: slotEnd, slotStartCount: slotStart, slotRoute, status: count === 0 ? 'empty' : isComplete ? 'completed' : isCurrent ? 'current' : 'upcoming' };
     });
-    const firstIncomplete = slots.findIndex(s => s.status !== 'completed');
+    const firstIncomplete = slots.findIndex(s => s.status !== 'completed' && s.status !== 'empty');
     if (firstIncomplete !== -1 && slots[firstIncomplete].status === 'upcoming') {
         slots[firstIncomplete] = { ...slots[firstIncomplete], status: 'current' };
     }
@@ -869,6 +869,7 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                             const isCurrent = slot.status === 'current';
                                             const isCompleted = slot.status === 'completed';
                                             const isUpcoming = slot.status === 'upcoming';
+                                            const isEmpty = slot.status === 'empty';
                                             return (
                                             <motion.div key={slot.name}
                                                 className={`relative overflow-hidden flex items-center gap-[0.85rem] rounded-[18px] px-4 py-4 shadow-sm transition-all duration-300 ${
@@ -876,7 +877,9 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                                         ? 'bg-[var(--bg-surface)] border border-[var(--accent-primary)] shadow-[0_8px_30px_rgba(198,168,124,0.25)] scale-[1.02]'
                                                         : isCompleted
                                                             ? 'bg-[rgba(16,185,129,0.03)] border border-[#10b981]/20 opacity-80 scale-95 py-2.5'
-                                                            : 'bg-[var(--h-white)] border-[1.5px] border-[var(--h-bone-dark)]'
+                                                            : isEmpty
+                                                                ? 'bg-[rgba(250,247,240,0.5)] border-[1.5px] border-[var(--h-bone-dark)] opacity-70 scale-95 py-2.5'
+                                                                : 'bg-[var(--h-white)] border-[1.5px] border-[var(--h-bone-dark)]'
                                                 }`}
                                                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: 0.05 * i, duration: 0.4, type: 'spring', bounce: 0.3 }}
@@ -885,11 +888,12 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                                     <div className="absolute inset-0 pointer-events-none border-[2px] border-[var(--accent-primary)] rounded-[18px] opacity-30 animate-pulse" />
                                                 )}
                                                 <div className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full transition-colors duration-200 text-white ${
-                                                    isCompleted ? 'bg-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.4)]' : isCurrent ? 'bg-[var(--accent-primary)] shadow-[0_0_15px_rgba(198,168,124,0.5)]' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                                                    isCompleted ? 'bg-[#10b981] shadow-[0_0_15px_rgba(16,185,129,0.4)]' : isCurrent ? 'bg-[var(--accent-primary)] shadow-[0_0_15px_rgba(198,168,124,0.5)]' : isEmpty ? 'bg-transparent border border-[var(--h-bone-dark)] text-[var(--text-muted)] opacity-50' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
                                                 }`}>
                                                     {isCompleted && <CheckIcon size={20} />}
                                                     {isCurrent && <BookIcon />}
                                                     {isUpcoming && <ClockIcon />}
+                                                    {isEmpty && <div className="h-2 w-2 rounded-full bg-[var(--text-muted)]" />}
                                                 </div>
                                                 <div className="flex min-w-0 flex-1 flex-col gap-[0.25rem]">
                                                     <span className={`font-ui text-[1.1rem] font-bold tracking-tight text-[var(--text-primary)] flex items-center gap-2 ${isCompleted ? 'line-through opacity-50' : ''}`}>
@@ -900,6 +904,7 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                                         {isCompleted && `${slot.doneInSlot}/${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} ✓`}
                                                         {isCurrent && `${slot.doneInSlot} of ${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} read`}
                                                         {isUpcoming && `${slot.count} ${PLANNER_UNITS[planner.unitType]?.plural} · pending`}
+                                                        {isEmpty && `No reading required`}
                                                     </span>
                                                 </div>
                                                 <div className="shrink-0 z-10">
@@ -919,6 +924,11 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                                         <button className="flex h-[32px] w-[32px] items-center justify-center cursor-pointer border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] hover:bg-[var(--h-bone)] transition-colors rounded-full" onClick={() => handleMarkPrayer(slot)} title="Mark done">
                                                             <div className="h-3 w-3 rounded-full border-[1.5px] border-[var(--text-muted)]" />
                                                         </button>
+                                                    )}
+                                                    {isEmpty && (
+                                                        <div className="flex h-[32px] w-[32px] items-center justify-center">
+                                                            <span className="text-[1.5rem] font-light text-[var(--text-muted)] opacity-30">-</span>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </motion.div>
