@@ -105,14 +105,18 @@ export default function PlannerReader() {
     }, [assignment, planner, chapters, pageNumber]);
 
     // Track the current page in the planner for "Resume" functionality
+    const prevTrackedRef = useRef({ page: null, day: null });
     useEffect(() => {
-        if (pageNumber !== null && setPlannerLastPage) {
-            setPlannerLastPage(pageNumber);
+        if (pageNumber !== null && assignment) {
+            const currentDay = assignment.dayNumber;
+            if (prevTrackedRef.current.page !== pageNumber || prevTrackedRef.current.day !== currentDay) {
+                if (setPlannerLastPage) setPlannerLastPage(pageNumber);
+                if (markPlannerPageRead) markPlannerPageRead(currentDay, pageNumber);
+                
+                prevTrackedRef.current = { page: pageNumber, day: currentDay };
+            }
         }
-        if (pageNumber !== null && assignment && planner && markPlannerPageRead) {
-            markPlannerPageRead(assignment.dayNumber, pageNumber);
-        }
-    }, [pageNumber, setPlannerLastPage, assignment, planner, markPlannerPageRead]);
+    }, [pageNumber, assignment?.dayNumber, setPlannerLastPage, markPlannerPageRead]);
 
     // Data fetching
     const { data: pageData, isLoading: isPageLoading } = useQuery({

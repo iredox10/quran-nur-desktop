@@ -11,6 +11,7 @@ import {
     getCompatibleArabicFontId,
     getMushafById,
 } from '../config/mushaf';
+import { adjustPlannerPace, rebalancePlanner, redistributeMissedAssignments } from '../utils/planner';
 
 const DEFAULT_ARABIC_FONT_ID = getCompatibleArabicFontId(DEFAULT_MUSHAF.id, DEFAULT_MUSHAF.defaultFontId);
 const DEFAULT_ARABIC_FONT_FAMILY = getArabicFontFamily(DEFAULT_ARABIC_FONT_ID);
@@ -487,6 +488,9 @@ export const useAppStore = create(
             setReadingPreferences: (prefs) => set((state) => ({ readingPreferences: { ...state.readingPreferences, ...prefs } })),
             updatePrayerSettings: (prefs) => set((state) => ({ prayerSettings: { ...state.prayerSettings, ...prefs } })),
             toggleIntentionPrompt: () => set((state) => ({ intentionPromptEnabled: !state.intentionPromptEnabled })),
+            adjustActivePlannerPace: (newDurationDays) => set((state) => replaceActivePlanner(state, (activePlanner) => adjustPlannerPace(activePlanner, newDurationDays))),
+            rebalanceActivePlanner: (strategy) => set((state) => replaceActivePlanner(state, (activePlanner) => rebalancePlanner(activePlanner, strategy))),
+            redistributeMissedAssignments: () => set((state) => replaceActivePlanner(state, (activePlanner) => redistributeMissedAssignments(activePlanner) || activePlanner)),
             setActivePlanner: (plannerId) => set((state) => buildPlannerState(state.planners || [], plannerId)),
             deletePlanner: (plannerId) => set((state) => {
                 const nextPlanners = (state.planners || []).filter((planner) => planner.id !== plannerId);
@@ -566,6 +570,7 @@ export const useAppStore = create(
                     assignmentCompletedItems,
                     assignmentCompletedAt,
                     completedDays,
+                };
             })),
             markPlannerPageRead: (dayNumber, pageNumber) => set((state) => replaceActivePlanner(state, (activePlanner) => {
                 const assignment = activePlanner.assignments.find((item) => item.dayNumber === dayNumber);

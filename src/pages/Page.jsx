@@ -420,27 +420,57 @@ export default function Page() {
                                         const chapterContext = chapters?.find(c => c.id.toString() === chId) || { id: parseInt(chId), name_simple: `Surah ${chId}` };
 
                                         return (
-                                            <VerseRow
-                                                key={verse.id}
-                                                verse={verse}
-                                                readingMode={readingMode}
-                                                chapter={chapterContext}
-                                                bookmark={bookmark}
-                                                setBookmark={setBookmark}
-                                                addRecentlyRead={addRecentlyRead}
-                                                fontSize={fontSize}
-                                                arabicFont={arabicFont}
-                                                tajweedEnabled={isTajweedActive}
-                                                tajweedMap={tajweedMap}
-                                                activeTafsir={null}
-                                                setActiveTafsir={() => { }}
-                                                isTafsirFetching={false}
-                                                tafsirs={[]}
-                                                tafsirId={tafsirId}
-                                                showPageDivider={false} // since it's exactly 1 page
-                                                mushaf={mushaf}
-                                                isAudioPlaying={activeAudioVerseKey === verse.verse_key}
-                                            />
+                                            <React.Fragment key={verse.id}>
+                                                {verse.verse_number === 1 && (
+                                                    <div style={{ display: 'block', width: '100%', textAlign: 'center', direction: 'ltr' }} className="my-12">
+                                                        <div className="inline-flex flex-col items-center justify-center rounded-[24px] bg-[var(--bg-secondary)] px-10 py-8 border border-[var(--border-color)] relative overflow-hidden shadow-sm">
+                                                            <div className="absolute top-0 left-0 w-full h-1 bg-[var(--accent-primary)] opacity-50"></div>
+                                                            <div className="inline-block px-4 py-1 rounded-full bg-[var(--accent-light)] text-[var(--accent-primary)] font-mono text-[0.7rem] font-bold tracking-[0.1em] uppercase mb-4">
+                                                                Surah {chapterContext.id}
+                                                            </div>
+                                                            <h3 className="font-ui text-3xl font-extrabold text-[var(--text-primary)] m-0 mb-2">{chapterContext.name_simple}</h3>
+                                                            {chapterContext.translated_name?.name && (
+                                                                <p className="font-ui text-[0.95rem] text-[var(--text-muted)] m-0 font-medium">
+                                                                    {chapterContext.translated_name.name} • {chapterContext.verses_count} Ayahs
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        {chapterContext.id !== 1 && chapterContext.id !== 9 && (
+                                                            <div
+                                                                className="quran-text text-center mt-10 mb-4 text-[var(--accent-primary)]"
+                                                                style={{
+                                                                    fontSize: `clamp(1.5rem, ${fontSize * 0.4 + 1.5}rem, 4rem)`,
+                                                                    fontFamily: arabicFont,
+                                                                    direction: 'rtl'
+                                                                }}
+                                                            >
+                                                                بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                <VerseRow
+                                                    key={verse.id}
+                                                    verse={verse}
+                                                    readingMode={readingMode}
+                                                    chapter={chapterContext}
+                                                    bookmark={bookmark}
+                                                    setBookmark={setBookmark}
+                                                    addRecentlyRead={addRecentlyRead}
+                                                    fontSize={fontSize}
+                                                    arabicFont={arabicFont}
+                                                    tajweedEnabled={isTajweedActive}
+                                                    tajweedMap={tajweedMap}
+                                                    activeTafsir={null}
+                                                    setActiveTafsir={() => { }}
+                                                    isTafsirFetching={false}
+                                                    tafsirs={[]}
+                                                    tafsirId={tafsirId}
+                                                    showPageDivider={false} // since it's exactly 1 page
+                                                    mushaf={mushaf}
+                                                    isAudioPlaying={activeAudioVerseKey === verse.verse_key}
+                                                />
+                                            </React.Fragment>
                                         );
                                     })
                                 )}

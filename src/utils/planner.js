@@ -363,6 +363,256 @@ export function adjustPlannerPace(planner, newDurationDays) {
   };
 }
 
+export function rebalancePlanner(planner, strategy) {
+    const today = formatPlannerDate(new Date());
+    const excludeDays = planner.excludeDays || [];
+    
+    // ─── Step 1: Classify each assignment ───
+    // Each assignment becomes one of:
+    //   - "done": fully completed → preserve as-is
+    //   - "partial": has some read pages but not all → split into a "done" read-portion + unread pages for rescheduling
+    //   - "unread": nothing read at all → all pages go for rescheduling
+    
+    const preservedAssignments = []; // Assignments to keep in their historical slots (done + read portions of partial)
+    const unreadPagePool = [];       // Flat list of page numbers that still need to be read
+    
+    planner.assignments.forEach(a => {
+        const prog = getAssignmentProgress(planner, a);
+        
+        if (prog.isComplete) {
+            // Fully completed — keep exactly as-is
+            preservedAssignments.push({ ...a, _wasComplete: true });
+            return;
+        }
+        
+        // Figure out which individual pages are read vs unread
+        const explicitReadPages = Array.isArray(planner?.assignmentReadPages?.[a.dayNumber])
+            ? planner.assignmentReadPages[a.dayNumber]
+            : [];
+        const readPages = [];
+        const unreadPages = [];
+        
+        a.items.forEach(item => {
+            const pStart = item.pageStart || 1;
+            const pEnd = item.pageEnd || pStart;
+            for (let p = pStart; p <= pEnd; p++) {
+                if (explicitReadPages.includes(p) || prog.completedRangeValues?.includes(item.rangeValue)) {
+                    readPages.push(p);
+                } else {
+                    unreadPages.push(p);
+                }
+            }
+        });
+        
+        if (readPages.length > 0 && unreadPages.length > 0) {
+            // PARTIAL: split into a preserved "read" portion and add unread to the pool
+            const pStart = readPages[0];
+            const pEnd = readPages[readPages.length - 1];
+            preservedAssignments.push({
+                ...a,
+                _wasComplete: true, // treat the read portion as "done" for display
+                unitType: 'page',
+                title: `Pages ${pStart}-${pEnd}`,
+                subtitle: `${readPages.length} pages (Read)`,
+                startUnit: pStart,
+                endUnit: pEnd,
+                pageStart: pStart,
+                pageEnd: pEnd,
+                items: [{
+                    title: `Pages ${pStart}-${pEnd}`,
+                    subtitle: `${readPages.length} pages`,
+                    route: `/planner/read/${a.dayNumber}`,
+                    rangeValue: `${pStart}-${pEnd}`,
+                    pageStart: pStart,
+                    pageEnd: pEnd,
+                }],
+            });
+            unreadPagePool.push(...unreadPages);
+        } else if (readPages.length > 0) {
+            // Fully read (but not marked complete for some reason) — preserve
+            preservedAssignments.push({ ...a, _wasComplete: true });
+        } else {
+            // Completely unread — all pages go to the pool
+            unreadPagePool.push(...unreadPages);
+        }
+    });
+    
+    // If there are no unread pages, nothing to rebalance
+    if (!unreadPagePool.length) return planner;
+    
+    // ─── Step 2: Build new assignments from unread pages ───
+    let newChunkAssignments = [];
+    
+    if (strategy === 'extend') {
+        // EXTEND: each original day's worth of pages becomes one new day appended to the end
+        // We keep the original grouping sizes from the plan to feel natural
+        const originalDaySize = Math.ceil(
+            planner.assignments.reduce((sum, a) => {
+                const pStart = a.pageStart || 0;
+                const pEnd = a.pageEnd || 0;
+                return sum + (pEnd - pStart + 1);
+            }, 0) / planner.assignments.length
+        );
+        const chunkSize = Math.max(originalDaySize, 1);
+        
+        for (let i = 0; i < unreadPagePool.length; i += chunkSize) {
+            const chunk = unreadPagePool.slice(i, i + chunkSize);
+            const pStart = chunk[0];
+            const pEnd = chunk[chunk.length - 1];
+            newChunkAssignments.push({
+                unitType: 'page',
+                title: `Pages ${pStart}-${pEnd}`,
+                subtitle: `${chunk.length} pages`,
+                startUnit: pStart,
+                endUnit: pEnd,
+                pageStart: pStart,
+                pageEnd: pEnd,
+                items: [{
+                    title: `Pages ${pStart}-${pEnd}`,
+                    subtitle: `${chunk.length} pages`,
+                    rangeValue: `${pStart}-${pEnd}`,
+                    pageStart: pStart,
+                    pageEnd: pEnd,
+                }],
+            });
+        }
+    } else if (strategy === 'spread') {
+        // SPREAD: divide unread pages evenly across the remaining calendar days
+        const originalEndDate = planner.assignments[planner.assignments.length - 1].date;
+        if (today > originalEndDate) {
+            // Past the end date — fall back to extend
+            return rebalancePlanner(planner, 'extend');
+        }
+        
+        let remainingDays = 0;
+        let curr = today;
+        while (curr <= originalEndDate) {
+            const d = new Date(`${curr}T00:00:00`);
+            if (!excludeDays.includes(d.getDay())) {
+                remainingDays++;
+            }
+            curr = addDays(curr, 1);
+        }
+        if (remainingDays <= 0) remainingDays = 1;
+        
+        const pagesPerDay = Math.ceil(unreadPagePool.length / remainingDays);
+        for (let i = 0; i < remainingDays; i++) {
+            const chunk = unreadPagePool.slice(i * pagesPerDay, (i + 1) * pagesPerDay);
+            if (!chunk.length) break;
+            const pStart = chunk[0];
+            const pEnd = chunk[chunk.length - 1];
+            newChunkAssignments.push({
+                unitType: 'page',
+                title: `Pages ${pStart}-${pEnd}`,
+                subtitle: `${chunk.length} pages`,
+                startUnit: pStart,
+                endUnit: pEnd,
+                pageStart: pStart,
+                pageEnd: pEnd,
+                items: [{
+                    title: `Pages ${pStart}-${pEnd}`,
+                    subtitle: `${chunk.length} pages`,
+                    rangeValue: `${pStart}-${pEnd}`,
+                    pageStart: pStart,
+                    pageEnd: pEnd,
+                }],
+            });
+        }
+    } else {
+        return planner;
+    }
+    
+    // ─── Step 3: Merge preserved + new, then renumber sequentially ───
+    const mergedRaw = [...preservedAssignments, ...newChunkAssignments];
+    
+    // Assign dates: preserved assignments keep their original dates,
+    // new assignments get dates starting from today (spread) or after the last preserved date (extend)
+    let lastPreservedDate = null;
+    preservedAssignments.forEach(a => {
+        if (!lastPreservedDate || a.date > lastPreservedDate) {
+            lastPreservedDate = a.date;
+        }
+    });
+    
+    const newStartDate = strategy === 'spread' ? today : (lastPreservedDate ? addDays(lastPreservedDate, 1) : today);
+    
+    // Build the final assignments with sequential dayNumbers
+    const newAssignmentProgress = {};
+    const newAssignmentReadPages = {};
+    const newAssignmentCompletedItems = {};
+    const newAssignmentCompletedAt = {};
+    const newCompletedDays = [];
+    
+    let nextDayNumber = 1;
+    let newDayIndex = 0; // Counter for new chunk assignments
+    
+    const finalAssignments = mergedRaw.map(a => {
+        const dn = nextDayNumber;
+        const oldDayNumber = a.dayNumber; // Will be undefined for new chunks
+        const isPreserved = a._wasComplete;
+        
+        const mapped = { ...a, dayNumber: dn };
+        delete mapped._wasComplete;
+        
+        // Set route
+        mapped.primaryRoute = `/planner/read/${dn}`;
+        if (mapped.items) {
+            mapped.items = mapped.items.map(it => ({ ...it, route: `/planner/read/${dn}` }));
+        }
+        
+        if (isPreserved && oldDayNumber != null) {
+            // Migrate progress data from old dayNumber to new dayNumber
+            if (planner.assignmentProgress?.[oldDayNumber] != null) {
+                newAssignmentProgress[dn] = planner.assignmentProgress[oldDayNumber];
+            }
+            if (planner.assignmentReadPages?.[oldDayNumber]) {
+                newAssignmentReadPages[dn] = planner.assignmentReadPages[oldDayNumber];
+            }
+            if (planner.assignmentCompletedItems?.[oldDayNumber]) {
+                newAssignmentCompletedItems[dn] = planner.assignmentCompletedItems[oldDayNumber];
+            }
+            if (planner.assignmentCompletedAt?.[oldDayNumber]) {
+                newAssignmentCompletedAt[dn] = planner.assignmentCompletedAt[oldDayNumber];
+            }
+            // Mark as completed if it was in the original completedDays
+            if (planner.completedDays?.includes(oldDayNumber)) {
+                newCompletedDays.push(dn);
+            }
+            // For preserved assignments that are split read-portions, also mark as complete
+            if (!planner.completedDays?.includes(oldDayNumber) && isPreserved) {
+                // This is a split read portion — mark it as complete
+                newAssignmentProgress[dn] = mapped.items.length;
+                newAssignmentCompletedItems[dn] = mapped.items.map(it => it.rangeValue);
+                newAssignmentCompletedAt[dn] = today;
+                newCompletedDays.push(dn);
+            }
+            // Keep original date
+        } else {
+            // New chunk assignment — assign a date
+            if (strategy === 'spread') {
+                mapped.date = getReadingDate(newStartDate, newDayIndex, excludeDays);
+            } else {
+                mapped.date = getReadingDate(newStartDate, newDayIndex, excludeDays);
+            }
+            newDayIndex++;
+        }
+        
+        nextDayNumber++;
+        return mapped;
+    });
+    
+    return {
+        ...planner,
+        durationDays: finalAssignments.length,
+        assignments: finalAssignments,
+        assignmentProgress: newAssignmentProgress,
+        assignmentReadPages: newAssignmentReadPages,
+        assignmentCompletedItems: newAssignmentCompletedItems,
+        assignmentCompletedAt: newAssignmentCompletedAt,
+        completedDays: newCompletedDays,
+    };
+}
+
 export function redistributeMissedAssignments(planner) {
     const today = formatPlannerDate(new Date());
     const uncompletedAssignments = planner.assignments.filter(a => !planner.completedDays?.includes(a.dayNumber));
@@ -593,6 +843,31 @@ export function getAssignmentResumePageNumber(plan, assignment, chapters = []) {
   if (!plan || !assignment) return 1;
   const progress = getAssignmentProgress(plan, assignment);
   if (progress.isComplete) return assignment.pageStart || 1;
+  
+  // Find the first unread page within the assignment's range
+  const explicitReadPages = Array.isArray(plan?.assignmentReadPages?.[assignment.dayNumber])
+    ? plan.assignmentReadPages[assignment.dayNumber]
+    : [];
+
+  const start = assignment.pageStart || 1;
+  const end = assignment.pageEnd || start;
+
+  for (let p = start; p <= end; p++) {
+    if (!explicitReadPages.includes(p)) {
+      let isCompletedViaItem = false;
+      assignment.items.forEach(item => {
+        if (progress.completedRangeValues && progress.completedRangeValues.includes(item.rangeValue)) {
+            const pStart = item.pageStart || 1;
+            const pEnd = item.pageEnd || pStart;
+            if (p >= pStart && p <= pEnd) isCompletedViaItem = true;
+        }
+      });
+      if (!isCompletedViaItem) {
+          return p;
+      }
+    }
+  }
+
   const nextItem = progress.nextItem;
   if (!nextItem) return assignment.pageStart || 1;
   const bounds = resolveItemPageBounds(nextItem, assignment.unitType, chapters);

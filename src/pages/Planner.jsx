@@ -572,7 +572,7 @@ function buildPrayerSlots(planner, todayAssignment, prayerTimes, prayerSettings)
 }
 
 function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete, setPlannerAssignmentProgress, togglePlannerDayComplete, chapters }) {
-    const { prayerTimes, setPrayerTimes, location, setLocation, shiftPlannerSchedule, setPlanner, prayerSettings, plannerReflections, plannerBookmarks } = useAppStore();
+    const { prayerTimes, setPrayerTimes, location, setLocation, shiftPlannerSchedule, setPlanner, prayerSettings, plannerReflections, plannerBookmarks, rebalanceActivePlanner } = useAppStore();
     const overview = useMemo(() => getPlannerOverview(planner), [planner]);
     const metrics = useMemo(() => getPlannerSuccessMetrics(planner), [planner]);
     const difficulty = useMemo(() => getDifficultyIndicators(planner?.assignments), [planner]) || {};
@@ -585,6 +585,18 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
     const [showSettings, setShowSettings] = useState(false);
     const [activeTab, setActiveTab] = useState('today');
     const [selectedDay, setSelectedDay] = useState(null);
+    const [showRebalanceModal, setShowRebalanceModal] = useState(false);
+    const [hasCheckedRebalance, setHasCheckedRebalance] = useState(false);
+
+    useEffect(() => {
+        if (!hasCheckedRebalance && overview?.firstIncomplete) {
+            const firstIncompleteDate = overview.firstIncomplete.date;
+            if (firstIncompleteDate < today) {
+                setShowRebalanceModal(true);
+            }
+            setHasCheckedRebalance(true);
+        }
+    }, [overview, today, hasCheckedRebalance]);
 
     useEffect(() => {
         if (location && (!prayerTimes || prayerTimes.date !== today)) {
@@ -649,9 +661,9 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
     }, [planner, todayComplete, todayAssignment]);
 
     const nextAssignmentProgress = nextAssignment ? getAssignmentProgress(planner, nextAssignment) : null;
-    const nextReadRoute = todayComplete
-        ? (nextAssignment ? `/planner/read/${nextAssignment.dayNumber}` : null)
-        : (todayAssignment ? `/planner/read/${todayAssignment.dayNumber}` : null);
+    const nextReadRoute = overview?.firstIncomplete 
+        ? `/planner/read/${overview.firstIncomplete.dayNumber}`
+        : null;
 
     const todayDone = todayProgress?.readPagesCount ?? 0;
     const todayTotal = todayProgress?.totalPagesCount ?? 1;
@@ -919,6 +931,7 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                         </h2>
                                         <div className="flex items-center gap-3">
                                             <span className="font-mono text-[0.7rem] uppercase tracking-[0.05em] text-[var(--text-muted)] hidden md:inline-block">({completedDays}/{planner.durationDays} done)</span>
+                                            <button onClick={() => setShowRebalanceModal(true)} className="cursor-pointer border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-3 py-1.5 rounded-full text-[0.75rem] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--h-bone)] shadow-sm transition-all duration-200 flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Rebalance</button>
                                             <button onClick={() => setShowAdjustPace(true)} className="cursor-pointer border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-3 py-1.5 rounded-full text-[0.75rem] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--h-bone)] shadow-sm transition-all duration-200 flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg> Adjust</button>
                                         </div>
                                     </div>
@@ -1062,14 +1075,11 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                             <p className="font-body text-[0.9rem] text-[var(--text-secondary)] mt-1 mb-0 relative z-10">You have fallen {overview.overdueDays} day{overview.overdueDays > 1 ? 's' : ''} behind schedule.</p>
                                         </div>
                                         <div className="flex flex-col gap-2 relative z-10">
-                                            <button onClick={() => shiftPlannerSchedule(planner.id, overview.overdueDays)} className="w-full cursor-pointer rounded-xl border border-red-500/30 bg-[rgba(255,255,255,0.02)] backdrop-blur-md p-[1rem] font-ui text-[0.95rem] font-bold text-[#dc2626] shadow-sm transition-all duration-300 hover:bg-[rgba(220,38,38,0.08)] hover:-translate-y-0.5 flex justify-between items-center">
-                                                Shift Deadlines ({overview.overdueDays} Days)
+                                            <button onClick={() => rebalanceActivePlanner('extend')} className="w-full cursor-pointer rounded-xl border border-red-500/30 bg-[rgba(255,255,255,0.02)] backdrop-blur-md p-[1rem] font-ui text-[0.95rem] font-bold text-[#dc2626] shadow-sm transition-all duration-300 hover:bg-[rgba(220,38,38,0.08)] hover:-translate-y-0.5 flex justify-between items-center">
+                                                Shift Deadlines (Extend Plan)
                                                 <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                                             </button>
-                                            <button onClick={() => {
-                                                const updated = redistributeMissedAssignments(planner);
-                                                if (updated) setPlanner(updated);
-                                            }} className="w-full cursor-pointer rounded-xl border-none bg-[rgba(220,38,38,0.12)] p-[1rem] font-ui text-[0.95rem] font-bold text-[#dc2626] shadow-none transition-all duration-300 hover:bg-[rgba(220,38,38,0.18)] hover:-translate-y-0.5 flex justify-between items-center" title="Keep the same end date, distribute missed reading across remaining days">
+                                            <button onClick={() => rebalanceActivePlanner('spread')} className="w-full cursor-pointer rounded-xl border-none bg-[rgba(220,38,38,0.12)] p-[1rem] font-ui text-[0.95rem] font-bold text-[#dc2626] shadow-none transition-all duration-300 hover:bg-[rgba(220,38,38,0.18)] hover:-translate-y-0.5 flex justify-between items-center" title="Keep the same end date, distribute missed reading across remaining days">
                                                 Redistribute Missed Pages
                                                 <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                             </button>
@@ -1279,6 +1289,45 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                 </div>
 
                                 <button className="w-full cursor-pointer rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] p-4 font-ui text-[1rem] font-bold text-[var(--text-primary)] transition-all hover:bg-[var(--h-bone)] hover:border-[var(--h-teal)] hover:-translate-y-0.5" onClick={() => setShowSettings(false)}>Done</button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {showRebalanceModal && (
+                    <motion.div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(250,247,240,0.85)] p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <motion.div className="w-full max-w-[420px] rounded-[32px] bg-white p-6 shadow-[0_20px_60px_rgba(43,63,60,0.15)] ring-1 ring-black/5" initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}>
+                            <div className="flex flex-col">
+                                <div className="mb-6 flex items-center justify-between">
+                                    <h2 className="font-ui text-[1.4rem] font-bold text-[var(--text-primary)]">Rebalance Plan</h2>
+                                    <button onClick={() => setShowRebalanceModal(false)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--h-bone)] text-[var(--text-secondary)] transition-colors hover:bg-[var(--h-bone-dark)] hover:text-[var(--text-primary)]">
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                                <p className="mb-6 font-body text-[0.95rem] leading-[1.6] text-[var(--text-secondary)]">You missed some pages from past assignments. How would you like to catch up?</p>
+                                
+                                <div className="flex flex-col gap-4">
+                                    <button onClick={() => { rebalanceActivePlanner('extend'); setShowRebalanceModal(false); }} className="group relative flex cursor-pointer flex-col gap-2 rounded-[20px] border-[2px] border-[var(--h-bone)] bg-white p-5 text-left transition-all duration-300 hover:border-[var(--h-teal)] hover:bg-[var(--h-bone)] hover:shadow-sm">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-ui text-[1.05rem] font-bold text-[var(--text-primary)]">Extend Plan</span>
+                                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--h-bone-dark)] text-[var(--h-teal)] transition-colors group-hover:bg-[var(--h-teal)] group-hover:text-white">
+                                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
+                                            </span>
+                                        </div>
+                                        <p className="font-body text-[0.85rem] leading-snug text-[var(--text-secondary)]">Keep your daily reading amount exactly the same, but add extra days to the end of your plan.</p>
+                                    </button>
+
+                                    <button onClick={() => { rebalanceActivePlanner('spread'); setShowRebalanceModal(false); }} className="group relative flex cursor-pointer flex-col gap-2 rounded-[20px] border-[2px] border-[var(--h-bone)] bg-white p-5 text-left transition-all duration-300 hover:border-[var(--h-teal)] hover:bg-[var(--h-bone)] hover:shadow-sm">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-ui text-[1.05rem] font-bold text-[var(--text-primary)]">Spread Pages</span>
+                                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--h-bone-dark)] text-[var(--h-teal)] transition-colors group-hover:bg-[var(--h-teal)] group-hover:text-white">
+                                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
+                                            </span>
+                                        </div>
+                                        <p className="font-body text-[0.85rem] leading-snug text-[var(--text-secondary)]">Keep your original deadline, but evenly distribute the missed pages across your remaining days.</p>
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
