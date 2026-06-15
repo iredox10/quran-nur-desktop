@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 
@@ -1359,6 +1359,7 @@ function ActiveViewWrapper({ planner, planners, activePlannerId, onSwitchPlan, o
 }
 
 export default function Planner() {
+    const navigate = useNavigate();
     const {
         setNavHeaderTitle, planner, planners, activePlannerId,
         setPlanner, setActivePlanner, deletePlanner,

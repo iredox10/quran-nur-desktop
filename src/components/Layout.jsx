@@ -33,7 +33,7 @@ export default function Layout() {
     const isImmersivePage = isSurahPage || isMemorizePage || isPagePage || isPlannerReader;
     const hasAudio = audioPlaylist.length > 0 || !!currentAudioUrl;
     const shouldReturnToPlanner = Boolean(location.state?.backToPlanner) || isPlannerReader;
-    const shouldForceHomeBack = isSurahPage || isMemorizePage;
+    const shouldForceHomeBack = isSurahPage || isMemorizePage || isPagePage;
 
     const navigateHomeAtTop = useCallback((replace = false) => {
         navigate('/', {
