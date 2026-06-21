@@ -406,7 +406,7 @@ export default function SaukaGroup() {
                                                     }
 
                                                     // Resume progress
-                                                    const savedProgress = localStorage.getItem(`sauka_progress_${selectedJuz.$id}`);
+                                                    const savedProgress = useAppStore.getState().saukaProgress[selectedJuz.$id];
                                                     let targetPage = startPage;
                                                     if (!isSurah && savedProgress && parseInt(savedProgress) >= startPage && parseInt(savedProgress) <= endPage) {
                                                         targetPage = parseInt(savedProgress);

@@ -112,6 +112,16 @@ export const useAppStore = create(
             pomodoroCompletedFocusCount: 0,
             showGlobalPomodoro: false,
 
+            saukaProgress: {}, // { [assignmentId]: pageNumber }
+            setSaukaProgress: (assignmentId, pageNumber) => set((state) => ({
+                saukaProgress: { ...state.saukaProgress, [assignmentId]: pageNumber }
+            })),
+            clearSaukaProgress: (assignmentId) => set((state) => {
+                const newProgress = { ...state.saukaProgress };
+                delete newProgress[assignmentId];
+                return { saukaProgress: newProgress };
+            }),
+
             dailyReadingGoal: 20, // minutes per day
             setDailyReadingGoal: (minutes) => set({ dailyReadingGoal: minutes }),
 
@@ -830,6 +840,7 @@ export function getSyncableState(state) {
         intentionPromptEnabled: state.intentionPromptEnabled ?? true,
         plannerReflections: state.plannerReflections || {},
         plannerBookmarks: state.plannerBookmarks || {},
-        plannerSessionTimers: state.plannerSessionTimers || {}
+        plannerSessionTimers: state.plannerSessionTimers || {},
+        saukaProgress: state.saukaProgress || {}
     };
 }

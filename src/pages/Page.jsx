@@ -59,7 +59,7 @@ export default function Page() {
         try {
             await saukaService.completeJuz(saukaAssignmentId, backToSauka);
             // Clear progress on completion
-            localStorage.removeItem(`sauka_progress_${saukaAssignmentId}`);
+            useAppStore.getState().clearSaukaProgress(saukaAssignmentId);
             navigate(`/sauka/${backToSauka}`);
         } catch (e) {
             console.error(e);
@@ -71,7 +71,7 @@ export default function Page() {
     // Save Sauka Progress
     useEffect(() => {
         if (backToSauka && saukaAssignmentId) {
-            localStorage.setItem(`sauka_progress_${saukaAssignmentId}`, pageNumber.toString());
+            useAppStore.getState().setSaukaProgress(saukaAssignmentId, pageNumber);
         }
     }, [pageNumber, backToSauka, saukaAssignmentId]);
 
