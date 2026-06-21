@@ -291,11 +291,39 @@ export default function SaukaGroup() {
 
                                         {selectedJuz.claimedBy === userId && selectedJuz.status === 'in_progress' && (
                                             <div className="space-y-3">
-                                                <button onClick={() => navigate(isSurah ? `/surah/${selectedJuz.partNumber}` : `/page/${JUZ_MAP[(isHizb ? Math.ceil(selectedJuz.partNumber / 2) : selectedJuz.partNumber) - 1]?.startPage || 1}`, { state: { backToSauka: groupId } })} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--h-gold)] py-3.5 text-sm font-bold text-white hover:bg-[var(--h-gold)]/90">
+                                                <button onClick={() => {
+                                                    let startPage = 1, endPage = 604;
+                                                    if (!isSurah) {
+                                                        if (isHizb) {
+                                                            const juzIndex = Math.ceil(selectedJuz.partNumber / 2) - 1;
+                                                            const juzStart = JUZ_MAP[juzIndex]?.startPage || 1;
+                                                            const nextJuzStart = JUZ_MAP[juzIndex + 1]?.startPage || 605;
+                                                            const half = Math.floor((nextJuzStart - juzStart) / 2);
+                                                            if (selectedJuz.partNumber % 2 !== 0) {
+                                                                startPage = juzStart;
+                                                                endPage = juzStart + half - 1;
+                                                            } else {
+                                                                startPage = juzStart + half;
+                                                                endPage = nextJuzStart - 1;
+                                                            }
+                                                        } else {
+                                                            const juzIndex = selectedJuz.partNumber - 1;
+                                                            startPage = JUZ_MAP[juzIndex]?.startPage || 1;
+                                                            endPage = (JUZ_MAP[juzIndex + 1]?.startPage || 605) - 1;
+                                                        }
+                                                    }
+                                                    navigate(isSurah ? `/surah/${selectedJuz.partNumber}` : `/page/${startPage}`, { 
+                                                        state: { 
+                                                            backToSauka: groupId, 
+                                                            saukaAssignmentId: selectedJuz.$id, 
+                                                            saukaPartNumber: selectedJuz.partNumber, 
+                                                            saukaUnit: unitName,
+                                                            saukaStartPage: startPage,
+                                                            saukaEndPage: endPage
+                                                        } 
+                                                    });
+                                                }} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--h-gold)] py-3.5 text-sm font-bold text-white hover:bg-[var(--h-gold)]/90">
                                                     <BookOpen size={16} /> Start Reading
-                                                </button>
-                                                <button onClick={() => handleComplete(selectedJuz.$id)} disabled={isActionLoading} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--h-teal)] py-3.5 text-sm font-bold text-white hover:bg-[var(--h-teal-mid)] disabled:opacity-50">
-                                                    {isActionLoading ? <Loader2 size={16} className="animate-spin" /> : <><CheckCircle2 size={16} /> Mark as Complete</>}
                                                 </button>
                                                 <button onClick={() => handleUnclaim(selectedJuz.$id)} disabled={isActionLoading} className="w-full py-2 text-xs font-semibold text-red-500 hover:text-red-600 disabled:opacity-50">
                                                     Unclaim (Drop)

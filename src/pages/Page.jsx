@@ -4,13 +4,14 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useSwipeable } from 'react-swipeable';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, ArrowRight, CheckCircle2, ChevronRight, ChevronLeft, Minus, Pause, Play, Plus, Target, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, ChevronRight, ChevronLeft, Minus, Pause, Play, Plus, Target, X, Loader2 } from 'lucide-react';
 
 import { getVersesByPage, getTajweedVersesByPage, getChapters } from '../services/api/quranApi';
 import { useAppStore } from '../store/useAppStore';
 import { getMushafById, isTajweedEnabledForMushaf } from '../config/mushaf';
 import { sanitizeTajweedHtml } from '../utils/quranText';
 import { getAssignmentProgress, getPlannerPageContext } from '../utils/planner';
+import { saukaService } from '../services/saukaService';
 
 import VerseRow from '../components/VerseRow';
 import MushafPageView from '../components/MushafPageView';
@@ -48,6 +49,22 @@ export default function Page() {
     const pageNumber = parseInt(id) || 1;
     const location = useLocation();
     const navigate = useNavigate();
+    
+    // Sauka Context
+    const { backToSauka, saukaAssignmentId, saukaPartNumber, saukaUnit, saukaStartPage, saukaEndPage } = location.state || {};
+    const [isSaukaCompleting, setIsSaukaCompleting] = useState(false);
+
+    const handleSaukaComplete = async () => {
+        setIsSaukaCompleting(true);
+        try {
+            await saukaService.completeJuz(saukaAssignmentId, backToSauka);
+            navigate(`/sauka/${backToSauka}`);
+        } catch (e) {
+            console.error(e);
+            alert('Failed to mark complete');
+            setIsSaukaCompleting(false);
+        }
+    };
 
     // App State
     const {
@@ -97,6 +114,9 @@ export default function Page() {
 
     const verses = pageData?.verses || [];
     const maxPageNumber = mushaf.pageCount || 604;
+    const minPageLimit = backToSauka && saukaStartPage ? saukaStartPage : 1;
+    const maxPageLimit = backToSauka && saukaEndPage ? saukaEndPage : maxPageNumber;
+
     const plannerPageContext = React.useMemo(() => getPlannerPageContext(planner, pageNumber, chapters || []), [planner, pageNumber, chapters]);
     const plannerAssignmentProgress = plannerPageContext
         ? getAssignmentProgress(planner, plannerPageContext.assignment)
@@ -207,12 +227,12 @@ export default function Page() {
     // Handle Top Level Keyboard
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.key === 'ArrowRight' && pageNumber > 1) navigate(`/page/${pageNumber - 1}`);
-            if (e.key === 'ArrowLeft' && pageNumber < maxPageNumber) navigate(`/page/${pageNumber + 1}`);
+            if (e.key === 'ArrowRight' && pageNumber > minPageLimit) navigate(`/page/${pageNumber - 1}`, { state: location.state });
+            if (e.key === 'ArrowLeft' && pageNumber < maxPageLimit) navigate(`/page/${pageNumber + 1}`, { state: location.state });
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [pageNumber, maxPageNumber, navigate]);
+    }, [pageNumber, maxPageLimit, minPageLimit, navigate, location.state]);
 
     const scrollRafRef = useRef(null);
     const lastScrollTimestampRef = useRef(null);
@@ -273,15 +293,15 @@ export default function Page() {
     const swipeDirectionRef = useRef(0);
     const swipeHandlers = useSwipeable({
         onSwipedLeft: () => {
-            if (pageNumber < maxPageNumber) {
+            if (pageNumber < maxPageLimit) {
                 swipeDirectionRef.current = 1;
-                navigate(`/page/${pageNumber + 1}`);
+                navigate(`/page/${pageNumber + 1}`, { state: location.state });
             }
         },
         onSwipedRight: () => {
-            if (pageNumber > 1) {
+            if (pageNumber > minPageLimit) {
                 swipeDirectionRef.current = -1;
-                navigate(`/page/${pageNumber - 1}`);
+                navigate(`/page/${pageNumber - 1}`, { state: location.state });
             }
         },
         preventDefaultTouchmoveEvent: false,
@@ -296,18 +316,18 @@ export default function Page() {
     };
 
     const handleNextPage = () => {
-        if (pageNumber < maxPageNumber) {
+        if (pageNumber < maxPageLimit) {
             scrollToTop();
             swipeDirectionRef.current = 1;
-            navigate(`/page/${pageNumber + 1}`);
+            navigate(`/page/${pageNumber + 1}`, { state: location.state });
         }
     };
 
     const handlePrevPage = () => {
-        if (pageNumber > 1) {
+        if (pageNumber > minPageLimit) {
             scrollToTop();
             swipeDirectionRef.current = -1;
-            navigate(`/page/${pageNumber - 1}`);
+            navigate(`/page/${pageNumber - 1}`, { state: location.state });
         }
     };
 
@@ -351,10 +371,39 @@ export default function Page() {
                         </div>
                     </div>
 
-                    {/* Planner context bar — shown at top when reading from a plan */}
-                    {plannerPageContext && plannerAssignmentProgress && (
-                        <div className="flex justify-between items-center gap-3 mb-5 p-3 px-4 rounded-[14px] bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-[var(--shadow-sm)] flex-wrap">
-                            <div className="min-w-0 flex-1">
+                    {/* Context bar — shown at top when reading from a plan or sauka */}
+                    {backToSauka && saukaAssignmentId ? (
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 p-3 sm:p-4 rounded-[14px] bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-[var(--shadow-sm)]">
+                            <div className="min-w-0 w-full sm:w-auto flex-1">
+                                <div className="flex items-center gap-[0.4rem] mb-[0.15rem] text-[var(--text-primary)] font-bold text-[0.88rem]">
+                                    <Target size={13} aria-hidden="true" />
+                                    <span>Sauka Group Reading</span>
+                                </div>
+                                <div className="text-[var(--text-muted)] text-[0.76rem]">
+                                    Currently reading: {saukaUnit} {saukaPartNumber}
+                                </div>
+                            </div>
+                            <div className="flex gap-2 items-center w-full sm:w-auto">
+                                <button
+                                    type="button"
+                                    disabled={isSaukaCompleting}
+                                    onClick={handleSaukaComplete}
+                                    className="flex-1 sm:flex-none justify-center min-h-9 px-4 py-2 rounded-full bg-[var(--h-teal)] text-white font-bold inline-flex items-center gap-2 text-[0.82rem] border-none cursor-pointer disabled:opacity-50"
+                                >
+                                    {isSaukaCompleting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} aria-hidden="true" />}
+                                    Mark as Complete
+                                </button>
+                                <Link
+                                    to={`/sauka/${backToSauka}`}
+                                    className="flex-1 sm:flex-none justify-center min-h-9 px-4 py-2 rounded-full bg-[var(--bg-secondary)] text-[var(--text-muted)] font-semibold inline-flex items-center gap-2 text-[0.78rem] no-underline"
+                                >
+                                    ← Back to Sauka
+                                </Link>
+                            </div>
+                        </div>
+                    ) : (plannerPageContext && plannerAssignmentProgress && (
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 p-3 sm:p-4 rounded-[14px] bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-[var(--shadow-sm)]">
+                            <div className="min-w-0 w-full sm:w-auto flex-1">
                                 <div className="flex items-center gap-[0.4rem] mb-[0.15rem] text-[var(--text-primary)] font-bold text-[0.88rem]">
                                     <Target size={13} aria-hidden="true" />
                                     <span>{plannerPageContext.assignment.title}</span>
@@ -368,12 +417,12 @@ export default function Page() {
                                         : `Page ${plannerAssignmentProgress.completedCount + 1} of ${plannerAssignmentProgress.totalCount} · ${plannerAssignmentProgress.remainingCount} remaining`}
                                 </div>
                             </div>
-                            <div className="flex gap-[0.4rem] items-center flex-wrap">
+                            <div className="flex gap-2 items-center w-full sm:w-auto">
                                 {!plannerAssignmentProgress.isComplete && !plannerPageContext.isCurrentItemComplete && (
                                     <button
                                         type="button"
                                         onClick={() => markPlannerItemComplete(plannerPageContext.assignment.dayNumber, plannerPageContext.currentItem?.rangeValue)}
-                                        className="min-h-9 px-[0.8rem] py-2 rounded-full bg-[var(--accent-light)] text-[var(--accent-primary)] font-bold inline-flex items-center gap-[0.35rem] text-[0.82rem] border-none cursor-pointer"
+                                        className="flex-1 sm:flex-none justify-center min-h-9 px-4 py-2 rounded-full bg-[var(--accent-light)] text-[var(--accent-primary)] font-bold inline-flex items-center gap-2 text-[0.82rem] border-none cursor-pointer"
                                     >
                                         <CheckCircle2 size={13} aria-hidden="true" />
                                         Mark done
@@ -381,13 +430,13 @@ export default function Page() {
                                 )}
                                 <Link
                                     to="/planner"
-                                    className="min-h-9 px-[0.8rem] py-2 rounded-full bg-[var(--bg-secondary)] text-[var(--text-muted)] font-semibold inline-flex items-center gap-[0.3rem] text-[0.78rem] no-underline"
+                                    className="flex-1 sm:flex-none justify-center min-h-9 px-4 py-2 rounded-full bg-[var(--bg-secondary)] text-[var(--text-muted)] font-semibold inline-flex items-center gap-2 text-[0.78rem] no-underline"
                                 >
                                     ← Planner
                                 </Link>
                             </div>
                         </div>
-                    )}
+                    ))}
 
                     <div className="relative z-[5] pb-16">
                         {mushaf.renderMode === 'qcf-page' && !readingMode ? (
@@ -485,17 +534,17 @@ export default function Page() {
             <div className="flex justify-between items-center mt-4 border-t border-[var(--border-color)] pt-12 pb-8">
                 <button
                     onClick={handleNextPage}
-                    disabled={pageNumber >= maxPageNumber}
+                    disabled={pageNumber >= maxPageLimit}
                     className="interactive-hover flex items-center gap-2 p-4 px-6 rounded-2xl border-none bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold text-[0.95rem] transition-all duration-200"
                     style={{
-                        cursor: pageNumber >= maxPageNumber ? 'not-allowed' : 'pointer',
-                        opacity: pageNumber >= maxPageNumber ? 0.5 : 1,
+                        cursor: pageNumber >= maxPageLimit ? 'not-allowed' : 'pointer',
+                        opacity: pageNumber >= maxPageLimit ? 0.5 : 1,
                     }}
                 >
                     <ChevronLeft size={20} />
                     <div className="flex flex-col items-start text-left">
                         <span className="font-mono text-[0.65rem] font-semibold text-[var(--text-muted)] uppercase tracking-[0.1em]">Next</span>
-                        <span>Page {pageNumber + 1 > maxPageNumber ? maxPageNumber : pageNumber + 1}</span>
+                        <span>Page {pageNumber + 1 > maxPageLimit ? maxPageLimit : pageNumber + 1}</span>
                     </div>
                 </button>
 
@@ -505,16 +554,16 @@ export default function Page() {
 
                 <button
                     onClick={handlePrevPage}
-                    disabled={pageNumber <= 1}
+                    disabled={pageNumber <= minPageLimit}
                     className="interactive-hover flex items-center gap-2 p-4 px-6 rounded-2xl border-none bg-[var(--bg-secondary)] text-[var(--text-primary)] font-semibold text-[0.95rem] transition-all duration-200"
                     style={{
-                        cursor: pageNumber <= 1 ? 'not-allowed' : 'pointer',
-                        opacity: pageNumber <= 1 ? 0.5 : 1,
+                        cursor: pageNumber <= minPageLimit ? 'not-allowed' : 'pointer',
+                        opacity: pageNumber <= minPageLimit ? 0.5 : 1,
                     }}
                 >
                     <div className="flex flex-col items-end text-right">
                         <span className="font-mono text-[0.65rem] font-semibold text-[var(--text-muted)] uppercase tracking-[0.1em]">Previous</span>
-                        <span>Page {pageNumber - 1 < 1 ? 1 : pageNumber - 1}</span>
+                        <span>Page {pageNumber - 1 < minPageLimit ? minPageLimit : pageNumber - 1}</span>
                     </div>
                     <ChevronRight size={20} />
                 </button>

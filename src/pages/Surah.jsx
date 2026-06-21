@@ -4,7 +4,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { getChapter, getVerses, getChapterAudio, getChapterTafsirs, getTajweedVerses } from '../services/api/quranApi';
 import { useAppStore } from '../store/useAppStore';
-import { ArrowLeft, ArrowRight, Play, Pause, BookOpen, Bookmark, Info, X, Download, CloudCheck, RefreshCw, ChevronsDown, Minus, Plus, Settings2, Target } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Play, Pause, BookOpen, Bookmark, Info, X, Download, CloudCheck, RefreshCw, ChevronsDown, Minus, Plus, Settings2, Target, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { useSwipeable } from 'react-swipeable';
@@ -13,6 +13,7 @@ import AudioSetupModal from '../components/AudioSetupModal';
 import AutoScroller from '../components/AutoScroller';
 import { getMushafById, isTajweedEnabledForMushaf } from '../config/mushaf';
 import { sanitizeTajweedHtml } from '../utils/quranText';
+import { saukaService } from '../services/saukaService';
 
 const surahScrollPositions = {};
 
@@ -22,6 +23,22 @@ export default function Surah() {
     const location = useLocation();
     const navigate = useNavigate();
     const didRegisterReadRef = React.useRef(null);
+    
+    // Sauka Context
+    const { backToSauka, saukaAssignmentId, saukaPartNumber, saukaUnit } = location.state || {};
+    const [isSaukaCompleting, setIsSaukaCompleting] = useState(false);
+
+    const handleSaukaComplete = async () => {
+        setIsSaukaCompleting(true);
+        try {
+            await saukaService.completeJuz(saukaAssignmentId, backToSauka);
+            navigate(`/sauka/${backToSauka}`);
+        } catch (e) {
+            console.error(e);
+            alert('Failed to mark complete');
+            setIsSaukaCompleting(false);
+        }
+    };
     const {
         translationId, reciterId, fontSize, translationFontSize,
         readingMode, setReadingMode,
@@ -298,14 +315,14 @@ export default function Surah() {
 
     const swipeHandlers = useSwipeable({
         onSwipedLeft: () => {
-            if (parseInt(id) < 114) {
+            if (!backToSauka && parseInt(id) < 114) {
                 surahScrollPositions[id] = window.scrollY;
                 swipeDirectionRef.current = 1; // forward
                 navigate(`/surah/${parseInt(id) + 1}`);
             }
         },
         onSwipedRight: () => {
-            if (parseInt(id) > 1) {
+            if (!backToSauka && parseInt(id) > 1) {
                 surahScrollPositions[id] = window.scrollY;
                 swipeDirectionRef.current = -1; // backward
                 navigate(`/surah/${parseInt(id) - 1}`);
@@ -464,6 +481,38 @@ export default function Surah() {
                         </div>
                     </div>
 
+                    {/* Sauka Context Bar */}
+                    {backToSauka && saukaAssignmentId && (
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-4 mb-2 mx-4 p-3 sm:p-4 rounded-[14px] bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-[var(--shadow-sm)]">
+                            <div className="min-w-0 w-full sm:w-auto flex-1">
+                                <div className="flex items-center gap-[0.4rem] mb-[0.15rem] text-[var(--text-primary)] font-bold text-[0.88rem]">
+                                    <Target size={13} aria-hidden="true" />
+                                    <span>Sauka Group Reading</span>
+                                </div>
+                                <div className="text-[var(--text-muted)] text-[0.76rem]">
+                                    Currently reading: {saukaUnit} {saukaPartNumber}
+                                </div>
+                            </div>
+                            <div className="flex gap-2 items-center w-full sm:w-auto">
+                                <button
+                                    type="button"
+                                    disabled={isSaukaCompleting}
+                                    onClick={handleSaukaComplete}
+                                    className="flex-1 sm:flex-none justify-center min-h-9 px-4 py-2 rounded-full bg-[var(--h-teal)] text-white font-bold inline-flex items-center gap-2 text-[0.82rem] border-none cursor-pointer disabled:opacity-50"
+                                >
+                                    {isSaukaCompleting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} aria-hidden="true" />}
+                                    Mark as Complete
+                                </button>
+                                <Link
+                                    to={`/sauka/${backToSauka}`}
+                                    className="flex-1 sm:flex-none justify-center min-h-9 px-4 py-2 rounded-full bg-[var(--bg-secondary)] text-[var(--text-muted)] font-semibold inline-flex items-center gap-2 text-[0.78rem] no-underline"
+                                >
+                                    ← Back to Sauka
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="px-4 flex-col" style={{ display: readingMode ? 'block' : 'flex' }}>
                         {/* Bismillah before Surah text (except Fatiha and Tawbah) */}
                         {chapter?.id !== 1 && chapter?.id !== 9 && (
@@ -525,7 +574,7 @@ export default function Surah() {
                         </div>
 
                         {/* Footer Navigation */}
-                        {!hasNextPage && !isVersesLoading && (
+                        {!hasNextPage && !isVersesLoading && !backToSauka && (
                             <div className="mt-12 pt-8 border-t border-[var(--border-color)] flex justify-between gap-4 pb-8">
                                 {parseInt(id) > 1 ? (
                                     <button
