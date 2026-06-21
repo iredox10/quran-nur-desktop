@@ -41,13 +41,13 @@ const VIEWS = { root: 'root', mushaf: 'mushaf', translation: 'translation', reci
 
 function SelectionRow({ label, value, hint, onClick }) {
     return (
-        <button type="button" onClick={onClick} className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-3 text-left text-[var(--sd-ink)] transition-colors duration-200 hover:bg-[var(--bg-primary)]">
+        <button type="button" onClick={onClick} className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-3 text-left text-[var(--text-primary)] transition-colors duration-200 hover:bg-[var(--bg-primary)]">
             <div className="min-w-0 flex-1">
-                <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]">{label}</div>
-                {value && <div className="mt-px text-[0.75rem] text-[var(--sd-ink-muted)]">{value}</div>}
-                {!value && hint && <div className="mt-px text-[0.75rem] text-[var(--sd-ink-muted)]">{hint}</div>}
+                <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">{label}</div>
+                {value && <div className="mt-px text-[0.75rem] text-[var(--text-secondary)]">{value}</div>}
+                {!value && hint && <div className="mt-px text-[0.75rem] text-[var(--text-secondary)]">{hint}</div>}
             </div>
-            <ChevronRight size={16} className="shrink-0 text-[var(--sd-ink-muted)]" />
+            <ChevronRight size={16} className="shrink-0 text-[var(--text-secondary)]" />
         </button>
     );
 }
@@ -55,7 +55,7 @@ function SelectionRow({ label, value, hint, onClick }) {
 function SegmentedOption({ active, icon, label, onClick }) {
     return (
         <button type="button" onClick={onClick} className={`flex flex-1 cursor-pointer items-center justify-center gap-[6px] border-none px-4 py-[10px] text-[0.82rem] font-semibold transition-all duration-200 first:rounded-l-[12px] last:rounded-r-[12px] ${
-            active ? 'bg-accent text-white shadow-[0_4px_8px_rgba(198,168,124,0.25)]' : 'bg-transparent text-[var(--sd-ink-muted)] hover:text-[var(--sd-ink)]'
+            active ? 'bg-accent text-white shadow-[0_4px_8px_rgba(198,168,124,0.25)]' : 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
         }`}>
             {icon}<span>{label}</span>
         </button>
@@ -66,11 +66,11 @@ function ToggleRow({ label, hint, checked, onToggle, disabled = false }) {
     return (
         <button type="button" disabled={disabled} onClick={() => !disabled && onToggle()} className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-3 text-left transition-colors duration-200 hover:bg-[var(--bg-primary)] disabled:opacity-50">
             <div className="min-w-0 flex-1">
-                <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]">{label}</div>
-                <div className="mt-px text-[0.75rem] text-[var(--sd-ink-muted)]">{hint}</div>
+                <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">{label}</div>
+                <div className="mt-px text-[0.75rem] text-[var(--text-secondary)]">{hint}</div>
             </div>
             <div className={`flex h-6 w-10 shrink-0 items-center rounded-[999px] px-[3px] transition-all duration-200 ${
-                checked ? 'bg-accent' : 'bg-[var(--sd-bone-dark)]'
+                checked ? 'bg-accent' : 'bg-[var(--border-color)]'
             }`}>
                 <div className={`h-[18px] w-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.15)] transition-transform duration-200 ${
                     checked ? 'translate-x-4' : 'translate-x-0'
@@ -83,11 +83,11 @@ function ToggleRow({ label, hint, checked, onToggle, disabled = false }) {
 function PickerOption({ title, subtitle, active, onClick, sampleStyle }) {
     return (
         <button type="button" onClick={onClick} className={`flex w-full cursor-pointer items-center gap-3 border-none px-4 py-3 text-left transition-all duration-200 ${
-            active ? 'rounded-[10px] bg-[var(--sd-gold-soft)]' : 'rounded-[10px] bg-transparent hover:bg-[var(--bg-primary)]'
+            active ? 'rounded-[10px] bg-[var(--accent-light)]' : 'rounded-[10px] bg-transparent hover:bg-[var(--bg-primary)]'
         }`}>
             <div className="min-w-0 flex-1">
-                <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]" style={sampleStyle || {}}>{title}</div>
-                {subtitle && <div className="mt-px text-[0.75rem] text-[var(--sd-ink-muted)]">{subtitle}</div>}
+                <div className="text-[0.9rem] font-medium text-[var(--text-primary)]" style={sampleStyle || {}}>{title}</div>
+                {subtitle && <div className="mt-px text-[0.75rem] text-[var(--text-secondary)]">{subtitle}</div>}
             </div>
             {active && <Check size={16} className="shrink-0 text-accent" />}
         </button>
@@ -148,16 +148,16 @@ function ReciterPickerOption({ reciter, active, onClick }) {
 
     return (
         <button type="button" onClick={onClick} className={`flex w-full cursor-pointer items-center gap-3 border-none px-4 py-3 text-left transition-all duration-200 ${
-            active ? 'rounded-[10px] bg-[var(--sd-gold-soft)]' : 'rounded-[10px] bg-transparent hover:bg-[var(--bg-primary)]'
+            active ? 'rounded-[10px] bg-[var(--accent-light)]' : 'rounded-[10px] bg-transparent hover:bg-[var(--bg-primary)]'
         }`}>
             <div className="min-w-0 flex-1">
-                <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]">{reciter.name}</div>
+                <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">{reciter.name}</div>
             </div>
             <button 
                 type="button" 
                 onClick={togglePlay} 
                 disabled={isLoading}
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--bg-secondary)] text-[var(--sd-ink-muted)] transition-colors hover:bg-accent hover:text-white"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors hover:bg-accent hover:text-white"
                 title="Play sample"
             >
                 {isLoading ? <Loader2 size={14} className="animate-spin" /> : isPlaying ? <Pause size={14} /> : <Play size={14} className="ml-[2px]" />}
@@ -239,16 +239,16 @@ function CloudSyncView({ currentUser, setCurrentUser }) {
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">{currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}</div>
                         <div className="flex-1">
-                            <div className="text-[0.9rem] font-semibold text-[var(--sd-ink)]">{currentUser.name || 'User'}</div>
-                            <div className="text-[0.75rem] text-[var(--sd-ink-muted)]">{currentUser.email}</div>
+                            <div className="text-[0.9rem] font-semibold text-[var(--text-primary)]">{currentUser.name || 'User'}</div>
+                            <div className="text-[0.75rem] text-[var(--text-secondary)]">{currentUser.email}</div>
                         </div>
-                        <button type="button" onClick={handleLogout} disabled={loading} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[var(--sd-ink-muted)] transition-colors duration-200 hover:bg-red-50 hover:text-red-500" aria-label="Logout"><LogOut size={18} /></button>
+                        <button type="button" onClick={handleLogout} disabled={loading} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[var(--text-secondary)] transition-colors duration-200 hover:bg-red-50 hover:text-red-500" aria-label="Logout"><LogOut size={18} /></button>
                     </div>
                 </div>
 
                 <div className="rounded-[10px] border border-[var(--border-color)] bg-[var(--bg-primary)] px-4 py-4">
-                    <div className="mb-1 text-[0.9rem] font-medium text-[var(--sd-ink)]">Cloud Backup</div>
-                    <div className="mb-3 text-[0.75rem] text-[var(--sd-ink-muted)]">Securely back up your bookmarks, memorization progress, planners, and reading history.</div>
+                    <div className="mb-1 text-[0.9rem] font-medium text-[var(--text-primary)]">Cloud Backup</div>
+                    <div className="mb-3 text-[0.75rem] text-[var(--text-secondary)]">Securely back up your bookmarks, memorization progress, planners, and reading history.</div>
 
                     <div className="flex flex-col gap-2">
                         <button type="button" onClick={handlePush} disabled={syncLoading} className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[12px] border-none bg-accent px-4 py-[10px] text-[0.85rem] font-bold text-white transition-all duration-200 hover:bg-[var(--accent-hover)] disabled:opacity-60">
@@ -268,15 +268,15 @@ function CloudSyncView({ currentUser, setCurrentUser }) {
     return (
         <div className="mx-4 mb-4 mt-4 rounded-[10px] border border-[var(--border-color)] bg-[var(--bg-primary)] px-4 py-6 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-light)] text-accent"><Cloud size={22} /></div>
-            <h3 className="mb-1 text-base font-semibold text-[var(--sd-ink)]">Cloud Sync</h3>
-            <p className="mb-5 text-[0.78rem] leading-[1.4] text-[var(--sd-ink-muted)]">
+            <h3 className="mb-1 text-base font-semibold text-[var(--text-primary)]">Cloud Sync</h3>
+            <p className="mb-5 text-[0.78rem] leading-[1.4] text-[var(--text-secondary)]">
                 Create an account to securely back up and sync your reading progress across devices.
             </p>
 
             <form onSubmit={handleAuth} className="flex flex-col gap-2 text-left">
-                {!isLoginMode && <input type="text" placeholder="Your Name" value={name} onChange={(e) => setName(e.target.value)} required className="w-full rounded-[10px] border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-[0.85rem] text-[var(--sd-ink)] outline-none" />}
-                <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full rounded-[10px] border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-[0.85rem] text-[var(--sd-ink)] outline-none" />
-                <input type="password" placeholder="Password (min 8 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className="w-full rounded-[10px] border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-[0.85rem] text-[var(--sd-ink)] outline-none" />
+                {!isLoginMode && <input type="text" placeholder="Your Name" value={name} onChange={(e) => setName(e.target.value)} required className="w-full rounded-[10px] border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-[0.85rem] text-[var(--text-primary)] outline-none" />}
+                <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full rounded-[10px] border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-[0.85rem] text-[var(--text-primary)] outline-none" />
+                <input type="password" placeholder="Password (min 8 chars)" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className="w-full rounded-[10px] border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-[0.85rem] text-[var(--text-primary)] outline-none" />
 
                 {error && <div className="rounded-[8px] bg-red-500/10 px-3 py-2 text-[0.78rem] font-semibold text-red-500">{error}</div>}
 
@@ -285,7 +285,7 @@ function CloudSyncView({ currentUser, setCurrentUser }) {
                 </button>
 
                 <div className="mt-1 text-center">
-                    <button type="button" onClick={() => { setIsLoginMode(!isLoginMode); setError(''); }} className="cursor-pointer border-none bg-transparent text-[0.78rem] font-semibold text-[var(--sd-ink-muted)] transition-colors duration-200 hover:text-accent">
+                    <button type="button" onClick={() => { setIsLoginMode(!isLoginMode); setError(''); }} className="cursor-pointer border-none bg-transparent text-[0.78rem] font-semibold text-[var(--text-secondary)] transition-colors duration-200 hover:text-accent">
                         {isLoginMode ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
                     </button>
                 </div>
@@ -367,7 +367,7 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                     <div className="flex flex-col gap-4 px-3 py-3">
                         {Object.entries(groupedReciters).map(([style, reciters]) => (
                             <div key={style} className="flex flex-col gap-1">
-                                <div className="px-2 pb-1 text-[0.75rem] font-bold uppercase tracking-wider text-[var(--sd-ink-muted)]">
+                                <div className="px-2 pb-1 text-[0.75rem] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                                     {style}
                                 </div>
                                 {reciters.map(reciter => (
@@ -412,29 +412,29 @@ export default function SettingsDrawer({ isOpen, onClose }) {
         <>
             <div className="fixed inset-0 z-[3000] bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-            <aside className="fixed inset-y-0 right-0 z-[3001] flex w-full max-w-[380px] flex-col bg-[var(--sd-paper)] shadow-[-8px_0_40px_rgba(0,0,0,0.1)]" aria-label="Reading settings"
-                style={{ '--sd-paper': '#F6F2E8', '--sd-ink': '#2D2D2A', '--sd-ink-muted': '#8E9B97', '--sd-bone-dark': '#DDD7C7', '--sd-gold-soft': 'rgba(198,168,124,0.15)' }}
+            <aside className="fixed inset-y-0 right-0 z-[3001] flex w-full max-w-[380px] flex-col bg-[var(--bg-surface)] shadow-[-8px_0_40px_rgba(0,0,0,0.1)]" aria-label="Reading settings"
+                
             >
                 <div className="flex shrink-0 items-center justify-between border-b border-[var(--border-color)] px-4 py-4">
                     <div className="flex items-center gap-3">
                         {activeView !== VIEWS.root && (
-                            <button type="button" onClick={() => setActiveView(VIEWS.root)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[var(--sd-ink-muted)] transition-colors duration-200 hover:bg-[var(--bg-primary)] hover:text-accent" aria-label="Back">
+                            <button type="button" onClick={() => setActiveView(VIEWS.root)} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-primary)] hover:text-accent" aria-label="Back">
                                 <ArrowLeft size={16} />
                             </button>
                         )}
                         <div>
-                            <h2 className="text-[1.1rem] font-bold text-[var(--sd-ink)]">{pickerView?.title || 'Settings'}</h2>
-                            {activeView === VIEWS.root && <p className="m-0 text-[0.75rem] text-[var(--sd-ink-muted)]">Customize your reading experience</p>}
+                            <h2 className="text-[1.1rem] font-bold text-[var(--text-primary)]">{pickerView?.title || 'Settings'}</h2>
+                            {activeView === VIEWS.root && <p className="m-0 text-[0.75rem] text-[var(--text-secondary)]">Customize your reading experience</p>}
                         </div>
                     </div>
-                    <button type="button" onClick={onClose} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-lg text-[var(--sd-ink-muted)] transition-colors duration-200 hover:bg-[var(--bg-primary)] hover:text-accent" aria-label="Close settings">✕</button>
+                    <button type="button" onClick={onClose} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-lg text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-primary)] hover:text-accent" aria-label="Close settings">✕</button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
                     {pickerView ? pickerView.content : (
                         <div className="flex flex-col gap-5 px-4 py-4">
                             <div>
-                                <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--sd-ink-muted)]">Appearance</div>
+                                <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Appearance</div>
                                 <div className="flex overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
                                     <SegmentedOption active={theme === 'light'} icon={<Sun size={15} />} label="Light" onClick={() => theme !== 'light' && toggleTheme()} />
                                     <SegmentedOption active={theme === 'dark'} icon={<Moon size={15} />} label="Dark" onClick={() => theme !== 'dark' && toggleTheme()} />
@@ -442,7 +442,7 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                             </div>
 
                             <div>
-                                <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--sd-ink-muted)]">Essentials</div>
+                                <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Essentials</div>
                                 <div className="overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
                                     <SelectionRow label="Mushaf" value={mushaf.name} onClick={() => setActiveView(VIEWS.mushaf)} />
                                     <SelectionRow label="Translation" value={selectedTranslation?.name} onClick={() => setActiveView(VIEWS.translation)} />
@@ -452,10 +452,10 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                                     <div className="border-t border-[var(--border-color)] px-4 py-3">
                                         <div className="mb-2 flex items-center justify-between">
                                             <div>
-                                                <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]">Arabic Size</div>
-                                                <div className="text-[0.72rem] text-[var(--sd-ink-muted)]">Adjust Quran text size</div>
+                                                <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">Arabic Size</div>
+                                                <div className="text-[0.72rem] text-[var(--text-secondary)]">Adjust Quran text size</div>
                                             </div>
-                                            <span className="text-[0.85rem] font-semibold text-[var(--sd-ink-muted)]"><Type size={13} className="mr-1 inline align-text-bottom" />{fontSize}</span>
+                                            <span className="text-[0.85rem] font-semibold text-[var(--text-secondary)]"><Type size={13} className="mr-1 inline align-text-bottom" />{fontSize}</span>
                                         </div>
                                         <input type="range" min="1" max="8" step="1" value={fontSize}
                                             onChange={(e) => setFontSize(Number(e.target.value))}
@@ -466,7 +466,7 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                             </div>
 
                             <div>
-                                <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--sd-ink-muted)]">Reading</div>
+                                <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Reading</div>
                                 <div className="overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
                                     <ToggleRow
                                         label="Tajweed"
@@ -477,10 +477,10 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                                     />
                                     <button type="button" onClick={() => setShowAdvanced(v => !v)} aria-expanded={showAdvanced} className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-3 text-left transition-colors duration-200 hover:bg-[var(--bg-primary)]">
                                         <div className="min-w-0 flex-1">
-                                            <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]">Advanced</div>
-                                            <div className="text-[0.72rem] text-[var(--sd-ink-muted)]">Arabic font, tafsir, offline & audio</div>
+                                            <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">Advanced</div>
+                                            <div className="text-[0.72rem] text-[var(--text-secondary)]">Arabic font, tafsir, offline & audio</div>
                                         </div>
-                                        <ChevronDown size={16} className={`shrink-0 text-[var(--sd-ink-muted)] transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
+                                        <ChevronDown size={16} className={`shrink-0 text-[var(--text-secondary)] transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
                                     </button>
                                 </div>
                             </div>
@@ -488,17 +488,17 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                             {showAdvanced && (
                                 <>
                                     <div>
-                                        <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--sd-ink-muted)]">Advanced Reading</div>
+                                        <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Advanced Reading</div>
                                         <div className="overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
                                             <SelectionRow label="Arabic Font" value={selectedFont?.name || 'Default'} onClick={() => setActiveView(VIEWS.arabicFont)} />
                                             <SelectionRow label="Tafsir" value={selectedTafsir ? `${selectedTafsir.name}` : ''} onClick={() => setActiveView(VIEWS.tafsir)} />
                                             <div className="border-t border-[var(--border-color)] px-4 py-3">
                                                 <div className="mb-2 flex items-center justify-between">
                                                     <div>
-                                                        <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]">Translation Size</div>
-                                                        <div className="text-[0.72rem] text-[var(--sd-ink-muted)]">Subtle or more readable</div>
+                                                        <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">Translation Size</div>
+                                                        <div className="text-[0.72rem] text-[var(--text-secondary)]">Subtle or more readable</div>
                                                     </div>
-                                                    <span className="text-[0.85rem] font-semibold text-[var(--sd-ink-muted)]">{translationFontSize || 2}</span>
+                                                    <span className="text-[0.85rem] font-semibold text-[var(--text-secondary)]">{translationFontSize || 2}</span>
                                                 </div>
                                                 <input type="range" min="1" max="8" step="1" value={translationFontSize || 2}
                                                     onChange={(e) => setTranslationFontSize(Number(e.target.value))}
@@ -509,12 +509,12 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                                     </div>
 
                                     <div>
-                                        <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--sd-ink-muted)]">Audio</div>
+                                        <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Audio</div>
                                         <div className="rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)] px-4 py-4">
-                                            <div className="text-[0.9rem] font-medium text-[var(--sd-ink)]">Local Offline Audio</div>
-                                            <div className="mb-3 text-[0.72rem] text-[var(--sd-ink-muted)]">Connect a folder of ayah MP3 files for native offline playback.</div>
+                                            <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">Local Offline Audio</div>
+                                            <div className="mb-3 text-[0.72rem] text-[var(--text-secondary)]">Connect a folder of ayah MP3 files for native offline playback.</div>
                                             <button type="button" onClick={handleSelectAudioFolder} className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] border-2 px-4 py-[10px] text-[0.82rem] font-bold transition-all duration-200 ${
-                                                localAudioDirHandle ? 'border-green-500 bg-green-50 text-green-600' : 'border-[var(--border-color)] bg-transparent text-[var(--sd-ink)] hover:bg-[var(--bg-secondary)]'
+                                                localAudioDirHandle ? 'border-green-500 bg-green-50 text-green-600' : 'border-[var(--border-color)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
                                             }`}>
                                                 {localAudioDirHandle ? <CheckCircle size={16} /> : <FolderOpen size={16} />}
                                                 {localAudioDirHandle ? 'Folder Connected' : 'Choose Audio Folder'}
@@ -523,14 +523,14 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                                     </div>
 
                                     <div>
-                                        <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--sd-ink-muted)]">Offline</div>
+                                        <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Offline</div>
                                         <div className="rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)] px-4 py-4">
                                             <div className="mb-3 flex items-start justify-between">
                                                 <div>
-                                                    <div className="flex items-center gap-1 text-[0.9rem] font-medium text-[var(--sd-ink)]">
+                                                    <div className="flex items-center gap-1 text-[0.9rem] font-medium text-[var(--text-primary)]">
                                                         <HardDrive size={14} /> Offline Library
                                                     </div>
-                                                    <div className="text-[0.72rem] text-[var(--sd-ink-muted)]">Manage downloadable Quran packs.</div>
+                                                    <div className="text-[0.72rem] text-[var(--text-secondary)]">Manage downloadable Quran packs.</div>
                                                 </div>
                                                 <div className={`flex shrink-0 items-center gap-1 rounded-[6px] px-2 py-1 text-[0.65rem] font-semibold ${
                                                     navigator.onLine ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
@@ -542,12 +542,12 @@ export default function SettingsDrawer({ isOpen, onClose }) {
 
                                             <div className="mb-3 flex gap-2">
                                                 <div className="flex-1 rounded-[8px] bg-[var(--bg-secondary)] px-3 py-2">
-                                                    <div className="text-[0.65rem] font-medium text-[var(--sd-ink-muted)]">Quran text</div>
-                                                    <div className="text-[0.82rem] font-semibold text-[var(--sd-ink)]">{offlineStats?.quranText?.downloaded ? offlineStats.quranText.sizeLabel : 'Not downloaded'}</div>
+                                                    <div className="text-[0.65rem] font-medium text-[var(--text-secondary)]">Quran text</div>
+                                                    <div className="text-[0.82rem] font-semibold text-[var(--text-primary)]">{offlineStats?.quranText?.downloaded ? offlineStats.quranText.sizeLabel : 'Not downloaded'}</div>
                                                 </div>
                                                 <div className="flex-1 rounded-[8px] bg-[var(--bg-secondary)] px-3 py-2">
-                                                    <div className="text-[0.65rem] font-medium text-[var(--sd-ink-muted)]">Tajweed</div>
-                                                    <div className="text-[0.82rem] font-semibold text-[var(--sd-ink)]">{offlineStats?.tajweed?.downloaded ? offlineStats.tajweed.sizeLabel : 'Not downloaded'}</div>
+                                                    <div className="text-[0.65rem] font-medium text-[var(--text-secondary)]">Tajweed</div>
+                                                    <div className="text-[0.82rem] font-semibold text-[var(--text-primary)]">{offlineStats?.tajweed?.downloaded ? offlineStats.tajweed.sizeLabel : 'Not downloaded'}</div>
                                                 </div>
                                             </div>
 
@@ -560,7 +560,7 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                             )}
 
                             <div className="py-4 text-center">
-                                <a href="https://iredox.tech" target="_blank" rel="noopener noreferrer" className="text-[0.72rem] text-[var(--sd-ink-muted)] no-underline transition-colors duration-200 hover:text-accent">built by iredox.tech</a>
+                                <a href="https://iredox.tech" target="_blank" rel="noopener noreferrer" className="text-[0.72rem] text-[var(--text-secondary)] no-underline transition-colors duration-200 hover:text-accent">built by iredox.tech</a>
                             </div>
                         </div>
                     )}
