@@ -1,9 +1,9 @@
 import { databases, databaseId, account } from './appwrite';
 import { Query, ID } from 'appwrite';
 
-const GROUPS_COLLECTION = 'sauka_groups';
-const ASSIGNMENTS_COLLECTION = 'sauka_assignments';
-const COMMENTS_COLLECTION = 'sauka_comments';
+export const GROUPS_COLLECTION = 'sauka_groups';
+export const ASSIGNMENTS_COLLECTION = 'sauka_assignments';
+export const COMMENTS_COLLECTION = 'sauka_comments';
 
 function generateJoinCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -154,6 +154,16 @@ export const saukaService = {
         return await databases.updateDocument(databaseId, ASSIGNMENTS_COLLECTION, assignmentId, {
             claimedBy: user.$id,
             claimedByName: user.name || 'Unknown',
+            status: 'in_progress',
+            claimedAt: new Date().toISOString(),
+        });
+    },
+
+    // ─── Direct Assign (Guest Claim) ───
+    async assignGuest(assignmentId, guestName) {
+        return await databases.updateDocument(databaseId, ASSIGNMENTS_COLLECTION, assignmentId, {
+            claimedBy: `guest_${Date.now()}`,
+            claimedByName: guestName,
             status: 'in_progress',
             claimedAt: new Date().toISOString(),
         });

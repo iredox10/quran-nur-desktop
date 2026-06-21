@@ -58,6 +58,8 @@ export default function Page() {
         setIsSaukaCompleting(true);
         try {
             await saukaService.completeJuz(saukaAssignmentId, backToSauka);
+            // Clear progress on completion
+            localStorage.removeItem(`sauka_progress_${saukaAssignmentId}`);
             navigate(`/sauka/${backToSauka}`);
         } catch (e) {
             console.error(e);
@@ -65,6 +67,13 @@ export default function Page() {
             setIsSaukaCompleting(false);
         }
     };
+
+    // Save Sauka Progress
+    useEffect(() => {
+        if (backToSauka && saukaAssignmentId) {
+            localStorage.setItem(`sauka_progress_${saukaAssignmentId}`, pageNumber.toString());
+        }
+    }, [pageNumber, backToSauka, saukaAssignmentId]);
 
     // App State
     const {

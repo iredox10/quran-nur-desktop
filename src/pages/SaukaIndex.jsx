@@ -88,7 +88,7 @@ export default function SaukaIndex() {
     const allGroups = [...groups.created, ...groups.joined].sort((a, b) => new Date(b.$createdAt) - new Date(a.$createdAt));
 
     return (
-        <div className="mx-auto max-w-[800px] pb-24 pt-4">
+        <div className="mx-auto max-w-[800px] px-4 sm:px-6 pb-24 pt-4">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                 {/* ── Header ── */}
                 <button 
