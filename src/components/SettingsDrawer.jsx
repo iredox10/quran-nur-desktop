@@ -314,7 +314,7 @@ export default function SettingsDrawer({ isOpen, onClose }) {
     const isTajweedActive = isTajweedEnabledForMushaf(mushafId, tajweedEnabled);
 
     const [activeView, setActiveView] = useState(VIEWS.root);
-    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [activeTab, setActiveTab] = useState('general');
 
     useEffect(() => {
         if (isOpen) setTimeout(() => setActiveView(VIEWS.root), 0);
@@ -433,71 +433,71 @@ export default function SettingsDrawer({ isOpen, onClose }) {
 
                 <div className="flex-1 overflow-y-auto">
                     {pickerView ? pickerView.content : (
-                        <div className="flex flex-col gap-5 px-4 py-4">
-                            <div>
-                                <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Appearance</div>
-                                <div className="flex overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
-                                    <SegmentedOption active={theme === 'light'} icon={<Sun size={15} />} label="Light" onClick={() => theme !== 'light' && toggleTheme()} />
-                                    <SegmentedOption active={theme === 'dark'} icon={<Moon size={15} />} label="Dark" onClick={() => theme !== 'dark' && toggleTheme()} />
-                                </div>
+                        <div className="flex flex-col gap-4 px-4 py-4">
+                            <div className="flex overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
+                                <SegmentedOption active={activeTab === 'general'} label="General" onClick={() => setActiveTab('general')} />
+                                <SegmentedOption active={activeTab === 'reading'} label="Reading" onClick={() => setActiveTab('reading')} />
+                                <SegmentedOption active={activeTab === 'data'} label="Data" onClick={() => setActiveTab('data')} />
                             </div>
 
-                            <div>
-                                <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Essentials</div>
-                                <div className="overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
-                                    <SelectionRow label="Mushaf" value={mushaf.name} onClick={() => setActiveView(VIEWS.mushaf)} />
-                                    <SelectionRow label="Translation" value={selectedTranslation?.name} onClick={() => setActiveView(VIEWS.translation)} />
-                                    <SelectionRow label="Reciter" value={selectedReciter?.name} onClick={() => setActiveView(VIEWS.reciter)} />
-                                    <SelectionRow label="Cloud Sync" hint={currentUser ? `Signed in as ${currentUser.name || currentUser.email}` : 'Backup your progress'} onClick={() => setActiveView(VIEWS.sync)} />
-
-                                    <div className="border-t border-[var(--border-color)] px-4 py-3">
-                                        <div className="mb-2 flex items-center justify-between">
-                                            <div>
-                                                <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">Arabic Size</div>
-                                                <div className="text-[0.72rem] text-[var(--text-secondary)]">Adjust Quran text size</div>
-                                            </div>
-                                            <span className="text-[0.85rem] font-semibold text-[var(--text-secondary)]"><Type size={13} className="mr-1 inline align-text-bottom" />{fontSize}</span>
+                            {activeTab === 'general' && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <div>
+                                        <div className="mb-2 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Appearance</div>
+                                        <div className="flex overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
+                                            <SegmentedOption active={theme === 'light'} icon={<Sun size={15} />} label="Light" onClick={() => theme !== 'light' && toggleTheme()} />
+                                            <SegmentedOption active={theme === 'dark'} icon={<Moon size={15} />} label="Dark" onClick={() => theme !== 'dark' && toggleTheme()} />
                                         </div>
-                                        <input type="range" min="1" max="8" step="1" value={fontSize}
-                                            onChange={(e) => setFontSize(Number(e.target.value))}
-                                            className="w-full cursor-pointer outline-none"
-                                            style={{ accentColor: 'var(--accent-primary)' }} aria-label="Arabic font size" />
+                                    </div>
+
+                                    <div>
+                                        <div className="mb-2 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Essentials</div>
+                                        <div className="overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
+                                            <SelectionRow label="Mushaf" value={mushaf.name} onClick={() => setActiveView(VIEWS.mushaf)} />
+                                            <SelectionRow label="Translation" value={selectedTranslation?.name} onClick={() => setActiveView(VIEWS.translation)} />
+                                            <SelectionRow label="Reciter" value={selectedReciter?.name} onClick={() => setActiveView(VIEWS.reciter)} />
+                                            <SelectionRow label="Cloud Sync" hint={currentUser ? `Signed in as ${currentUser.name || currentUser.email}` : 'Backup your progress'} onClick={() => setActiveView(VIEWS.sync)} />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
-                            <div>
-                                <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Reading</div>
-                                <div className="overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
-                                    <ToggleRow
-                                        label="Tajweed"
-                                        hint={mushaf.supportsTajweedToggle ? 'Color cues for pronunciation' : 'Not available for this Mushaf'}
-                                        checked={isTajweedActive}
-                                        disabled={!mushaf.supportsTajweedToggle}
-                                        onToggle={() => setTajweed(!tajweedEnabled)}
-                                    />
-                                    <button type="button" onClick={() => setShowAdvanced(v => !v)} aria-expanded={showAdvanced} className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent px-4 py-3 text-left transition-colors duration-200 hover:bg-[var(--bg-primary)]">
-                                        <div className="min-w-0 flex-1">
-                                            <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">Advanced</div>
-                                            <div className="text-[0.72rem] text-[var(--text-secondary)]">Arabic font, tafsir, offline & audio</div>
-                                        </div>
-                                        <ChevronDown size={16} className={`shrink-0 text-[var(--text-secondary)] transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {showAdvanced && (
-                                <>
+                            {activeTab === 'reading' && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                     <div>
-                                        <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Advanced Reading</div>
+                                        <div className="mb-2 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Text Preferences</div>
                                         <div className="overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
                                             <SelectionRow label="Arabic Font" value={selectedFont?.name || 'Default'} onClick={() => setActiveView(VIEWS.arabicFont)} />
                                             <SelectionRow label="Tafsir" value={selectedTafsir ? `${selectedTafsir.name}` : ''} onClick={() => setActiveView(VIEWS.tafsir)} />
+                                            <ToggleRow
+                                                label="Tajweed"
+                                                hint={mushaf.supportsTajweedToggle ? 'Color cues for pronunciation' : 'Not available for this Mushaf'}
+                                                checked={isTajweedActive}
+                                                disabled={!mushaf.supportsTajweedToggle}
+                                                onToggle={() => setTajweed(!tajweedEnabled)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="mb-2 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Sizes</div>
+                                        <div className="overflow-hidden rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)]">
+                                            <div className="px-4 py-3">
+                                                <div className="mb-2 flex items-center justify-between">
+                                                    <div>
+                                                        <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">Arabic Size</div>
+                                                    </div>
+                                                    <span className="text-[0.85rem] font-semibold text-[var(--text-secondary)]"><Type size={13} className="mr-1 inline align-text-bottom" />{fontSize}</span>
+                                                </div>
+                                                <input type="range" min="1" max="8" step="1" value={fontSize}
+                                                    onChange={(e) => setFontSize(Number(e.target.value))}
+                                                    className="w-full cursor-pointer outline-none"
+                                                    style={{ accentColor: 'var(--accent-primary)' }} aria-label="Arabic font size" />
+                                            </div>
                                             <div className="border-t border-[var(--border-color)] px-4 py-3">
                                                 <div className="mb-2 flex items-center justify-between">
                                                     <div>
                                                         <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">Translation Size</div>
-                                                        <div className="text-[0.72rem] text-[var(--text-secondary)]">Subtle or more readable</div>
                                                     </div>
                                                     <span className="text-[0.85rem] font-semibold text-[var(--text-secondary)]">{translationFontSize || 2}</span>
                                                 </div>
@@ -508,9 +508,13 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            )}
 
+                            {activeTab === 'data' && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                     <div>
-                                        <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Audio</div>
+                                        <div className="mb-2 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Local Audio</div>
                                         <div className="rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)] px-4 py-4">
                                             <div className="text-[0.9rem] font-medium text-[var(--text-primary)]">Local Offline Audio</div>
                                             <div className="mb-3 text-[0.72rem] text-[var(--text-secondary)]">Connect a folder of ayah MP3 files for native offline playback.</div>
@@ -524,7 +528,7 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                                     </div>
 
                                     <div>
-                                        <div className="mb-3 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Offline</div>
+                                        <div className="mb-2 px-1 text-[0.72rem] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">Offline Downloads</div>
                                         <div className="rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-primary)] px-4 py-4">
                                             <div className="mb-3 flex items-start justify-between">
                                                 <div>
@@ -557,12 +561,11 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                                             </button>
                                         </div>
                                     </div>
-                                </>
+                                    <div className="py-2 text-center">
+                                        <a href="https://iredox.tech" target="_blank" rel="noopener noreferrer" className="text-[0.72rem] text-[var(--text-secondary)] no-underline transition-colors duration-200 hover:text-accent">built by iredox.tech</a>
+                                    </div>
+                                </div>
                             )}
-
-                            <div className="py-4 text-center">
-                                <a href="https://iredox.tech" target="_blank" rel="noopener noreferrer" className="text-[0.72rem] text-[var(--text-secondary)] no-underline transition-colors duration-200 hover:text-accent">built by iredox.tech</a>
-                            </div>
                         </div>
                     )}
                 </div>
