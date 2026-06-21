@@ -354,7 +354,7 @@ html[data-theme='dark'] tajweed:hover {
 .tajweed-text tajweed.ghunnah { color: #FF7E1E; }
 .tajweed-text tajweed.slnt,
 .tajweed-text tajweed.silent { color: #AAAAAA; }
-.tajweed-text span.end { color: var(--accent-primary); font-size: 0.7em; }
+.tajweed-text span.end { color: var(--accent-primary); }
 
 @keyframes tajweedFadeIn {
   from { opacity: 0; transform: translateY(-100%) scale(0.95); }
