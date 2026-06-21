@@ -50,6 +50,7 @@ export default function Profile() {
     const [isLoading, setIsLoading] = useState(true);
     const [syncStatus, setSyncStatus] = useState(null);
     const [authError, setAuthError] = useState('');
+    const [authSuccess, setAuthSuccess] = useState('');
     const [showAuthForm, setShowAuthForm] = useState(false);
     const [showGoalPicker, setShowGoalPicker] = useState(false);
 
@@ -67,9 +68,15 @@ export default function Profile() {
     };
 
     const handleAuth = async (e) => {
-        e.preventDefault(); setIsLoading(true); setAuthError('');
+        e.preventDefault(); setIsLoading(true); setAuthError(''); setAuthSuccess('');
         try {
             if (authMode === 'register') { await authService.register(email, password, name); await authService.login(email, password); }
+            else if (authMode === 'forgot') {
+                await authService.sendPasswordRecovery(email, window.location.origin + '/profile');
+                setAuthSuccess('Recovery email sent. Check your inbox.');
+                setIsLoading(false);
+                return;
+            }
             else { await authService.login(email, password); }
             await checkUser(); setEmail(''); setPassword(''); setName(''); setShowAuthForm(false);
         } catch (err) { setAuthError(err.message || 'Authentication failed'); }
@@ -201,7 +208,7 @@ export default function Profile() {
                                 <div className="mt-4 flex flex-wrap gap-2 pt-2 border-t-[1.5px] border-[var(--h-bone-dark)]">
                                     {GOAL_OPTIONS.map(mins => (
                                         <button key={mins} onClick={() => { setDailyReadingGoal(mins); setShowGoalPicker(false); }}
-                                            className={`rounded-full px-4 py-1.5 font-mono text-[0.65rem] uppercase tracking-wider font-semibold transition-all ${goalMins === mins ? 'bg-[var(--accent-primary)] text-[var(--bg-main)] shadow-[0_0_10px_var(--accent-light)]' : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--h-bone)] hover:text-[var(--text-primary)] border-[1.5px] border-[var(--h-bone-dark)]'}`}>
+                                            className={`rounded-full px-4 py-1.5 font-mono text-[0.65rem] uppercase tracking-wider font-semibold transition-all ${goalMins === mins ? 'bg-[var(--accent-primary)] text-[var(--bg-primary)] shadow-[0_0_10px_var(--accent-light)]' : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--h-bone)] hover:text-[var(--text-primary)] border-[1.5px] border-[var(--h-bone-dark)]'}`}>
                                             {mins}m
                                         </button>
                                     ))}
@@ -306,22 +313,34 @@ export default function Profile() {
                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                                         <form onSubmit={handleAuth} className="mt-5 space-y-3 border-t-[1.5px] border-[var(--h-bone-dark)] pt-5">
                                             {authError && <div className="rounded-[12px] bg-red-500/10 px-4 py-3 text-[0.8rem] font-bold text-red-500 border border-red-500/20">{authError}</div>}
+                                            {authSuccess && <div className="rounded-[12px] bg-green-500/10 px-4 py-3 text-[0.8rem] font-bold text-green-600 border border-green-500/20">{authSuccess}</div>}
                                             {authMode === 'register' && (
                                                 <input type="text" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)}
                                                     className="w-full rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" required />
                                             )}
                                             <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
                                                 className="w-full rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" required />
-                                            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-                                                className="w-full rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" minLength={8} required />
+                                            {authMode !== 'forgot' && (
+                                                <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+                                                    className="w-full rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] px-4 py-3 text-[0.9rem] text-[var(--text-primary)] outline-none focus:border-[var(--accent-primary)] transition-colors" minLength={8} required />
+                                            )}
                                             <button type="submit" disabled={isLoading}
-                                                className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-[var(--text-primary)] py-3 text-[0.9rem] font-bold text-[var(--bg-main)] hover:scale-[0.98] transition-transform disabled:opacity-50 mt-2">
-                                                {isLoading ? <Loader2 size={18} className="animate-spin" /> : (authMode === 'login' ? 'Sign In' : 'Create Account')}
+                                                className="flex w-full items-center justify-center gap-2 rounded-[16px] bg-[var(--text-primary)] py-3 text-[0.9rem] font-bold text-[var(--bg-primary)] hover:scale-[0.98] transition-transform disabled:opacity-50 mt-2">
+                                                {isLoading ? <Loader2 size={18} className="animate-spin" /> : (authMode === 'login' ? 'Sign In' : authMode === 'register' ? 'Create Account' : 'Send Recovery Link')}
                                             </button>
-                                            <button type="button" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}
-                                                className="w-full bg-transparent text-center text-[0.8rem] font-bold text-[var(--text-secondary)] hover:text-[var(--accent-primary)] pt-2">
-                                                {authMode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
-                                            </button>
+                                            
+                                            <div className="flex flex-col items-center gap-3 mt-4">
+                                                <button type="button" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); setAuthSuccess(''); }}
+                                                    className="text-[0.8rem] font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
+                                                    {authMode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                                                </button>
+                                                {authMode !== 'forgot' && (
+                                                    <button type="button" onClick={() => { setAuthMode('forgot'); setAuthError(''); setAuthSuccess(''); }}
+                                                        className="text-[0.75rem] font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] underline underline-offset-2">
+                                                        Forgot Password?
+                                                    </button>
+                                                )}
+                                            </div>
                                         </form>
                                     </motion.div>
                                 )}
@@ -352,7 +371,7 @@ export default function Profile() {
                                 <button onClick={handlePullSync} disabled={!!syncStatus} className="flex flex-1 items-center justify-center gap-2 rounded-[16px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-white)] py-3 text-[0.85rem] font-bold text-[var(--text-primary)] hover:bg-[var(--h-bone)] transition-colors disabled:opacity-50">
                                     <CloudDownload size={16} /> Restore
                                 </button>
-                                <button onClick={handlePushSync} disabled={!!syncStatus} className="flex flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--text-primary)] py-3 text-[0.85rem] font-bold text-[var(--bg-main)] hover:scale-[0.98] transition-transform disabled:opacity-50">
+                                <button onClick={handlePushSync} disabled={!!syncStatus} className="flex flex-1 items-center justify-center gap-2 rounded-[16px] bg-[var(--text-primary)] py-3 text-[0.85rem] font-bold text-[var(--bg-primary)] hover:scale-[0.98] transition-transform disabled:opacity-50">
                                     <CloudUpload size={16} /> Backup
                                 </button>
                             </div>

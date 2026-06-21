@@ -31,6 +31,9 @@ export const authService = {
     async register(email, password, name) {
         return await account.create('unique()', email, password, name);
     },
+    async sendPasswordRecovery(email, url) {
+        return await account.createRecovery(email, url);
+    },
     async logout() {
         return await account.deleteSession('current');
     }

@@ -307,7 +307,7 @@ export default function Progress() {
                         <BookOpen size={48} className="mx-auto mb-5 text-[var(--accent-primary)]/60" />
                         <h3 className="mb-3 font-ui text-[1.4rem] font-bold text-[var(--text-primary)]">Start Your Journey</h3>
                         <p className="mx-auto max-w-[420px] text-[0.95rem] leading-[1.6] text-[var(--text-secondary)] mb-6">Your reading and memorization activity will beautifully visualize here as you use the app.</p>
-                        <Link to="/" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--text-primary)] text-[var(--bg-main)] font-ui font-bold text-[0.9rem] transition-transform hover:scale-105 active:scale-95">
+                        <Link to="/" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--text-primary)] text-[var(--bg-primary)] font-ui font-bold text-[0.9rem] transition-transform hover:scale-105 active:scale-95">
                             Open Quran
                         </Link>
                     </div>
@@ -543,7 +543,7 @@ export default function Progress() {
                     ].map((item, i) => (
                         <Link to={item.route} key={i} className="group rounded-[24px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-5 md:p-6 flex items-center justify-between transition-all hover:border-[var(--accent-hover)] hover:-translate-y-1 hover:shadow-[0_4px_20px_rgba(198,168,124,0.15)]">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-[var(--bg-surface)] flex items-center justify-center text-[var(--text-primary)] group-hover:bg-[var(--accent-primary)] group-hover:text-[var(--bg-main)] transition-colors">
+                                <div className="w-12 h-12 rounded-xl bg-[var(--bg-surface)] flex items-center justify-center text-[var(--text-primary)] group-hover:bg-[var(--accent-primary)] group-hover:text-[var(--bg-primary)] transition-colors">
                                     <item.icon size={20} />
                                 </div>
                                 <div>

@@ -222,35 +222,7 @@ const VerseRow = ({
                     {verse.translations?.[0]?.text?.replace(/<[^>]*>?/gm, '')}
                 </div>
 
-                <AnimatePresence>
-                    {activeTafsir?.verse_key === verse.verse_key && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            style={{ overflow: 'hidden' }}
-                        >
-                            <div className="relative mt-6 rounded-xl bg-[var(--bg-secondary)] p-6"
-                                style={{ borderLeft: '4px solid var(--accent-primary)' }}
-                            >
-                                <button
-                                    onClick={() => setActiveTafsir(null)}
-                                    className="absolute right-4 top-4 cursor-pointer border-none bg-transparent text-[var(--text-muted)]"
-                                >
-                                    <X size={18} />
-                                </button>
-                                <h4 className="mb-4 text-[1.1rem] font-semibold text-[var(--text-primary)]">
-                                    📖 {TAFSIR_NAMES[tafsirId] || 'Tafsir'}
-                                </h4>
-                                <div
-                                    className="tafsir-content quran-tafsir-html"
-                                    style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.8 }}
-                                    dangerouslySetInnerHTML={{ __html: activeTafsir.text }}
-                                />
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+
 
                 <AnimatePresence>
                     {showCollectionModal && (
