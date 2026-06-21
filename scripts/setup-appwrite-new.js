@@ -123,6 +123,7 @@ async function setup() {
                         console.log(`Attribute ${attr.key} already exists.`);
                     } else {
                         console.error(`Error creating attribute ${attr.key}:`, e.message);
+                        throw e;
                     }
                 }
             }
@@ -130,6 +131,7 @@ async function setup() {
         console.log("\nSetup complete! All databases and collections are ready.");
     } catch (error) {
         console.error("Setup failed:", error);
+        process.exit(1);
     }
 }
 
