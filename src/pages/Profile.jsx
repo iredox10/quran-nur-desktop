@@ -12,9 +12,13 @@ import { authService, syncService } from '../services/appwrite';
 import { RECITERS } from '../config/reciters';
 
 const TRANSLATIONS = [
-    { id: 85, name: 'Abdel Haleem' }, { id: 20, name: 'Saheeh Intl' },
-    { id: 22, name: 'Yusuf Ali' }, { id: 84, name: 'Mufti Taqi Usmani' },
-    { id: 32, name: 'Abubakar Gumi' }, { id: 234, name: 'Jalandhari' },
+    { id: 85, name: 'English - M.A.S. Abdel Haleem' },
+    { id: 131, name: 'English - Dr. Mustafa Khattab' },
+    { id: 20, name: 'English - Saheeh International' },
+    { id: 22, name: 'English - A. Yusuf Ali' },
+    { id: 84, name: 'English - Mufti Taqi Usmani' },
+    { id: 32, name: 'Hausa - Abubakar Mahmoud Gumi' },
+    { id: 234, name: 'Urdu - Fatah Muhammad Jalandhari' }
 ];
 const GOAL_OPTIONS = [10, 15, 20, 30, 45, 60];
 
