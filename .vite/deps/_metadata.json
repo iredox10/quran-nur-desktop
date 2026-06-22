@@ -1,0 +1,118 @@
+{
+  "hash": "c76ad809",
+  "configHash": "d2e0d181",
+  "lockfileHash": "eeb6e94d",
+  "browserHash": "765d6068",
+  "optimized": {
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "81547237",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "1bd4fe2e",
+      "needsInterop": true
+    },
+    "@tanstack/react-query": {
+      "src": "../../node_modules/@tanstack/react-query/build/modern/index.js",
+      "file": "@tanstack_react-query.js",
+      "fileHash": "72e804fb",
+      "needsInterop": false
+    },
+    "react-helmet-async": {
+      "src": "../../node_modules/react-helmet-async/lib/index.esm.js",
+      "file": "react-helmet-async.js",
+      "fileHash": "9b65a486",
+      "needsInterop": false
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.mjs",
+      "file": "react-router-dom.js",
+      "fileHash": "39fa864f",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "90863105",
+      "needsInterop": false
+    },
+    "framer-motion": {
+      "src": "../../node_modules/framer-motion/dist/es/index.mjs",
+      "file": "framer-motion.js",
+      "fileHash": "f38622e8",
+      "needsInterop": false
+    },
+    "ts-fsrs": {
+      "src": "../../node_modules/ts-fsrs/dist/index.mjs",
+      "file": "ts-fsrs.js",
+      "fileHash": "16007485",
+      "needsInterop": false
+    },
+    "react-intersection-observer": {
+      "src": "../../node_modules/react-intersection-observer/dist/index.mjs",
+      "file": "react-intersection-observer.js",
+      "fileHash": "9247314d",
+      "needsInterop": false
+    },
+    "react-swipeable": {
+      "src": "../../node_modules/react-swipeable/es/index.js",
+      "file": "react-swipeable.js",
+      "fileHash": "c94dc921",
+      "needsInterop": false
+    },
+    "recharts": {
+      "src": "../../node_modules/recharts/es6/index.js",
+      "file": "recharts.js",
+      "fileHash": "c91393f6",
+      "needsInterop": false
+    },
+    "canvas-confetti": {
+      "src": "../../node_modules/canvas-confetti/dist/confetti.module.mjs",
+      "file": "canvas-confetti.js",
+      "fileHash": "ed8af735",
+      "needsInterop": false
+    },
+    "zustand": {
+      "src": "../../node_modules/zustand/esm/index.mjs",
+      "file": "zustand.js",
+      "fileHash": "e0e8b683",
+      "needsInterop": false
+    },
+    "zustand/middleware": {
+      "src": "../../node_modules/zustand/esm/middleware.mjs",
+      "file": "zustand_middleware.js",
+      "fileHash": "b3d6197e",
+      "needsInterop": false
+    },
+    "axios": {
+      "src": "../../node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "1a140aeb",
+      "needsInterop": false
+    },
+    "appwrite": {
+      "src": "../../node_modules/appwrite/dist/esm/sdk.js",
+      "file": "appwrite.js",
+      "fileHash": "d24d559a",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-AU2MKR2E": {
+      "file": "chunk-AU2MKR2E.js"
+    },
+    "chunk-7WO645K6": {
+      "file": "chunk-7WO645K6.js"
+    },
+    "chunk-VX2H6PUQ": {
+      "file": "chunk-VX2H6PUQ.js"
+    },
+    "chunk-G3PMV62Z": {
+      "file": "chunk-G3PMV62Z.js"
+    }
+  }
+}

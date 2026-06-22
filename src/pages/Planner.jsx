@@ -15,7 +15,7 @@ import {
     getAssignmentProgress,
     getAssignmentStatus,
     addDays,
-    redistributeMissedAssignments,
+
     adjustPlannerPace,
     getDifficultyIndicators,
     PLAN_TEMPLATES,
