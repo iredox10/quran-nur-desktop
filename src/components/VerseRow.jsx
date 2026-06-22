@@ -111,7 +111,7 @@ const VerseRow = ({
                 <span 
                     ref={ref}
                     id={`verse-${verse.verse_key}`}
-                    className="quran-text tajweed-text"
+                    className={`quran-text tajweed-text ${wordTooltipBehavior === 'tajweed' ? 'tajweed-interactive' : ''}`}
                     style={{
                         fontSize: `clamp(${0.9 + fontSize * 0.15}rem, ${fontSize * 1.2}vw, ${fontSize * 0.4 + 1.5}rem)`,
                         fontFamily: arabicFont,
@@ -231,7 +231,7 @@ const VerseRow = ({
                 </div>
 
                 <div
-                    className="quran-text tajweed-text"
+                    className={`quran-text tajweed-text ${wordTooltipBehavior === 'tajweed' ? 'tajweed-interactive' : ''}`}
                     style={{
                         textAlign: 'right',
                         fontSize: `clamp(${0.9 + fontSize * 0.15}rem, ${fontSize * 1.2}vw, ${fontSize * 0.4 + 1.5}rem)`,

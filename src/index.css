@@ -315,16 +315,19 @@ html[data-theme='dark'] {
 
 tajweed {
   font-style: inherit;
-  cursor: pointer;
   border-radius: 4px;
   transition: background-color 0.15s ease;
 }
 
-tajweed:hover {
+.tajweed-interactive tajweed {
+  cursor: pointer;
+}
+
+.tajweed-interactive tajweed:hover {
   background-color: rgba(0, 0, 0, 0.08);
 }
 
-html[data-theme='dark'] tajweed:hover {
+html[data-theme='dark'] .tajweed-interactive tajweed:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
