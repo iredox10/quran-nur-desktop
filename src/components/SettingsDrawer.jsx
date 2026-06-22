@@ -477,14 +477,31 @@ export default function SettingsDrawer({ isOpen, onClose }) {
                                                 disabled={!mushaf.supportsTajweedToggle}
                                                 onToggle={() => setTajweed(!tajweedEnabled)}
                                             />
-                                            <SelectionRow 
-                                                label="Hover Action" 
-                                                value={wordTooltipBehavior === 'tajweed' ? 'Tajweed Rules' : wordTooltipBehavior === 'translation' ? 'Word Translation' : 'None'} 
-                                                onClick={() => {
-                                                    const next = wordTooltipBehavior === 'tajweed' ? 'translation' : wordTooltipBehavior === 'translation' ? 'none' : 'tajweed';
-                                                    setWordTooltipBehavior(next);
-                                                }} 
-                                            />
+                                            <div className="border-t border-[var(--border-color)] px-4 py-3">
+                                                <div className="mb-2 text-[0.9rem] font-medium text-[var(--text-primary)]">Word Hover Action</div>
+                                                <div className="flex overflow-hidden rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)]">
+                                                    <button
+                                                        className={`flex-1 py-1.5 text-[0.8rem] font-medium transition-colors ${wordTooltipBehavior === 'none' ? 'bg-accent text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}
+                                                        onClick={() => setWordTooltipBehavior('none')}
+                                                    >
+                                                        None
+                                                    </button>
+                                                    <div className="w-px bg-[var(--border-color)]" />
+                                                    <button
+                                                        className={`flex-1 py-1.5 text-[0.8rem] font-medium transition-colors ${wordTooltipBehavior === 'translation' ? 'bg-accent text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}
+                                                        onClick={() => setWordTooltipBehavior('translation')}
+                                                    >
+                                                        Translation
+                                                    </button>
+                                                    <div className="w-px bg-[var(--border-color)]" />
+                                                    <button
+                                                        className={`flex-1 py-1.5 text-[0.8rem] font-medium transition-colors ${wordTooltipBehavior === 'tajweed' ? 'bg-accent text-white' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}
+                                                        onClick={() => setWordTooltipBehavior('tajweed')}
+                                                    >
+                                                        Tajweed
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 

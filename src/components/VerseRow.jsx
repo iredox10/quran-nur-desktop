@@ -90,7 +90,7 @@ const VerseRow = ({
             return (
                 <span 
                     key={word.id || index} 
-                    className="word inline-block" 
+                    className={`word inline-block ${isEndMark ? 'end' : ''}`} 
                     data-word-translation={translationText}
                     style={{ cursor: wordTooltipBehavior !== 'none' && !isEndMark && translationText ? 'pointer' : 'auto', marginLeft: index < verse.words.length - 1 ? '0.3em' : '0' }}
                 >
