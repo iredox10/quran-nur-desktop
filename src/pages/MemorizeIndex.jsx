@@ -216,7 +216,7 @@ export default function MemorizeIndex() {
                         <div className="mt-1 font-mono text-[0.6rem] uppercase tracking-[0.12em] text-[var(--h-ink-muted)]">Ayahs</div>
                     </div>
                     <div className="group flex-1 rounded-[20px] border-[1.5px] border-[var(--h-bone-dark)] bg-[var(--h-cream)] p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:border-[var(--h-teal)] hover:shadow-[0_12px_32px_rgba(46,79,74,0.12)]">
-                        <div className="font-ui text-[1.8rem] font-bold leading-[1.1] text-[var(--h-ink)] transition-colors group-hover:text-[var(--h-teal)]">{totalSurahs > 0 ? Math.round((totalAyahs / 6236) * 100) : 0}<small className="text-[0.8rem] font-normal text-[var(--h-ink-muted)]">%</small></div>
+                        <div className="font-ui text-[1.8rem] font-bold leading-[1.1] text-[var(--h-ink)] transition-colors group-hover:text-[var(--h-teal)]">{totalAyahs > 0 ? Math.round((totalAyahs / 6236) * 100) : 0}<small className="text-[0.8rem] font-normal text-[var(--h-ink-muted)]">%</small></div>
                         <div className="mt-1 font-mono text-[0.6rem] uppercase tracking-[0.12em] text-[var(--h-ink-muted)]">Progress</div>
                     </div>
                 </div>
@@ -469,6 +469,85 @@ export default function MemorizeIndex() {
                         }
                         queueType={testQueueType}
                     />
+                )}
+                
+                {showSurahsModal && (
+                    <motion.div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[var(--h-ink)]/40 p-4 backdrop-blur-sm"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        onClick={e => { if (e.target === e.currentTarget) setShowSurahsModal(false); }}
+                    >
+                        <motion.div className="flex w-full max-w-[460px] max-h-[80vh] flex-col overflow-hidden rounded-[24px] bg-[var(--h-cream)] shadow-2xl border-[1px] border-[var(--glass-border)]"
+                            initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.96 }}
+                        >
+                            <div className="flex items-center justify-between border-b border-[var(--h-bone-dark)] p-6">
+                                <h3 className="font-ui text-xl font-bold text-[var(--h-ink)]">Memorized Surahs ({totalSurahs})</h3>
+                                <button className="cursor-pointer border-none bg-[var(--h-bone)] p-2 rounded-full text-[var(--h-ink-muted)] hover:bg-[var(--h-bone-dark)] transition-colors" onClick={() => setShowSurahsModal(false)}><X size={18} /></button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+                                {(memorizedSurahs || []).length > 0 ? chapters?.filter(c => (memorizedSurahs || []).includes(c.id)).map(c => (
+                                    <div key={c.id} className="flex items-center justify-between rounded-xl bg-[var(--h-white)] border border-[var(--h-bone-dark)] p-3.5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--h-green-soft)] font-mono text-sm font-bold text-[var(--h-green)]">{c.id}</div>
+                                            <div className="font-ui text-[1.05rem] font-semibold text-[var(--h-ink)]">{c.name_simple}</div>
+                                        </div>
+                                        <CheckCircle size={20} className="text-[var(--h-green)]" />
+                                    </div>
+                                )) : (
+                                    <div className="text-center p-8 text-[var(--h-ink-muted)] font-ui">No surahs memorized completely yet.</div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {showAyahsModal && (
+                    <motion.div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[var(--h-ink)]/40 p-4 backdrop-blur-sm"
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        onClick={e => { if (e.target === e.currentTarget) setShowAyahsModal(false); }}
+                    >
+                        <motion.div className="flex w-full max-w-[460px] max-h-[80vh] flex-col overflow-hidden rounded-[24px] bg-[var(--h-cream)] shadow-2xl border-[1px] border-[var(--glass-border)]"
+                            initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.96 }}
+                        >
+                            <div className="flex items-center justify-between border-b border-[var(--h-bone-dark)] p-6">
+                                <h3 className="font-ui text-xl font-bold text-[var(--h-ink)]">Memorized Ayahs ({totalAyahs})</h3>
+                                <button className="cursor-pointer border-none bg-[var(--h-bone)] p-2 rounded-full text-[var(--h-ink-muted)] hover:bg-[var(--h-bone-dark)] transition-colors" onClick={() => setShowAyahsModal(false)}><X size={18} /></button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                                {Object.keys(memorizedAyahsGrouped).length > 0 ? Object.keys(memorizedAyahsGrouped).sort((a,b) => Number(a)-Number(b)).map(surahId => {
+                                    const ch = chapters?.find(c => String(c.id) === surahId);
+                                    const ayahs = memorizedAyahsGrouped[surahId];
+                                    
+                                    let ranges = [];
+                                    let start = ayahs[0];
+                                    let prev = ayahs[0];
+                                    for(let i=1; i<=ayahs.length; i++) {
+                                        if (ayahs[i] === prev + 1) {
+                                            prev = ayahs[i];
+                                        } else {
+                                            if (start === prev) ranges.push(`${start}`);
+                                            else ranges.push(`${start}-${prev}`);
+                                            start = ayahs[i];
+                                            prev = ayahs[i];
+                                        }
+                                    }
+
+                                    return (
+                                        <div key={surahId} className="rounded-xl bg-[var(--h-white)] border border-[var(--h-bone-dark)] p-4">
+                                            <div className="mb-2 flex items-center justify-between">
+                                                <div className="font-ui text-[1.05rem] font-semibold text-[var(--h-ink)]">{ch?.name_simple || `Surah ${surahId}`}</div>
+                                                <div className="rounded-md bg-[var(--h-teal-soft)] px-2 py-0.5 text-xs font-bold text-[var(--h-teal)]">{ayahs.length} ayahs</div>
+                                            </div>
+                                            <div className="font-mono text-[0.8rem] text-[var(--h-ink-mid)] leading-relaxed">
+                                                Verses: <span className="font-semibold text-[var(--h-ink)]">{ranges.join(', ')}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                }) : (
+                                    <div className="text-center p-8 text-[var(--h-ink-muted)] font-ui">No ayahs memorized yet.</div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
                 )}
                 
                 {showGoalModal && (

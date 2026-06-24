@@ -40,8 +40,6 @@ export default function Memorization() {
 
     const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
     const [isBlurred, setIsBlurred] = useState(false);
-    const [isRecording, setIsRecording] = useState(false);
-    const [showAnalysis, setShowAnalysis] = useState(false);
     const [showTranslation, setShowTranslation] = useState(false);
     const [ayahsPerSwipe, setAyahsPerSwipe] = useState(1);
     const [isCollectionsOpen, setIsCollectionsOpen] = useState(false);
@@ -246,7 +244,7 @@ export default function Memorization() {
         const isTajweed = isTajweedActive && tajweedMap?.[verse.verse_key];
 
         if (hideMode === 'word' || hideMode === 'firstletter') {
-            const words = isTajweed ? (tajweedMap[verse.verse_key].match(/(?:<[^>]+>|\S)+/g) || []) : text.split(/\s+/);
+            const words = isTajweed ? (tajweedMap[verse.verse_key].match(/(?:<[^>]*>|[^<>\s])+/g) || []) : text.split(/\s+/);
             return (
                 <div
                     className={`quran-text ${isTajweed ? 'tajweed-text' : ''} leading-[2.2] text-center [direction:rtl] transition-all duration-300 ${isPlayingAudio && audioVerseIndex === idx ? 'text-[var(--mem-teal)]' : ''}`}
@@ -436,16 +434,6 @@ export default function Memorization() {
         };
     }, [currentVerseIndex, verses.length, ayahsPerSwipe, id, navigate]);
 
-    const handleMicToggle = () => {
-        if (isRecording) {
-            setIsRecording(false);
-            setTimeout(() => {
-                setShowAnalysis(true);
-            }, 800);
-        } else {
-            setIsRecording(true);
-        }
-    };
 
     const activeAudioVerse = currentVerses[audioVerseIndex];
     let audioUrl = activeAudioVerse?.audio?.url ? (activeAudioVerse.audio.url.startsWith('http') ? activeAudioVerse.audio.url : `https://verses.quran.com/${activeAudioVerse.audio.url}`) : null;
@@ -563,7 +551,7 @@ export default function Memorization() {
             </div>
 
             <div className={`fixed bottom-0 left-0 right-0 z-40 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] transition-all duration-[400ms] ${showUI ? '' : 'pointer-events-none translate-y-[10px] opacity-0'}`}>
-                <div className="mx-auto flex max-w-[480px] items-center justify-center gap-[0.35rem] rounded-[20px] border-[1.5px] border-[var(--mem-bone-dark)] bg-[var(--mem-white)] px-[0.85rem] py-[0.65rem] shadow-[0_-4px_30px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.03)]" style={{ position: 'relative' }}>
+                <div className="mx-auto flex w-full max-w-[480px] overflow-x-auto no-scrollbar scroll-smooth items-center justify-start sm:justify-center gap-[0.35rem] rounded-[20px] border-[1.5px] border-[var(--mem-bone-dark)] bg-[var(--mem-white)] px-[0.85rem] py-[0.65rem] shadow-[0_-4px_30px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.03)]" style={{ position: 'relative' }}>
                     <button className="flex h-[42px] w-[42px] shrink-0 cursor-pointer items-center justify-center rounded-xl border-none bg-transparent text-[var(--mem-ink-mid)] transition-all duration-150 hover:bg-[var(--mem-bone)] disabled:cursor-default disabled:opacity-25" onClick={handlePrev} disabled={currentVerseIndex === 0}><ChevronLeft size={20} /></button>
                     <button className={`flex h-[42px] w-[42px] shrink-0 cursor-pointer items-center justify-center rounded-xl border-none bg-transparent text-[var(--mem-ink-mid)] transition-all duration-150 hover:bg-[var(--mem-bone)] ${hideMode !== 'visible' ? 'bg-[var(--mem-teal-soft)] text-[var(--mem-teal)]' : ''}`} onClick={cycleHideMode}
                         title={hideMode === 'visible' ? 'Hide Text' : hideMode === 'blur' ? 'Word-by-Word' : hideMode === 'word' ? 'First Letter Hints' : 'Show All'}>
@@ -582,9 +570,6 @@ export default function Memorization() {
                         {isPlayingAudio ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" style={{ marginLeft: '2px' }} />}
                     </motion.button>
                     <div className="mx-0.5 h-6 w-px shrink-0 bg-[var(--mem-bone-dark)]" />
-                    <button className={`flex h-[42px] w-[42px] shrink-0 cursor-pointer items-center justify-center rounded-xl border-none bg-transparent transition-all duration-150 ${isRecording ? 'bg-red-100 text-red-500 hover:bg-red-200' : 'text-[var(--mem-ink-mid)] hover:bg-[var(--mem-bone)]'}`} onClick={handleMicToggle}>
-                        <Mic size={18} />
-                    </button>
                     <div className="flex h-[42px] cursor-pointer items-center gap-[0.35rem] rounded-xl border-none bg-transparent px-2 text-[0.78rem] text-[var(--mem-ink-mid)] font-[inherit]">
                         <Layers size={14} />
                         <select value={ayahsPerSwipe} onChange={(e) => {
@@ -684,35 +669,6 @@ export default function Memorization() {
                 </div>
             </div>
 
-            <AnimatePresence>
-                {showAnalysis && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(30,35,32,0.45)] backdrop-blur-sm">
-                        <motion.div className="relative w-[90%] max-w-[500px] rounded-[20px] border-[1.5px] border-[var(--mem-bone-dark)] bg-[var(--mem-white)] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
-                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 20, scale: 0.95 }}>
-                            <button className="absolute right-4 top-4 flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border-none bg-[var(--mem-bone)] text-[var(--mem-ink-mid)] transition-all duration-150 hover:bg-[var(--mem-bone-dark)]" onClick={() => setShowAnalysis(false)}><X size={18} /></button>
-                            <h3 className="mb-6 text-center text-2xl font-ui font-bold text-[var(--mem-ink)]">Analysis Results</h3>
-                            <div className="mx-auto mb-6 flex h-[100px] w-[100px] items-center justify-center rounded-full" style={{ background: 'conic-gradient(var(--mem-teal) 92%, var(--mem-bone) 0)' }}>
-                                <div className="flex h-[80px] w-[80px] flex-col items-center justify-center rounded-full bg-[var(--mem-white)]">
-                                    <span className="text-4xl font-mono font-extrabold leading-none text-[var(--mem-ink)]">92<small className="text-[1rem]">%</small></span>
-                                    <span className="font-mono text-[0.6rem] uppercase tracking-wider text-[var(--mem-ink-muted)]">Accuracy</span>
-                                </div>
-                            </div>
-                            <div className="mb-[0.6rem] flex items-start gap-3 rounded-xl border-l-[3px] border-[#dc2626] bg-[var(--mem-cream)] p-3.5">
-                                <ShieldAlert size={18} color="#dc2626" className="mt-0.5 shrink-0" />
-                                <div><div className="text-lg font-ui font-semibold text-[var(--mem-ink)]">Missed Ghunnah</div>
-                                <div className="mt-0.5 text-[0.78rem] text-[var(--mem-ink-muted)]">Verses {currentVerses.map(v => v.verse_key.split(':')[1]).join(', ')}</div></div>
-                            </div>
-                            <div className="flex items-start gap-3 rounded-xl border-l-[3px] border-[var(--mem-teal)] bg-[var(--mem-cream)] p-3.5">
-                                <Award size={18} color="var(--mem-teal)" className="mt-0.5 shrink-0" />
-                                <div><div className="text-lg font-ui font-semibold text-[var(--mem-ink)]">Perfect Makhraj</div>
-                                <div className="mt-0.5 text-[0.78rem] text-[var(--mem-ink-muted)]">Pronunciation of 'Qaaf' was excellent.</div></div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }
