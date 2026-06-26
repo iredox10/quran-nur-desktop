@@ -661,6 +661,7 @@ export default function Surah() {
                 audioSettings={audioSettings}
                 updateAudioSettings={updateAudioSettings}
                 handleStartPlaying={handleStartPlaying}
+                chapterName={chapter?.name_simple}
             />
         </div>
     );

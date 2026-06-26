@@ -60,7 +60,8 @@ export default function AudioSetupModal({
     isOpen,
     onClose,
     pendingPlaylist = [],
-    handleStartPlaying
+    handleStartPlaying,
+    chapterName
 }) {
     const { reciterId, setReciter, audioSettings, updateAudioSettings } = useAppStore();
 
@@ -79,7 +80,11 @@ export default function AudioSetupModal({
     }, []);
 
     // Other options
-    const ayahOptions = pendingPlaylist.map((v, i) => ({ value: i, label: v.verseKey }));
+    const ayahOptions = pendingPlaylist.map((v, i) => {
+        const [, ayahNum] = v.verseKey.split(':');
+        const displayLabel = chapterName ? `${chapterName} ${ayahNum}` : v.verseKey;
+        return { value: i, label: displayLabel };
+    });
     const repeatOptions = [1, 2, 3, 5, 10, -1].map(opt => ({ value: opt, label: opt === -1 ? '∞ Infinite' : `${opt}×` }));
     const delayOptions = [0, 1, 2, 3, 5, 10].map(opt => ({ value: opt, label: opt === 0 ? 'None' : `${opt}s` }));
     const speedOptions = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map(opt => ({ value: opt, label: `${opt}×` }));
