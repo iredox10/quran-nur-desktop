@@ -519,7 +519,7 @@ export default function Surah() {
                             <div
                                 className="quran-text text-center mb-12 text-accent"
                                 style={{
-                                    fontSize: `${fontSize * 0.4 + 1.5}rem`,
+                                    fontSize: `clamp(${fontSize * 0.2 + 1.2}rem, 4vw + ${fontSize * 0.2}rem, ${fontSize * 0.4 + 2}rem)`,
                                     fontFamily: arabicFont
                                 }}
                             >
