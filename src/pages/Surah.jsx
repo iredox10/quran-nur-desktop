@@ -576,19 +576,6 @@ export default function Surah() {
                         {/* Footer Navigation */}
                         {!hasNextPage && !isVersesLoading && !backToSauka && (
                             <div className="mt-12 pt-8 border-t border-[var(--border-color)] flex justify-between gap-4 pb-8">
-                                {parseInt(id) > 1 ? (
-                                    <button
-                                        onClick={() => {
-                                            surahScrollPositions[id] = window.scrollY;
-                                            swipeDirectionRef.current = -1;
-                                            navigate(`/surah/${parseInt(id) - 1}`);
-                                        }}
-                                        className="interactive-hover flex items-center gap-2 p-4 bg-[var(--bg-secondary)] rounded-xl text-[var(--text-primary)] font-semibold border border-[var(--border-color)] flex-1 justify-center cursor-pointer"
-                                    >
-                                        <ArrowLeft size={18} /> Previous Surah
-                                    </button>
-                                ) : <div className="flex-1" />}
-
                                 {parseInt(id) < 114 ? (
                                     <button
                                         onClick={() => {
@@ -598,7 +585,20 @@ export default function Surah() {
                                         }}
                                         className="interactive-hover flex items-center gap-2 p-4 bg-[var(--bg-secondary)] rounded-xl text-[var(--text-primary)] font-semibold border border-[var(--border-color)] flex-1 justify-center cursor-pointer"
                                     >
-                                        Next Surah <ArrowRight size={18} />
+                                        <ArrowLeft size={18} /> Next Surah
+                                    </button>
+                                ) : <div className="flex-1" />}
+
+                                {parseInt(id) > 1 ? (
+                                    <button
+                                        onClick={() => {
+                                            surahScrollPositions[id] = window.scrollY;
+                                            swipeDirectionRef.current = -1;
+                                            navigate(`/surah/${parseInt(id) - 1}`);
+                                        }}
+                                        className="interactive-hover flex items-center gap-2 p-4 bg-[var(--bg-secondary)] rounded-xl text-[var(--text-primary)] font-semibold border border-[var(--border-color)] flex-1 justify-center cursor-pointer"
+                                    >
+                                        Previous Surah <ArrowRight size={18} />
                                     </button>
                                 ) : <div className="flex-1" />}
                             </div>
