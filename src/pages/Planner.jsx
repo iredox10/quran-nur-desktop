@@ -1317,8 +1317,8 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
             </AnimatePresence>
             <AnimatePresence>
                 {showRebalanceModal && (
-                    <motion.div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(250,247,240,0.85)] p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <motion.div className="w-full max-w-[420px] rounded-[32px] bg-white p-6 shadow-[0_20px_60px_rgba(43,63,60,0.15)] ring-1 ring-black/5" initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}>
+                    <motion.div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <motion.div className="w-full max-w-[420px] rounded-[32px] bg-[var(--h-white)] p-6 shadow-xl ring-1 ring-[var(--h-bone)]" initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}>
                             <div className="flex flex-col">
                                 <div className="mb-6 flex items-center justify-between">
                                     <h2 className="font-ui text-[1.4rem] font-bold text-[var(--text-primary)]">Rebalance Plan</h2>
@@ -1329,7 +1329,7 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                 <p className="mb-6 font-body text-[0.95rem] leading-[1.6] text-[var(--text-secondary)]">You missed some pages from past assignments. How would you like to catch up?</p>
                                 
                                 <div className="flex flex-col gap-4">
-                                    <button onClick={() => { rebalanceActivePlanner('extend'); setShowRebalanceModal(false); }} className="group relative flex cursor-pointer flex-col gap-2 rounded-[20px] border-[2px] border-[var(--h-bone)] bg-white p-5 text-left transition-all duration-300 hover:border-[var(--h-teal)] hover:bg-[var(--h-bone)] hover:shadow-sm">
+                                    <button onClick={() => { rebalanceActivePlanner('extend'); setShowRebalanceModal(false); }} className="group relative flex cursor-pointer flex-col gap-2 rounded-[20px] border-[2px] border-[var(--h-bone)] bg-[var(--h-white)] p-5 text-left transition-all duration-300 hover:border-[var(--h-teal)] hover:bg-[var(--h-bone)] hover:shadow-sm">
                                         <div className="flex items-center justify-between">
                                             <span className="font-ui text-[1.05rem] font-bold text-[var(--text-primary)]">Extend Plan</span>
                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--h-bone-dark)] text-[var(--h-teal)] transition-colors group-hover:bg-[var(--h-teal)] group-hover:text-white">
@@ -1339,7 +1339,7 @@ function ActiveView({ planner, planners, activePlannerId, onSwitchPlan, onDelete
                                         <p className="font-body text-[0.85rem] leading-snug text-[var(--text-secondary)]">Keep your daily reading amount exactly the same, but add extra days to the end of your plan.</p>
                                     </button>
 
-                                    <button onClick={() => { rebalanceActivePlanner('spread'); setShowRebalanceModal(false); }} className="group relative flex cursor-pointer flex-col gap-2 rounded-[20px] border-[2px] border-[var(--h-bone)] bg-white p-5 text-left transition-all duration-300 hover:border-[var(--h-teal)] hover:bg-[var(--h-bone)] hover:shadow-sm">
+                                    <button onClick={() => { rebalanceActivePlanner('spread'); setShowRebalanceModal(false); }} className="group relative flex cursor-pointer flex-col gap-2 rounded-[20px] border-[2px] border-[var(--h-bone)] bg-[var(--h-white)] p-5 text-left transition-all duration-300 hover:border-[var(--h-teal)] hover:bg-[var(--h-bone)] hover:shadow-sm">
                                         <div className="flex items-center justify-between">
                                             <span className="font-ui text-[1.05rem] font-bold text-[var(--text-primary)]">Spread Pages</span>
                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--h-bone-dark)] text-[var(--h-teal)] transition-colors group-hover:bg-[var(--h-teal)] group-hover:text-white">
