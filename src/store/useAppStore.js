@@ -609,7 +609,55 @@ export const useAppStore = create(
                     return activePlanner;
                 }
                 
-                return { ...activePlanner, assignmentReadPages };
+                const newReadPages = assignmentReadPages[dayNumber];
+                const assignmentCompletedItems = { ...(activePlanner.assignmentCompletedItems || {}) };
+                const existingCompletedItems = Array.isArray(assignmentCompletedItems[dayNumber]) ? assignmentCompletedItems[dayNumber] : [];
+                const nextCompletedItems = new Set(existingCompletedItems);
+
+                assignment.items.forEach(item => {
+                    const pStart = item.pageStart || 1;
+                    const pEnd = item.pageEnd || pStart;
+                    let allRead = true;
+                    for (let p = pStart; p <= pEnd; p++) {
+                        if (!newReadPages.includes(p)) {
+                            allRead = false;
+                            break;
+                        }
+                    }
+                    if (allRead) {
+                        nextCompletedItems.add(item.rangeValue);
+                    }
+                });
+
+                const completedItemsArray = Array.from(nextCompletedItems);
+                assignmentCompletedItems[dayNumber] = completedItemsArray;
+
+                const assignmentProgress = {
+                    ...(activePlanner.assignmentProgress || {}),
+                    [dayNumber]: completedItemsArray.length,
+                };
+
+                const assignmentCompletedAt = { ...(activePlanner.assignmentCompletedAt || {}) };
+                if (completedItemsArray.length >= assignment.items.length) {
+                    assignmentCompletedAt[dayNumber] = assignmentCompletedAt[dayNumber] || new Date().toISOString().split('T')[0];
+                }
+
+                const completedDays = activePlanner.assignments
+                    .filter((item) => {
+                        const completedItems = assignmentCompletedItems[item.dayNumber] || [];
+                        return completedItems.length >= item.items.length;
+                    })
+                    .map((item) => item.dayNumber)
+                    .sort((a, b) => a - b);
+                
+                return { 
+                    ...activePlanner, 
+                    assignmentReadPages,
+                    assignmentCompletedItems,
+                    assignmentProgress,
+                    assignmentCompletedAt,
+                    completedDays
+                };
             })),
             markPlannerItemComplete: (dayNumber, rangeValue) => set((state) => replaceActivePlanner(state, (activePlanner) => {
                 const assignment = activePlanner.assignments.find((item) => item.dayNumber === dayNumber);

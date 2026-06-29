@@ -708,7 +708,7 @@ export function getAssignmentProgress(plan, assignment) {
     : null;
   const rawCompletedCount = plan?.assignmentProgress?.[assignment.dayNumber] ?? 0;
 
-  const completedRangeValues = explicitCompletedItems
+  const initialCompletedRangeValues = explicitCompletedItems
     ? assignment.items
         .filter((item) => explicitCompletedItems.includes(item.rangeValue))
         .map((item) => item.rangeValue)
@@ -716,8 +716,7 @@ export function getAssignmentProgress(plan, assignment) {
         .slice(0, Math.max(0, Math.min(rawCompletedCount, totalCount)))
         .map((item) => item.rangeValue);
 
-  const completedCount = completedRangeValues.length;
-  const nextItem = assignment.items.find((item) => !completedRangeValues.includes(item.rangeValue)) || assignment.items[assignment.items.length - 1] || null;
+  const completedRangeValuesSet = new Set(initialCompletedRangeValues);
 
   const explicitReadPages = Array.isArray(plan?.assignmentReadPages?.[assignment.dayNumber])
     ? plan.assignmentReadPages[assignment.dayNumber]
@@ -731,12 +730,28 @@ export function getAssignmentProgress(plan, assignment) {
     const pEnd = item.pageEnd || pStart;
     totalPagesCount += (pEnd - pStart + 1);
 
-    if (completedRangeValues.includes(item.rangeValue)) {
+    let allItemPagesRead = true;
+    for (let p = pStart; p <= pEnd; p++) {
+      if (!explicitReadPages.includes(p)) {
+        allItemPagesRead = false;
+        break;
+      }
+    }
+
+    if (allItemPagesRead) {
+      completedRangeValuesSet.add(item.rangeValue);
+    }
+
+    if (completedRangeValuesSet.has(item.rangeValue)) {
       for (let p = pStart; p <= pEnd; p++) {
         allReadPages.add(p);
       }
     }
   });
+
+  const completedRangeValues = Array.from(completedRangeValuesSet);
+  const completedCount = completedRangeValues.length;
+  const nextItem = assignment.items.find((item) => !completedRangeValues.includes(item.rangeValue)) || assignment.items[assignment.items.length - 1] || null;
 
   return {
     completedCount,
