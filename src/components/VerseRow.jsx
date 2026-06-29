@@ -245,7 +245,7 @@ const VerseRow = ({
                 </div>
 
                 <div dir="ltr" className="quran-translation text-left" style={{
-                    fontSize: `${translationFontSize * 0.15 + 0.8}rem`,
+                    fontSize: `${(translationFontSize || 2) * 0.15 + 0.8}rem`,
                     color: 'var(--text-secondary)',
                     lineHeight: 1.6
                 }}

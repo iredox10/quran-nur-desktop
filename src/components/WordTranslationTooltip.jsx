@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 
 export default function WordTranslationTooltip() {
-    const { wordTooltipBehavior } = useAppStore();
+    const { wordTooltipBehavior, translationFontSize } = useAppStore();
     const [tooltip, setTooltip] = useState(null); // { x, y, translation }
     const tooltipRef = useRef(null);
 
@@ -80,7 +80,8 @@ export default function WordTranslationTooltip() {
             }}
         >
             <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 text-center shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-xl">
-                <p className="m-0 font-['Outfit',sans-serif] text-[0.9rem] font-medium leading-[1.4] text-[var(--text-primary)]">
+                <p className="m-0 font-['Outfit',sans-serif] font-medium leading-[1.4] text-[var(--text-primary)]"
+                   style={{ fontSize: `${(translationFontSize || 2) * 0.1 + 0.75}rem` }}>
                     {tooltip.translation}
                 </p>
             </div>
