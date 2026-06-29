@@ -477,27 +477,6 @@ export default function PlannerReader() {
     }, [verses, isPageLoading, pageNumber, setAudioPlaylist, setIsPlaying, setIsPlayerVisible, updateAudioSettings, localAudioDirHandle, customAudioBaseUrl]);
 
     // Swipe gestures
-    const swipeDirectionRef = useRef(0);
-    const swipeHandlers = useSwipeable({
-        onSwipedLeft: () => {
-            if (pageNumber !== null && pageNumber < maxPageNumber) {
-                swipeDirectionRef.current = 1;
-                setPageNumber(pageNumber + 1);
-            }
-        },
-        onSwipedRight: () => {
-            if (pageNumber !== null && pageNumber > minPageNumber) {
-                swipeDirectionRef.current = -1;
-                setPageNumber(pageNumber - 1);
-            }
-        },
-        preventDefaultTouchmoveEvent: false,
-        trackTouch: true,
-        trackMouse: false,
-        delta: 40,
-        swipeDuration: 500
-    });
-
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: 'auto' });
     };
@@ -529,6 +508,17 @@ export default function PlannerReader() {
             setPageNumber(pageNumber - 1);
         }
     };
+
+    const swipeDirectionRef = useRef(0);
+    const swipeHandlers = useSwipeable({
+        onSwipedRight: handleNextPage,
+        onSwipedLeft: handlePrevPage,
+        preventDefaultTouchmoveEvent: false,
+        trackTouch: true,
+        trackMouse: false,
+        delta: 40,
+        swipeDuration: 500
+    });
 
     // Auto-smooth top-scroll when verses change
     useEffect(() => {
