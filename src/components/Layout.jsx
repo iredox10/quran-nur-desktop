@@ -35,7 +35,7 @@ export default function Layout() {
     const hasAudio = audioPlaylist.length > 0 || !!currentAudioUrl;
     const shouldReturnToPlanner = Boolean(location.state?.backToPlanner) || isPlannerReader;
     const shouldReturnToSauka = Boolean(location.state?.backToSauka);
-    const shouldForceHomeBack = (isSurahPage || isMemorizePage || isPagePage) && !shouldReturnToSauka;
+    const shouldForceHomeBack = (isSurahPage || isPagePage) && !shouldReturnToSauka;
 
     const navigateHomeAtTop = useCallback((replace = false) => {
         navigate('/', {
@@ -49,6 +49,11 @@ export default function Layout() {
     const handleImmersiveBack = () => {
         if (shouldReturnToSauka) {
             navigate(`/sauka/${location.state.backToSauka}`);
+            return;
+        }
+
+        if (isMemorizePage) {
+            navigate('/memorize');
             return;
         }
 
@@ -88,7 +93,7 @@ export default function Layout() {
     }, [pomodoroIsRunning, tickPomodoro]);
 
     useEffect(() => {
-        if (!shouldForceHomeBack) {
+        if (!shouldForceHomeBack && !isMemorizePage) {
             return undefined;
         }
 
@@ -105,12 +110,16 @@ export default function Layout() {
         }
 
         const handlePopState = () => {
-            navigateHomeAtTop(true);
+            if (isMemorizePage) {
+                navigate('/memorize', { replace: true });
+            } else {
+                navigateHomeAtTop(true);
+            }
         };
 
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [location.pathname, navigateHomeAtTop, shouldForceHomeBack]);
+    }, [location.pathname, navigateHomeAtTop, shouldForceHomeBack, isMemorizePage, navigate]);
 
     useEffect(() => {
         let hideTimer;

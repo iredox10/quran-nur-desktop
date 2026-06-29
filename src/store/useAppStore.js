@@ -240,13 +240,26 @@ export const useAppStore = create(
                 hifdhGoals: (state.hifdhGoals || []).filter(g => g.id !== id)
             })),
 
-            toggleMemorizedSurah: (chapterId) => set((state) => {
+            toggleMemorizedSurah: (chapterId, totalVerses = null) => set((state) => {
                 const isMemorized = (state.memorizedSurahs || []).includes(chapterId);
+                let newMemorizedSurahs;
+                let newMemorizedAyahs = new Set(state.memorizedAyahs || []);
+                
                 if (isMemorized) {
-                    return { memorizedSurahs: state.memorizedSurahs.filter(id => id !== chapterId) };
+                    newMemorizedSurahs = state.memorizedSurahs.filter(id => id !== chapterId);
+                    if (totalVerses) {
+                        for(let i=1; i<=totalVerses; i++) newMemorizedAyahs.delete(`${chapterId}:${i}`);
+                    }
                 } else {
-                    return { memorizedSurahs: [...(state.memorizedSurahs || []), chapterId] };
+                    newMemorizedSurahs = [...(state.memorizedSurahs || []), chapterId];
+                    if (totalVerses) {
+                        for(let i=1; i<=totalVerses; i++) newMemorizedAyahs.add(`${chapterId}:${i}`);
+                    }
                 }
+                return { 
+                    memorizedSurahs: newMemorizedSurahs,
+                    memorizedAyahs: Array.from(newMemorizedAyahs)
+                };
             }),
 
             addCollection: (name, id = null) => set((state) => ({

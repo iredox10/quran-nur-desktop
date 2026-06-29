@@ -78,15 +78,22 @@ export default function Memorization() {
     }, [currentVerseIndex, ayahsPerSwipe]);
 
     useEffect(() => {
-        if (isPlayingAudio && audioRef.current) {
-            audioRef.current.play().catch(e => {
-                console.error("Audio playback error", e);
-                setIsPlayingAudio(false);
-            });
+        if (isPlayingAudio) {
+            if (resolvedAudioUrl && audioRef.current) {
+                audioRef.current.play().catch(e => {
+                    console.error("Audio playback error", e);
+                    setIsPlayingAudio(false);
+                });
+            } else if (currentVerses[audioVerseIndex]) {
+                const activeV = currentVerses[audioVerseIndex];
+                if (!activeV?.audio?.url) {
+                    handleAudioEnded();
+                }
+            }
         }
-    }, [isPlayingAudio, audioVerseIndex, currentVerseIndex]);
+    }, [isPlayingAudio, audioVerseIndex, currentVerseIndex, resolvedAudioUrl]);
 
-    const handleAudioEnded = () => {
+    function handleAudioEnded() {
         const nextAction = () => {
             if (ayahRepeatTarget === -1 || currentAyahPlayCount + 1 < ayahRepeatTarget) {
                 if (ayahRepeatTarget !== -1) setCurrentAyahPlayCount(prev => prev + 1);
@@ -537,7 +544,7 @@ export default function Memorization() {
             <div className={`fixed bottom-[5.5rem] left-1/2 z-30 flex -translate-x-1/2 items-center gap-[0.6rem] whitespace-nowrap font-mono text-[0.78rem] text-[var(--mem-ink-muted)] transition-opacity duration-[400ms] ${showUI ? '' : 'pointer-events-none opacity-0'}`}>
                 <div className="flex items-center gap-1 font-semibold text-[var(--mem-teal)]">
                     <span>Surah {chapter?.name_simple}</span>
-                    <button className="flex cursor-pointer items-center border-none bg-transparent p-0 transition-colors duration-150" onClick={() => chapter?.id && toggleMemorizedSurah(chapter.id)}
+                    <button className="flex cursor-pointer items-center border-none bg-transparent p-0 transition-colors duration-150" onClick={() => chapter?.id && toggleMemorizedSurah(chapter.id, chapter.verses_count)}
                         style={{ color: (memorizedSurahs || []).includes(chapter?.id) ? 'var(--mem-green)' : 'var(--mem-ink-muted)' }}>
                         <Award size={16} fill={(memorizedSurahs || []).includes(chapter?.id) ? 'currentColor' : 'none'} />
                     </button>
@@ -580,7 +587,9 @@ export default function Memorization() {
                                 let s = currentVerseIndex;
                                 while (s > 0 && verses[s - 1].page_number === pg) s--;
                                 setCurrentVerseIndex(s);
-                            } else setCurrentVerseIndex(0);
+                            } else {
+                                setCurrentVerseIndex(Math.floor(currentVerseIndex / val) * val);
+                            }
                         }}
                             className="cursor-pointer border-none bg-transparent text-[0.78rem] text-inherit outline-none font-mono">
                             <option value={1}>1</option><option value={3}>3</option><option value={5}>5</option>
