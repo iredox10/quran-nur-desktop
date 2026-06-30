@@ -6,7 +6,17 @@ import App from './App.jsx';
 import './index.css';
 
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      networkMode: 'offlineFirst',
+      refetchOnWindowFocus: false, // Optional: prevents annoying refetches when tabbing back
+    },
+    mutations: {
+      networkMode: 'offlineFirst',
+    }
+  }
+});
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

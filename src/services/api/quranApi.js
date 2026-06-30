@@ -76,20 +76,28 @@ export const getChapter = async (id) => {
 };
 
 export const getVerses = async (chapterId, translationId = 85, reciterId = 7, page = 1, mushafId = 'madani-standard', perPage = 50) => {
-  const { mushaf, fields, wordFields } = buildFieldsForMushaf(mushafId);
+  const { mushaf } = buildFieldsForMushaf(mushafId);
   const isEveryAyah = typeof reciterId === 'string';
-  const params = {
-    language: 'en',
-    words: true,
-    translations: translationId,
-    audio: isEveryAyah ? 7 : reciterId,
-    fields,
-    word_fields: wordFields,
-    mushaf: mushaf.apiMushafId,
-    page,
-    per_page: perPage,
+
+  // Load from local bundled data
+  const response = await axios.get(`/data/surahs/${chapterId}.json`);
+  const allVerses = response.data;
+  
+  // Handle native pagination
+  const start = (page - 1) * perPage;
+  const end = start + perPage;
+  const slicedVerses = allVerses.slice(start, end);
+
+  const data = {
+    verses: slicedVerses,
+    pagination: {
+      per_page: perPage,
+      current_page: page,
+      next_page: end < allVerses.length ? page + 1 : null,
+      total_pages: Math.ceil(allVerses.length / perPage),
+      total_records: allVerses.length
+    }
   };
-  const data = await fetchWithOfflineCache(`/verses/by_chapter/${chapterId}`, params);
   
   if (isEveryAyah) {
       data.verses.forEach(v => {
@@ -107,19 +115,11 @@ export const getVerses = async (chapterId, translationId = 85, reciterId = 7, pa
 };
 
 export const getVersesByPage = async (pageNumber, translationId = 85, reciterId = 7, mushafId = 'madani-standard') => {
-  const { mushaf, fields, wordFields } = buildFieldsForMushaf(mushafId);
+  const { mushaf } = buildFieldsForMushaf(mushafId);
   const isEveryAyah = typeof reciterId === 'string';
-  const params = {
-    language: 'en',
-    words: true,
-    translations: translationId,
-    audio: isEveryAyah ? 7 : reciterId,
-    fields,
-    word_fields: wordFields,
-    mushaf: mushaf.apiMushafId,
-    per_page: 50,
-  };
-  const data = await fetchWithOfflineCache(`/verses/by_page/${pageNumber}`, params);
+  
+  const response = await axios.get(`/data/pages/${pageNumber}.json`);
+  const data = { verses: response.data };
   
   if (isEveryAyah) {
       data.verses.forEach(v => {
@@ -163,8 +163,8 @@ export const getTajweedVersesByPage = async (pageNumber) => {
 };
 
 export const getJuzs = async () => {
-  const data = await fetchWithOfflineCache('/juzs');
-  return data.juzs;
+  const response = await axios.get('/data/juzs.json');
+  return response.data.juzs;
 };
 
 export const getFootnote = async (footnoteId) => {
