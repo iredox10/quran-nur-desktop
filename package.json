@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@fontsource/amiri-quran": "^5.2.10",
     "@fontsource/cormorant-garamond": "^5.2.11",
     "@fontsource/geist-mono": "^5.2.8",
     "@fontsource/piazzolla": "^5.2.8",

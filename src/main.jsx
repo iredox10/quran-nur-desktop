@@ -13,6 +13,7 @@ import '@fontsource/piazzolla/600.css';
 import '@fontsource/piazzolla/700.css';
 import '@fontsource/scheherazade-new/400.css';
 import '@fontsource/scheherazade-new/700.css';
+import '@fontsource/amiri-quran/400.css';
 import './index.css';
 
 
