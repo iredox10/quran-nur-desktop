@@ -25,6 +25,12 @@ async function fetchSurah(chapterId) {
     });
 
     const url = `https://api.quran.com/api/v4/verses/by_chapter/${chapterId}?${params.toString()}`;
+    const destFile = path.join(DEST_DIR, `${chapterId}.json`);
+
+    if (fs.existsSync(destFile) && fs.statSync(destFile).size > 100) {
+        console.log(`Skipping Surah ${chapterId} (already downloaded)`);
+        return Promise.resolve();
+    }
     
     console.log(`Fetching Surah ${chapterId}...`);
     return new Promise((resolve, reject) => {

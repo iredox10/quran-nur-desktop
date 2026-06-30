@@ -11,6 +11,10 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.2.11",
+    "@fontsource/geist-mono": "^5.2.8",
+    "@fontsource/piazzolla": "^5.2.8",
+    "@fontsource/scheherazade-new": "^5.2.9",
     "@tailwindcss/vite": "latest",
     "@tanstack/react-query": "^5.90.21",
     "@tauri-apps/plugin-fs": "^2.5.1",

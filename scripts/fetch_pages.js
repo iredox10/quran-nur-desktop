@@ -24,6 +24,11 @@ async function fetchPage(pageNumber) {
     });
 
     const url = `https://api.quran.com/api/v4/verses/by_page/${pageNumber}?${params.toString()}`;
+    const destFile = path.join(DEST_DIR, `${pageNumber}.json`);
+
+    if (fs.existsSync(destFile) && fs.statSync(destFile).size > 100) {
+        return Promise.resolve();
+    }
     
     return new Promise((resolve, reject) => {
         https.get(url, { family: 4 }, (res) => {
